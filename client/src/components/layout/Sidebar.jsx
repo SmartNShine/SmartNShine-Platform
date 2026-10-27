@@ -18,6 +18,7 @@ import {
   HelpCircle,
   TrendingUp,
   FileText,
+  History,
 } from "lucide-react";
 import {useAuth} from "@/context/AuthContext";
 import Logo from "@/components/common/Logo";
@@ -67,6 +68,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       description: "AI Mock Interview Studio",
       requiresAuth: true,
       badge: "NEW",
+    },
+    {
+      name: "Interview History",
+      path: "/interview/history",
+      icon: History,
+      description: "Past interviews & reports",
+      requiresAuth: true,
     },
     {
       name: "Career Profile",
