@@ -91,16 +91,16 @@ const titleCase = (value) =>
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
 const StatCard = ({label, value, icon: Icon, tone}) => (
-  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-black">
+  <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-sm">
     <div className="flex items-center justify-between gap-4">
       <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
+        <p className="mt-1 text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100">
           {value || 0}
         </p>
       </div>
       <div
-        className={`flex h-11 w-11 items-center justify-center rounded-xl ${tone} text-white`}
+        className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}
       >
         <Icon className="h-5 w-5" />
       </div>
@@ -287,25 +287,25 @@ const AdminNotifications = () => {
           label="Unread Alerts"
           value={stats?.unread}
           icon={Bell}
-          tone="bg-cyan-500"
+          tone="bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
         />
         <StatCard
           label="Critical Events"
           value={stats?.critical}
           icon={ShieldAlert}
-          tone="bg-rose-500"
+          tone="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
         />
         <StatCard
           label="System Errors"
           value={stats?.errors}
           icon={XCircle}
-          tone="bg-red-500"
+          tone="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
         />
         <StatCard
           label="Today's Activity"
           value={stats?.today}
           icon={Sparkles}
-          tone="bg-emerald-500"
+          tone="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
         />
       </div>
 

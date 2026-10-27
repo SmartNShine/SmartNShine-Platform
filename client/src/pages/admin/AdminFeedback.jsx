@@ -229,73 +229,67 @@ const AdminFeedback = () => {
           {/* Statistics Cards */}
           {stats && (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Total Feedback</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                      {stats.total}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl">
-                    <MessageSquare className="w-5 h-5 text-white" />
-                  </div>
+              <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Feedback</p>
+                  <p className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-1">
+                    {stats.total}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
                 </div>
               </div>
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Open</p>
-                <p className="text-2xl font-bold text-blue-400 mt-1">
-                  {stats.open}
-                </p>
+
+              <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Open Tickets</p>
+                  <p className="text-2xl font-bold font-mono text-sky-600 dark:text-sky-400 mt-1">
+                    {stats.open}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                  <Clock className="w-5 h-5" />
+                </div>
               </div>
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl">
-                <Clock className="w-5 h-5 text-white" />
+
+              <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">In Progress</p>
+                  <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
+                    {stats.inProgress}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5" />
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">In Progress</p>
-                <p className="text-2xl font-bold text-yellow-400 mt-1">
-                  {stats.inProgress}
-                </p>
+
+              <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Resolved</p>
+                  <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                    {stats.resolved}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
               </div>
-              <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl">
-                <Loader2 className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Resolved</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">
-                  {stats.resolved}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                <CheckCircle className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Bugs Reported</p>
-                <p className="text-2xl font-bold text-red-400 mt-1">
-                  {stats.bugs}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl">
-                <Bug className="w-5 h-5 text-white" />
+
+              <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Bugs Reported</p>
+                  <p className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">
+                    {stats.bugs}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <Bug className="w-5 h-5" />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
       {/* Filters */}
       <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">

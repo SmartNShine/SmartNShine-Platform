@@ -354,11 +354,13 @@ const SessionAuditDetail = ({
             <span className="text-[11px] text-gray-400 block font-medium">Duration & Timing</span>
             <span className="font-semibold text-sm text-gray-900 dark:text-white flex items-center gap-1 mt-0.5">
               <Clock className="w-3.5 h-3.5 text-blue-500" />
-              {sessionDetail?.totalDurationSeconds
-                ? `${Math.floor(sessionDetail.totalDurationSeconds / 60)}m ${
-                    sessionDetail.totalDurationSeconds % 60
-                  }s`
-                : "N/A"}
+              {(() => {
+                const dur = sessionDetail?.durationSeconds || sessionDetail?.totalDurationSeconds || 0;
+                if (!dur) return "--";
+                const m = Math.floor(dur / 60);
+                const s = dur % 60;
+                return m > 0 ? `${m}m ${s}s` : `${s}s`;
+              })()}
             </span>
             <span className="text-xs text-gray-500 block mt-0.5">
               {sessionDetail?.createdAt ? new Date(sessionDetail.createdAt).toLocaleString() : "N/A"}

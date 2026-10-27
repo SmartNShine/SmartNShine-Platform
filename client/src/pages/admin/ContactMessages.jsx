@@ -170,73 +170,63 @@ const ContactMessages = () => {
       {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Total</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                  {stats.total}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl">
-                <MessageSquare className="w-5 h-5 text-white" />
-              </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Enquiries</p>
+              <p className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-1">
+                {stats.total}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">New</p>
-                <p className="text-2xl font-bold text-blue-400 mt-1">
-                  {stats.byStatus.new || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl">
-                <Mail className="w-5 h-5 text-white" />
-              </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">New / Unread</p>
+              <p className="text-2xl font-bold font-mono text-sky-600 dark:text-sky-400 mt-1">
+                {stats.byStatus.new || 0}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <Mail className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Read</p>
-                <p className="text-2xl font-bold text-gray-300 mt-1">
-                  {stats.byStatus.read || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl">
-                <Eye className="w-5 h-5 text-white" />
-              </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Read</p>
+              <p className="text-2xl font-bold font-mono text-zinc-700 dark:text-zinc-300 mt-1">
+                {stats.byStatus.read || 0}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center">
+              <Eye className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Replied</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">
-                  {stats.byStatus.replied || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                <CheckCircle className="w-5 h-5 text-white" />
-              </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Replied</p>
+              <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                {stats.byStatus.replied || 0}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Recent (7d)</p>
-                <p className="text-2xl font-bold text-violet-400 mt-1">
-                  {stats.recentCount}
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl">
-                <Clock className="w-5 h-5 text-white" />
-              </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Recent (7 Days)</p>
+              <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
+                {stats.recentCount}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Clock className="w-5 h-5" />
             </div>
           </div>
         </div>

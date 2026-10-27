@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {Activity, Clock} from "lucide-react";
+import {Activity, Clock, RefreshCw} from "lucide-react";
 import {getAdminLogs} from "@/api/admin.api";
 
 const AdminLogs = () => {
@@ -42,8 +42,9 @@ const AdminLogs = () => {
 
       <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 animate-pulse"></div>
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+            <p className="text-xs text-zinc-500">Loading audit logs...</p>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-center py-16">

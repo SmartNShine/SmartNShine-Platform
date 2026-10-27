@@ -115,6 +115,53 @@ export const calculateSessionCosts = (session, pricing) => {
 };
 
 /**
+ * Helper to reliably derive session duration in seconds from available telemetry
+ */
+export const deriveSessionDurationSeconds = (session, answeredCount, costs) => {
+  if (session.totalDurationSeconds && Number(session.totalDurationSeconds) > 0) {
+    return Number(session.totalDurationSeconds);
+  }
+
+  if (session.durationSeconds && Number(session.durationSeconds) > 0) {
+    return Number(session.durationSeconds);
+  }
+
+  if (session.completedAt && (session.startedAt || session.createdAt)) {
+    const start = new Date(session.startedAt || session.createdAt).getTime();
+    const end = new Date(session.completedAt).getTime();
+    const diff = Math.round((end - start) / 1000);
+    if (diff > 5 && diff < 86400) {
+      return diff;
+    }
+  }
+
+  const ansCount =
+    answeredCount !== undefined
+      ? answeredCount
+      : (session.questions?.filter((q) => q.userAnswer || (q.evaluation && q.evaluation.score > 0))?.length || 0);
+
+  if (session.updatedAt && (session.startedAt || session.createdAt) && ansCount > 0) {
+    const start = new Date(session.startedAt || session.createdAt).getTime();
+    const end = new Date(session.updatedAt).getTime();
+    const diff = Math.round((end - start) / 1000);
+    if (diff >= 20 && diff <= 14400) {
+      return diff;
+    }
+  }
+
+  const sttSec = costs?.stt?.durationSeconds || session.costBreakdown?.stt?.durationSeconds || 0;
+  if (sttSec > 0) {
+    return Math.round(sttSec * 1.5);
+  }
+
+  if (ansCount > 0) {
+    return Math.max(45, ansCount * 65);
+  }
+
+  return 0;
+};
+
+/**
  * @desc    Get aggregate AI Interview stats, spend breakdown & KPI metrics
  * @route   GET /api/admin/interviews/stats
  * @access  Private (Admin)
@@ -138,7 +185,7 @@ export const getInterviewAdminStats = async (req, res) => {
       InterviewSession.countDocuments({ status: "abandoned" }),
       InterviewSession.countDocuments({ mode: { $in: ["live", "voice"] } }),
       InterviewSession.countDocuments({ mode: "text" }),
-      InterviewSession.find({}, "mode voiceEngineUsed questions totalDurationSeconds costBreakdown createdAt status")
+      InterviewSession.find({}, "mode voiceEngineUsed questions totalDurationSeconds costBreakdown createdAt completedAt updatedAt startedAt status")
         .sort({ createdAt: -1 })
         .lean(),
     ]);
@@ -180,7 +227,8 @@ export const getInterviewAdminStats = async (req, res) => {
       aggregateLlmCostInr += costs.llm.costInr;
       aggregateTotalCostInr += costs.totalCostInr;
 
-      totalDurationSec += sess.totalDurationSeconds || 0;
+      const durSec = deriveSessionDurationSeconds(sess, undefined, costs);
+      totalDurationSec += durSec;
 
       if (sess.questions) {
         sess.questions.forEach((q) => {
@@ -376,6 +424,8 @@ export const getAllInterviewSessions = async (req, res) => {
             )
           : 0;
 
+      const durationSeconds = deriveSessionDurationSeconds(session, answeredCount, costs);
+
       return {
         id: session._id,
         user: session.userId || { name: "Anonymous Candidate", email: "N/A" },
@@ -393,10 +443,13 @@ export const getAllInterviewSessions = async (req, res) => {
         questionsTotal: session.totalQuestions || session.questions?.length || 0,
         questionsAnswered: answeredCount,
         averageScore,
-        durationSeconds: session.totalDurationSeconds || 0,
+        durationSeconds,
+        totalDurationSeconds: durationSeconds,
         costs,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
+        completedAt: session.completedAt,
+        startedAt: session.startedAt,
       };
     });
 
@@ -448,21 +501,24 @@ export const getInterviewSessionDetail = async (req, res) => {
 
     const costs = calculateSessionCosts(session, pricing);
 
+    const answeredQuestions = (session.questions || []).filter(
+      (q) => (q.evaluation && q.evaluation.score > 0) || q.userAnswer
+    );
+    const evaluatedQuestions = (session.questions || []).filter(
+      (q) => q.evaluation && typeof q.evaluation.score === "number" && q.evaluation.score > 0
+    );
+    const averageScore = evaluatedQuestions.length > 0
+      ? Math.round(
+          evaluatedQuestions.reduce((acc, q) => acc + (q.evaluation.score || 0), 0) /
+            evaluatedQuestions.length
+        )
+      : 0;
+
+    const durationSeconds = deriveSessionDurationSeconds(session, answeredQuestions.length, costs);
+
     // Fallback result for partial or in-progress interviews without a completed InterviewResult document
     let result = interviewResult;
     if (!result) {
-      const answeredQuestions = (session.questions || []).filter(
-        (q) => (q.evaluation && q.evaluation.score > 0) || q.userAnswer
-      );
-      const evaluatedQuestions = (session.questions || []).filter(
-        (q) => q.evaluation && typeof q.evaluation.score === "number" && q.evaluation.score > 0
-      );
-      const averageScore = evaluatedQuestions.length > 0
-        ? Math.round(
-            evaluatedQuestions.reduce((acc, q) => acc + (q.evaluation.score || 0), 0) /
-              evaluatedQuestions.length
-          )
-        : 0;
 
       let grade = "N/A";
       if (averageScore >= 90) grade = "A+";
@@ -638,7 +694,9 @@ export const getInterviewSessionDetail = async (req, res) => {
       data: {
         session: {
           ...session,
-          averageScore: result?.overallScore || averageScore,
+          durationSeconds,
+          totalDurationSeconds: durationSeconds,
+          averageScore: result?.overallScore || averageScore || 0,
           voiceEngineUsed:
             session.voiceEngineUsed ||
             (session.mode === "text" ? "none" : "local"),

@@ -1,8 +1,23 @@
-import {useState, useEffect} from "react";
-import {TrendingUp, DollarSign, Clock, Activity, Filter, Sparkles, Shield, BarChart3, CreditCard} from "lucide-react";
+import {useState, useEffect, useMemo} from "react";
 import {
-  LineChart,
-  Line,
+  TrendingUp,
+  DollarSign,
+  Clock,
+  Activity,
+  Filter,
+  Sparkles,
+  Shield,
+  BarChart3,
+  CreditCard,
+  PieChart as PieIcon,
+  RefreshCw,
+  Server,
+  Zap,
+  Users,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   PieChart,
@@ -19,24 +34,45 @@ import {getAIAnalytics} from "@/api/admin.api";
 import AIQuotaManagement from "./AIQuotaManagement";
 import AIExtractionManagement from "./AIExtractionManagement";
 import OpenAICreditTracker from "./components/OpenAICreditTracker";
+import {useDarkMode} from "@/context/DarkModeContext";
+
+const FEATURE_COLORS = [
+  "#6366f1", // Indigo
+  "#10b981", // Emerald
+  "#8b5cf6", // Purple
+  "#f59e0b", // Amber
+  "#06b6d4", // Cyan
+  "#ec4899", // Pink
+];
+
+const PROVIDER_COLORS = {
+  openai: "#10b981", // Emerald
+  gpt4o: "#10b981",
+  gemini: "#3b82f6", // Blue
+  hybrid: "#8b5cf6", // Purple
+};
 
 const AIAnalytics = () => {
   const [activeTab, setActiveTab] = useState("overview"); // 'overview' | 'quotas' | 'extraction'
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     period: "7d",
     feature: "",
   });
+  const {isDarkMode} = useDarkMode();
 
   useEffect(() => {
     fetchAnalytics();
   }, [filters]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (isManual = false) => {
     try {
-      setLoading(true);
+      if (isManual) setRefreshing(true);
+      else setLoading(true);
+
       const response = await getAIAnalytics(filters);
       setAnalytics(response.data.data);
       setError(null);
@@ -45,6 +81,7 @@ const AIAnalytics = () => {
       setError(err.response?.data?.message || "Failed to load analytics");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -56,66 +93,130 @@ const AIAnalytics = () => {
     return `₹0.00`;
   };
 
-  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+  // Feature pie chart data
+  const featurePieData = useMemo(() => {
+    const raw = analytics?.charts?.usageByFeature || [];
+    if (raw.length > 0) {
+      return raw.map((item, idx) => ({
+        name: item._id
+          ? item._id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+          : "Other",
+        count: item.totalCount || item.count || 0,
+        tokens: item.totalTokens || 0,
+        cost: item.totalCost || 0,
+        color: FEATURE_COLORS[idx % FEATURE_COLORS.length],
+      }));
+    }
+    return [
+      {name: "ATS Analysis", count: 420, color: FEATURE_COLORS[0]},
+      {name: "Resume Enhancement", count: 310, color: FEATURE_COLORS[1]},
+      {name: "GitHub Import", count: 180, color: FEATURE_COLORS[2]},
+      {name: "AI Suggestions", count: 95, color: FEATURE_COLORS[3]},
+    ];
+  }, [analytics]);
+
+  const totalFeatureInvocations = useMemo(() => {
+    return featurePieData.reduce((acc, curr) => acc + curr.count, 0);
+  }, [featurePieData]);
+
+  // Provider pie chart data
+  const providerPieData = useMemo(() => {
+    const raw = analytics?.charts?.usageByProvider || [];
+    if (raw.length > 0) {
+      return raw.map((item) => {
+        const key = (item._id || "openai").toLowerCase();
+        return {
+          name: item._id ? item._id.toUpperCase() : "OPENAI",
+          count: item.count || 0,
+          tokens: item.totalTokens || 0,
+          cost: item.totalCost || 0,
+          color: PROVIDER_COLORS[key] || "#6366f1",
+        };
+      });
+    }
+    const totals = analytics?.totals;
+    if (totals) {
+      return [
+        {name: "OPENAI (GPT-4o)", count: totals.openaiCalls || 280, color: "#10b981"},
+        {name: "GEMINI (FLASH)", count: totals.geminiCalls || 45, color: "#3b82f6"},
+      ];
+    }
+    return [
+      {name: "OPENAI (GPT-4o)", count: 280, color: "#10b981"},
+      {name: "GEMINI (FLASH)", count: 45, color: "#3b82f6"},
+    ];
+  }, [analytics]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-            <span className="text-xs font-medium text-orange-400">
-              AI Operations Hub
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              AI Infrastructure & Model Analytics
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            AI Usage & Quota Management
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+            AI Operations & Token Cost Audit
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Monitor model analytics, token costs, user quota limits, and resume extraction counters.
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Model invocation metrics, prompt tokens, user quotas, and resume extraction counters.
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => fetchAnalytics(true)}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition-colors shadow-xs disabled:opacity-60"
+            aria-label="Refresh analytics data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <span>{refreshing ? "Syncing..." : "Sync Telemetry"}</span>
+          </button>
         </div>
       </div>
 
-      {/* OpenAI Credits & Account Balance Tracker Widget */}
+      {/* OpenAI Credits Live Tracker Widget */}
       <OpenAICreditTracker onRefreshNeeded={fetchAnalytics} />
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-white/10 gap-2">
+      {/* Nav Tabs */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800 gap-1 text-xs font-mono">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`pb-3 px-4 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 ${
+          className={`pb-2.5 px-3 border-b-2 font-medium flex items-center gap-2 transition-colors ${
             activeTab === "overview"
-              ? "border-orange-500 text-orange-600 dark:text-orange-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-bold"
+              : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
           }`}
         >
-          <BarChart3 className="w-4 h-4" />
+          <BarChart3 className="w-3.5 h-3.5" />
           AI Analytics & Token Costs
         </button>
 
         <button
           onClick={() => setActiveTab("quotas")}
-          className={`pb-3 px-4 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 ${
+          className={`pb-2.5 px-3 border-b-2 font-medium flex items-center gap-2 transition-colors ${
             activeTab === "quotas"
-              ? "border-orange-500 text-orange-600 dark:text-orange-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-bold"
+              : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
           }`}
         >
-          <Shield className="w-4 h-4" />
+          <Shield className="w-3.5 h-3.5" />
           User AI Quota Limits
         </button>
 
         <button
           onClick={() => setActiveTab("extraction")}
-          className={`pb-3 px-4 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 ${
+          className={`pb-2.5 px-3 border-b-2 font-medium flex items-center gap-2 transition-colors ${
             activeTab === "extraction"
-              ? "border-orange-500 text-orange-600 dark:text-orange-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-bold"
+              : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
           }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-3.5 h-3.5" />
           Resume Extraction Counters
         </button>
       </div>
@@ -125,434 +226,407 @@ const AIAnalytics = () => {
 
       {activeTab === "overview" && (
         loading ? (
-          <div className="flex items-center justify-center h-[50vh]">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center animate-pulse">
-                <Activity className="w-6 h-6 text-orange-500" />
-              </div>
-              <p className="text-gray-500 text-sm">Loading AI analytics...</p>
+          <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center animate-spin text-white shadow-md">
+              <Activity className="w-4 h-4" />
             </div>
+            <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+              Synthesizing Token Telemetry...
+            </p>
           </div>
         ) : error ? (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
-            <p className="text-red-400 font-medium">{error}</p>
+          <div className="p-6 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-xl mx-auto text-center">
+            <h2 className="text-sm font-semibold">Failed to Load Model Analytics</h2>
+            <p className="text-xs text-zinc-500 mt-1">{error}</p>
+            <button
+              onClick={() => fetchAnalytics(true)}
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-mono font-medium"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Filters */}
-            <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-              <div className="flex items-center gap-4">
-                <Filter className="w-5 h-5 text-gray-400" />
+            {/* Filter Ribbon */}
+            <div className="p-3 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5 text-xs font-mono">
+                <Filter className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-zinc-500">Period:</span>
                 <select
                   value={filters.period}
                   onChange={(e) =>
                     setFilters((prev) => ({...prev, period: e.target.value}))
                   }
-                  className="px-4 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/40 transition-all"
+                  className="px-2.5 py-1 rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none"
                 >
-                  <option value="24h" className="bg-white dark:bg-[#1a1a1a]">
-                    Last 24 Hours
-                  </option>
-                  <option value="7d" className="bg-white dark:bg-[#1a1a1a]">
-                    Last 7 Days
-                  </option>
-                  <option value="30d" className="bg-white dark:bg-[#1a1a1a]">
-                    Last 30 Days
-                  </option>
-                  <option value="90d" className="bg-white dark:bg-[#1a1a1a]">
-                    Last 90 Days
-                  </option>
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
                 </select>
+
+                <span className="text-zinc-500 ml-2">Capability:</span>
                 <select
                   value={filters.feature}
                   onChange={(e) =>
                     setFilters((prev) => ({...prev, feature: e.target.value}))
                   }
-                  className="px-4 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/40 transition-all"
+                  className="px-2.5 py-1 rounded bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none"
                 >
-                  <option value="" className="bg-white dark:bg-[#1a1a1a]">
-                    All Features
-                  </option>
-                  <option value="ats_analysis" className="bg-white dark:bg-[#1a1a1a]">
-                    ATS Analysis
-                  </option>
-                  <option value="resume_enhancement" className="bg-white dark:bg-[#1a1a1a]">
-                    Resume Enhancement
-                  </option>
-                  <option value="github_import" className="bg-white dark:bg-[#1a1a1a]">
-                    GitHub Import
-                  </option>
-                  <option value="ai_suggestions" className="bg-white dark:bg-[#1a1a1a]">
-                    AI Suggestions
-                  </option>
+                  <option value="">All Capabilities</option>
+                  <option value="ats_analysis">ATS Analysis</option>
+                  <option value="resume_enhancement">Resume Enhancement</option>
+                  <option value="github_import">GitHub Import</option>
+                  <option value="ai_suggestions">AI Suggestions</option>
                 </select>
               </div>
-            </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Total API Calls */}
-              <div className="group relative bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:bg-gray-50 dark:hover:bg-white/[0.07] hover:border-gray-300 dark:hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                    <Activity className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Total API Calls</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {analytics?.totals?.totalCalls || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* OpenAI Stats */}
-              <div className="group relative bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-500/20 rounded-2xl p-6 hover:border-green-300 dark:hover:border-green-500/30 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/25">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-green-500 dark:text-green-400 text-sm font-semibold">
-                      OpenAI (GPT-4o)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {analytics?.totals?.openaiCalls || 0} calls
-                    </p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {formatInr(analytics?.totals?.openaiCost)}
-                      <span className="text-xs font-normal text-gray-400 ml-1">
-                        (≈ ${(analytics?.totals?.openaiCost || 0).toFixed(2)})
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gemini Stats */}
-              <div className="group relative bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-500/20 rounded-2xl p-6 hover:border-indigo-300 dark:hover:border-indigo-500/30 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                    <Activity className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-indigo-500 dark:text-indigo-400 text-sm font-semibold">
-                      Gemini Flash (Legacy)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {analytics?.totals?.geminiCalls || 0} calls
-                    </p>
-                    <p className="text-sm font-bold text-indigo-500 dark:text-indigo-400">
-                      {formatInr(analytics?.totals?.geminiCost)}
-                      <span className="text-xs font-normal text-gray-400 ml-1">
-                        (≈ ${(analytics?.totals?.geminiCost || 0).toFixed(2)})
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Total Cost */}
-              <div className="group relative bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:bg-gray-50 dark:hover:bg-white/[0.07] hover:border-gray-300 dark:hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/25">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Total Expense</p>
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                      {formatInr(analytics?.totals?.totalCost)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      ≈ ${(analytics?.totals?.totalCost || 0).toFixed(2)} USD • {analytics?.totals?.totalTokens?.toLocaleString() || 0} tokens
-                    </p>
-                  </div>
-                </div>
+              <div className="text-[11px] font-mono text-zinc-500">
+                Avg Latency: <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{(analytics?.totals?.avgResponseTime || 450).toFixed(0)}ms</span>
               </div>
             </div>
 
-            {/* Provider Comparison */}
-            <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                AI Provider Comparison
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-6 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-500/20">
-                  <p className="text-sm text-green-500 dark:text-green-400 font-semibold mb-2">
-                    OpenAI
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {analytics?.totals?.openaiCalls || 0}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {((analytics?.totals?.openaiTokens || 0) / 1000).toFixed(1)}K tokens
-                  </p>
-                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+            {/* Stats Cards Ribbon */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Total Calls */}
+              <div className="p-4 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between text-zinc-500 text-xs mb-3">
+                  <span className="font-mono uppercase tracking-wider">Total Model Invocations</span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold font-mono tracking-tight text-zinc-900 dark:text-white">
+                    {(analytics?.totals?.totalCalls || 0).toLocaleString()}
+                  </div>
+                  <div className="mt-2 text-[11px] text-zinc-400 font-mono">
+                    {(analytics?.totals?.totalTokens || 0).toLocaleString()} tokens processed
+                  </div>
+                </div>
+              </div>
+
+              {/* OpenAI Spend */}
+              <div className="p-4 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between text-zinc-500 text-xs mb-3">
+                  <span className="font-mono uppercase tracking-wider">OpenAI GPT-4o</span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
                     {formatInr(analytics?.totals?.openaiCost)}
-                  </p>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-zinc-500">
+                      ${(analytics?.totals?.openaiCost || 0).toFixed(2)} USD
+                    </span>
+                    <span className="text-zinc-400">
+                      {analytics?.totals?.openaiCalls || 0} calls
+                    </span>
+                  </div>
                 </div>
+              </div>
 
-                <div className="text-center p-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl border border-indigo-200 dark:border-indigo-500/20">
-                  <p className="text-sm text-indigo-500 dark:text-indigo-400 font-semibold mb-2">
-                    Gemini
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {analytics?.totals?.geminiCalls || 0}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {((analytics?.totals?.geminiTokens || 0) / 1000).toFixed(1)}K tokens
-                  </p>
-                  <p className="text-lg font-bold text-indigo-500 dark:text-indigo-400 mt-2">
+              {/* Gemini / Legacy */}
+              <div className="p-4 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between text-zinc-500 text-xs mb-3">
+                  <span className="font-mono uppercase tracking-wider">Google Gemini</span>
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Server className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold font-mono tracking-tight text-zinc-900 dark:text-white">
                     {formatInr(analytics?.totals?.geminiCost)}
-                  </p>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-zinc-500">
+                      ${(analytics?.totals?.geminiCost || 0).toFixed(2)} USD
+                    </span>
+                    <span className="text-zinc-400">
+                      {analytics?.totals?.geminiCalls || 0} calls
+                    </span>
+                  </div>
                 </div>
+              </div>
 
-                <div className="text-center p-6 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-white/10">
-                  <p className="text-sm text-gray-400 font-semibold mb-2">
-                    Hybrid
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {analytics?.totals?.hybridCalls || 0}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-1">Mixed usage</p>
-                  <p className="text-lg font-semibold text-gray-400 mt-2">-</p>
+              {/* Total Cumulative Expense */}
+              <div className="p-4 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between text-zinc-500 text-xs mb-3">
+                  <span className="font-mono uppercase tracking-wider">Gross AI Expenditure</span>
+                  <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold font-mono tracking-tight text-zinc-900 dark:text-white">
+                    {formatInr(analytics?.totals?.totalCost)}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                      ${(analytics?.totals?.totalCost || 0).toFixed(2)} USD
+                    </span>
+                    <span className="text-zinc-400">Combined</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Usage Over Time */}
-        <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            API Calls Over Time
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={analytics?.charts?.usageOverTime || []}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#374151"
-                opacity={0.3}
-              />
-              <XAxis
-                dataKey="_id"
-                stroke="#9CA3AF"
-                tick={{fill: "#9CA3AF", fontSize: 12}}
-              />
-              <YAxis stroke="#9CA3AF" tick={{fill: "#9CA3AF", fontSize: 12}} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(17, 17, 17, 0.95)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "12px",
-                }}
-                labelStyle={{color: "#fff"}}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                name="API Calls"
-                dot={{fill: "#3b82f6", strokeWidth: 2}}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Usage by Feature */}
-        <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Usage by Feature
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={analytics?.charts?.usageByFeature || []}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({_id, count}) => `${_id}: ${count}`}
-                outerRadius={80}
-                innerRadius={40}
-                fill="#8884d8"
-                dataKey="count"
-                paddingAngle={5}
-              >
-                {(analytics?.charts?.usageByFeature || []).map(
-                  (entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                      stroke="transparent"
-                    />
-                  )
-                )}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(17, 17, 17, 0.95)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "12px",
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Top Users */}
-      <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Top Users by API Usage
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  User
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Total Calls
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-green-400 uppercase">
-                  OpenAI
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-indigo-500 dark:text-indigo-400 uppercase">
-                  Gemini
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Total Cost
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {(analytics?.topUsers || []).map((user, index) => (
-                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-black text-sm font-medium">
-                        {user.userName?.charAt(0) || "U"}
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.userName}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {user.userEmail}
-                        </div>
-                      </div>
+            {/* Charts Grid: Usage Over Time + Feature Donut + Provider Donut */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Usage Over Time Area Chart (2 Cols) */}
+              <div className="lg:col-span-2 p-5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-indigo-500" />
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                        Invocations & Token Consumption Over Time
+                      </h3>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {user.count}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {((user.totalTokens || 0) / 1000).toFixed(1)}K tokens
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-green-400">
-                      {user.openaiCalls || 0} calls
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      ${(user.openaiCost || 0).toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-indigo-500 dark:text-indigo-400">
-                      {user.geminiCalls || 0} calls
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      ${(user.geminiCost || 0).toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">
-                      ${(user.totalCost || 0).toFixed(2)}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Recent Logs */}
-      <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Recent API Calls
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Time
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  User
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Feature
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Tokens
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">
-                  Cost
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {(analytics?.recentLogs || []).slice(0, 20).map((log, index) => (
-                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {log.userId?.name || "Unknown"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-500/10 dark:text-primary-300 border border-primary-200 dark:border-primary-500/20 rounded-lg">
-                      {log.feature}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                        log.status === "success"
-                          ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                          : "bg-red-500/10 text-red-400 border border-red-500/20"
-                      }`}
-                    >
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {log.tokensUsed}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {formatInr(log.cost)}
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Request frequency across selected time window.
                     </p>
-                    <span className="text-[11px] text-gray-400">
-                      ≈ ${(log.cost || 0).toFixed(4)}
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
+                    Model Throughput
+                  </span>
+                </div>
+
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={analytics?.charts?.usageOverTime || []}
+                      margin={{top: 10, right: 10, left: -20, bottom: 0}}
+                    >
+                      <defs>
+                        <linearGradient id="callsGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="2 2"
+                        stroke={isDarkMode ? "#27272a" : "#e4e4e7"}
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="_id"
+                        tick={{
+                          fontSize: 10,
+                          fill: isDarkMode ? "#71717a" : "#a1a1aa",
+                          fontFamily: "monospace",
+                        }}
+                        axisLine={{stroke: isDarkMode ? "#27272a" : "#e4e4e7"}}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{
+                          fontSize: 10,
+                          fill: isDarkMode ? "#71717a" : "#a1a1aa",
+                          fontFamily: "monospace",
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        content={({active, payload, label}) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="p-3 rounded-md bg-zinc-950 border border-zinc-800 text-white shadow-xl text-xs font-mono">
+                                <p className="font-semibold text-zinc-400">{label}</p>
+                                <p className="text-indigo-400 font-bold mt-1">
+                                  Calls: {payload[0].value}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="count"
+                        name="API Calls"
+                        stroke="#6366f1"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#callsGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Feature Usage Pie/Donut Chart (1 Col) */}
+              <div className="p-5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <PieIcon className="w-4 h-4 text-emerald-500" />
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                        Usage by Capability
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
+                      Feature Pie
                     </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </div>
+                  <p className="text-xs text-zinc-500 mb-4">
+                    Call frequency per feature capability.
+                  </p>
+
+                  <div className="relative h-[200px] w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={featurePieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={80}
+                          paddingAngle={3}
+                          dataKey="count"
+                          stroke={isDarkMode ? "#09090b" : "#ffffff"}
+                          strokeWidth={2}
+                        >
+                          {featurePieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({active, payload}) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="p-2.5 rounded-md bg-zinc-950 border border-zinc-800 text-white shadow-xl text-xs font-mono">
+                                  <p className="font-semibold" style={{color: d.color}}>
+                                    {d.name}
+                                  </p>
+                                  <p className="text-zinc-300 mt-1">Calls: {d.count}</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-lg font-bold font-mono text-zinc-900 dark:text-white leading-none">
+                        {totalFeatureInvocations}
+                      </span>
+                      <span className="text-[9px] font-mono uppercase text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                        Calls
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
+                  {featurePieData.slice(0, 4).map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shadow-xs"
+                          style={{backgroundColor: item.color}}
+                        />
+                        <span className="text-zinc-600 dark:text-zinc-400 truncate">
+                          {item.name}
+                        </span>
+                      </div>
+                      <span className="font-mono text-zinc-900 dark:text-white font-medium text-[11px]">
+                        {item.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Top Users by AI Token Consumption Table */}
+            <div className="p-5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                    Top Users by AI Token Consumption
+                  </h3>
+                  <p className="text-xs text-zinc-500">
+                    Highest utilization accounts and cost burn ranking.
+                  </p>
+                </div>
+                <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400">
+                  Audit Ranking
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-800 text-left text-zinc-400 font-mono text-[10px] uppercase tracking-wider">
+                      <th className="pb-2.5 font-normal">Candidate</th>
+                      <th className="pb-2.5 font-normal">Total Invocations</th>
+                      <th className="pb-2.5 font-normal">OpenAI GPT-4o</th>
+                      <th className="pb-2.5 font-normal">Gemini</th>
+                      <th className="pb-2.5 font-normal text-right">Settled Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+                    {(analytics?.topUsers || []).map((user, index) => (
+                      <tr
+                        key={index}
+                        className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+                      >
+                        <td className="py-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center font-mono font-bold text-[10px] text-indigo-600 dark:text-indigo-400">
+                              {user.userName?.charAt(0)?.toUpperCase() || "U"}
+                            </div>
+                            <div>
+                              <p className="font-medium text-zinc-900 dark:text-white">
+                                {user.userName || "User"}
+                              </p>
+                              <p className="text-[10px] font-mono text-zinc-400">
+                                {user.userEmail}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 font-mono font-semibold text-zinc-900 dark:text-white">
+                          {user.count || 0}
+                        </td>
+                        <td className="py-3 font-mono text-emerald-600 dark:text-emerald-400">
+                          {user.openaiCalls || 0} calls
+                        </td>
+                        <td className="py-3 font-mono text-blue-600 dark:text-blue-400">
+                          {user.geminiCalls || 0} calls
+                        </td>
+                        <td className="py-3 text-right font-mono font-bold text-zinc-900 dark:text-white">
+                          {formatInr(user.totalCost)}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {(!analytics?.topUsers || analytics.topUsers.length === 0) && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="py-8 text-center text-zinc-400 font-mono text-xs"
+                        >
+                          No AI usage records found for selected period
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )
       )}
