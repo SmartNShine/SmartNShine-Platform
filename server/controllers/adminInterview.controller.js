@@ -427,7 +427,7 @@ export const getAllInterviewSessions = async (req, res) => {
  */
 export const getInterviewSessionDetail = async (req, res) => {
   try {
-    const { sessionId } = req.params;
+    const sessionId = req.params.sessionId || req.params.id;
     const pricing = await getActivePricing();
 
     const session = await InterviewSession.findById(sessionId)

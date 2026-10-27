@@ -835,6 +835,15 @@ export const validateTemplateId = [
 ];
 
 /**
+ * Validation rules for MongoDB sessionId parameter
+ */
+export const validateSessionId = [
+  param("sessionId").isMongoId().withMessage("Invalid session ID format"),
+
+  handleValidationErrors,
+];
+
+/**
  * Validation rules for pagination query parameters
  */
 export const validatePagination = [
