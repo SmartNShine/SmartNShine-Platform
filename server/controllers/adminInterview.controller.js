@@ -1,4 +1,5 @@
 import InterviewSession from "../models/InterviewSession.model.js";
+import InterviewResult from "../models/InterviewResult.model.js";
 import Settings from "../models/Settings.model.js";
 import User from "../models/User.model.js";
 import mongoose from "mongoose";
@@ -430,10 +431,13 @@ export const getInterviewSessionDetail = async (req, res) => {
     const sessionId = req.params.sessionId || req.params.id;
     const pricing = await getActivePricing();
 
-    const session = await InterviewSession.findById(sessionId)
-      .populate("userId", "name email profilePicture tier createdAt")
-      .populate("resumeId", "title")
-      .lean();
+    const [session, interviewResult] = await Promise.all([
+      InterviewSession.findById(sessionId)
+        .populate("userId", "name email profilePicture tier createdAt")
+        .populate("resumeId", "title")
+        .lean(),
+      InterviewResult.findOne({ sessionId }).lean(),
+    ]);
 
     if (!session) {
       return res.status(404).json({
@@ -443,6 +447,110 @@ export const getInterviewSessionDetail = async (req, res) => {
     }
 
     const costs = calculateSessionCosts(session, pricing);
+
+    // Fallback result for partial or in-progress interviews without a completed InterviewResult document
+    let result = interviewResult;
+    if (!result) {
+      const answeredQuestions = (session.questions || []).filter(
+        (q) => (q.evaluation && q.evaluation.score > 0) || q.userAnswer
+      );
+      const evaluatedQuestions = (session.questions || []).filter(
+        (q) => q.evaluation && typeof q.evaluation.score === "number" && q.evaluation.score > 0
+      );
+      const averageScore = evaluatedQuestions.length > 0
+        ? Math.round(
+            evaluatedQuestions.reduce((acc, q) => acc + (q.evaluation.score || 0), 0) /
+              evaluatedQuestions.length
+          )
+        : 0;
+
+      let grade = "N/A";
+      if (averageScore >= 90) grade = "A+";
+      else if (averageScore >= 80) grade = "A";
+      else if (averageScore >= 70) grade = "B";
+      else if (averageScore >= 60) grade = "C";
+      else if (averageScore > 0) grade = "D";
+
+      let performanceLevel = "Not Evaluated";
+      if (averageScore >= 85) performanceLevel = "Excellent";
+      else if (averageScore >= 70) performanceLevel = "Good";
+      else if (averageScore >= 55) performanceLevel = "Average";
+      else if (averageScore > 0) performanceLevel = "Needs Improvement";
+
+      result = {
+        overallScore: averageScore,
+        grade,
+        performanceLevel,
+        isPartial: true,
+        summary:
+          session.status === "completed"
+            ? `Interview completed with an overall score of ${averageScore}%.`
+            : `Session is currently "${session.status}". ${answeredQuestions.length} of ${
+                session.totalQuestions || session.questions?.length || 0
+              } questions answered so far.`,
+        strengths: evaluatedQuestions.flatMap((q) => q.evaluation?.strengths || []).filter(Boolean).slice(0, 5),
+        weaknesses: evaluatedQuestions.flatMap((q) => q.evaluation?.weaknesses || []).filter(Boolean).slice(0, 5),
+        hiringRecommendation: {
+          recommendation: averageScore >= 75 ? "hire" : averageScore >= 60 ? "maybe" : "no-hire",
+          confidence: Math.min(100, Math.max(20, evaluatedQuestions.length * 20)),
+          reasoning: `Based on preliminary scores across ${evaluatedQuestions.length} evaluated questions.`,
+        },
+        skillBreakdown: {
+          technicalKnowledge: {
+            score: averageScore,
+            feedback: "Based on technical responses provided during the session.",
+          },
+          communication: {
+            score:
+              evaluatedQuestions.length > 0
+                ? Math.round(
+                    evaluatedQuestions.reduce(
+                      (acc, q) => acc + (q.evaluation?.clarity || averageScore),
+                      0
+                    ) / evaluatedQuestions.length
+                  )
+                : averageScore,
+            feedback: "Based on clarity and response articulation.",
+          },
+          problemSolving: {
+            score:
+              evaluatedQuestions.length > 0
+                ? Math.round(
+                    evaluatedQuestions.reduce(
+                      (acc, q) => acc + (q.evaluation?.relevance || averageScore),
+                      0
+                    ) / evaluatedQuestions.length
+                  )
+                : averageScore,
+            feedback: "Based on response relevance and problem structuring.",
+          },
+          situationalAwareness: {
+            score:
+              evaluatedQuestions.length > 0
+                ? Math.round(
+                    evaluatedQuestions.reduce(
+                      (acc, q) => acc + (q.evaluation?.confidence || averageScore),
+                      0
+                    ) / evaluatedQuestions.length
+                  )
+                : averageScore,
+            feedback: "Based on candidate confidence and context understanding.",
+          },
+          culturalFit: {
+            score:
+              evaluatedQuestions.length > 0
+                ? Math.round(
+                    evaluatedQuestions.reduce(
+                      (acc, q) => acc + (q.evaluation?.roleFit || averageScore),
+                      0
+                    ) / evaluatedQuestions.length
+                  )
+                : averageScore,
+            feedback: "Based on role alignment and professional presentation.",
+          },
+        },
+      };
+    }
 
     return res.status(200).json({
       success: true,
@@ -457,6 +565,7 @@ export const getInterviewSessionDetail = async (req, res) => {
             (session.mode === "text" ? "standard" : "shubh"),
           costs,
         },
+        result,
         pricing,
       },
     });
