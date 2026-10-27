@@ -686,139 +686,123 @@ export default function TemplateManagement() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 rounded-full mb-2">
-            <FileBox className="w-3.5 h-3.5 text-blue-500" />
-            <span className="text-xs font-black uppercase text-blue-600 dark:text-cyan-400 tracking-wider">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md mb-2">
+            <FileBox className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+            <span className="text-[11px] font-mono uppercase text-zinc-700 dark:text-zinc-300 tracking-wider">
               Template Studio & Access Control
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
             Resume Template Management
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-1">
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
             Configure ATS scoring algorithms, manage premium tier locks, toggle
             availability, and preview resume layouts.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={fetchData}
             disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-zinc-200 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-mono rounded-md transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Refresh</span>
           </button>
 
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-md shadow-orange-500/20 transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-mono font-medium rounded-md shadow-xs transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Add Template</span>
           </button>
         </div>
       </div>
 
       {/* METRIC OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Total */}
-        <div className="bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-              Total Catalog
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-              <Layers className="w-4 h-4" />
-            </div>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 uppercase tracking-wider">
+            <span>Total Catalog</span>
+            <Layers className="w-4 h-4 text-zinc-400" />
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-zinc-900 dark:text-white">
               {stats.total || templates.length}
             </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
               {stats.active || templates.filter((t) => t.isActive).length} Active
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+          <p className="text-[11px] text-zinc-400 mt-1">
             Engineered for ATS parsing
           </p>
         </div>
 
         {/* Card 2: Free vs Premium */}
-        <div className="bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-              Tier Access Split
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-              <Crown className="w-4 h-4" />
-            </div>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 uppercase tracking-wider">
+            <span>Tier Access</span>
+            <Crown className="w-4 h-4 text-purple-500" />
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-purple-600 dark:text-purple-400">
               {stats.proTier + stats.oneTimeTier ||
                 templates.filter((t) => t.tier !== "free").length}
             </span>
-            <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+            <span className="text-xs font-mono text-zinc-400">
               Paid / {stats.freeTier || templates.filter((t) => t.tier === "free").length} Free
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+          <p className="text-[11px] text-zinc-400 mt-1">
             Pro & One-Time Pass unlocks
           </p>
         </div>
 
         {/* Card 3: Average ATS Score */}
-        <div className="bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-              Avg. ATS Compatibility
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-              <Award className="w-4 h-4" />
-            </div>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 uppercase tracking-wider">
+            <span>Avg. ATS Score</span>
+            <Award className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
               {stats.averageAtsScore || 96}%
             </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
               Grade A+
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+          <p className="text-[11px] text-zinc-400 mt-1">
             Across standard resume models
           </p>
         </div>
 
         {/* Card 4: Featured / Popular */}
-        <div className="bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-              Featured Highlights
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-              <Star className="w-4 h-4" />
-            </div>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 uppercase tracking-wider">
+            <span>Featured</span>
+            <Star className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-amber-600 dark:text-amber-400">
               {stats.featuredCount || templates.filter((t) => t.isFeatured).length}
             </span>
-            <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+            <span className="text-xs font-mono text-zinc-400">
               Showcased
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+          <p className="text-[11px] text-zinc-400 mt-1">
             Top picks on home & gallery
           </p>
         </div>
       </div>
 
       {/* FILTER & SEARCH TOOLBAR */}
-      <div className="bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Search */}
           <div className="relative flex-1 min-w-[240px]">

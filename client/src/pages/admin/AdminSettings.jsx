@@ -258,78 +258,77 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full mb-2">
-            <Gift className="w-3.5 h-3.5 text-orange-500" />
-            <span className="text-xs font-black uppercase text-orange-600 dark:text-orange-400 tracking-wider">
-              Promotions & Pricing Studio
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md mb-2">
+            <Gift className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+            <span className="text-[11px] font-mono uppercase text-zinc-700 dark:text-zinc-300 tracking-wider">
+              System & Campaign Engine
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
             System & Campaign Settings
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-1">
-            Configure Raksha Bandhan ₹9 sale pricing, countdown banners, AI
-            quotas, and system limits
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            Configure promotional pricing, countdown banners, AI quotas, and system parameters.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/super-admin"
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-mono rounded-md transition-colors shadow-2xs"
           >
-            <KeyRound className="w-4 h-4" />
+            <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
             <span>Super Admin (.env)</span>
           </Link>
           <button
             onClick={fetchData}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-mono rounded-md transition-colors shadow-2xs cursor-pointer"
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
           </button>
           <button
             onClick={handleResetSettings}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 text-xs font-mono rounded-md transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <AlertCircle className="w-4 h-4" />
-            Reset
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Reset</span>
           </button>
           <button
             onClick={handleSaveSettings}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-lg shadow-orange-500/25 transition-all disabled:opacity-50 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-mono font-medium rounded-md shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <Save className="w-4 h-4" />
-            {saving ? "Saving..." : "Save All Changes"}
+            <Save className="w-3.5 h-3.5" />
+            <span>{saving ? "Saving..." : "Save All Changes"}</span>
           </button>
         </div>
       </div>
 
       {/* Alert Messages */}
       {success && (
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
-          <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-          <p className="text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-3 flex items-center gap-2.5">
+          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+          <p className="text-xs font-mono text-emerald-700 dark:text-emerald-300">
             {success}
           </p>
         </div>
       )}
 
       {error && (
-        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
-          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
-          <p className="text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-300">
+        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-lg p-3 flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <p className="text-xs font-mono text-rose-700 dark:text-rose-300">
             {error}
           </p>
         </div>
       )}
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-200 dark:border-white/10">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-zinc-200 dark:border-zinc-800">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -337,13 +336,13 @@ export default function AdminSettings() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono whitespace-nowrap transition-colors cursor-pointer ${
                 isActive
-                  ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-500/20"
-                  : "bg-gray-100 dark:bg-zinc-800/80 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300"
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold shadow-xs"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
             </button>
           );
