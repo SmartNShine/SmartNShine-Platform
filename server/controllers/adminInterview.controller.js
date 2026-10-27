@@ -552,11 +552,93 @@ export const getInterviewSessionDetail = async (req, res) => {
       };
     }
 
+    // Enrich result with categoryBreakdown and readiness score for frontend consumption
+    if (result) {
+      const sb = result.skillBreakdown || {};
+      const finalScore = result.overallScore || averageScore || 0;
+
+      const techScore =
+        sb.technicalKnowledge?.score ??
+        sb.technical?.score ??
+        (evaluatedQuestions.length > 0
+          ? Math.round(
+              evaluatedQuestions.reduce(
+                (acc, q) => acc + (q.evaluation?.technicalAccuracy || finalScore),
+                0
+              ) / evaluatedQuestions.length
+            )
+          : finalScore);
+
+      const commScore =
+        sb.communication?.score ??
+        (evaluatedQuestions.length > 0
+          ? Math.round(
+              evaluatedQuestions.reduce(
+                (acc, q) => acc + (q.evaluation?.clarity || finalScore),
+                0
+              ) / evaluatedQuestions.length
+            )
+          : finalScore);
+
+      const probScore =
+        sb.problemSolving?.score ??
+        (evaluatedQuestions.length > 0
+          ? Math.round(
+              evaluatedQuestions.reduce(
+                (acc, q) => acc + (q.evaluation?.relevance || finalScore),
+                0
+              ) / evaluatedQuestions.length
+            )
+          : finalScore);
+
+      const confScore =
+        sb.situationalAwareness?.score ??
+        sb.confidence?.score ??
+        (evaluatedQuestions.length > 0
+          ? Math.round(
+              evaluatedQuestions.reduce(
+                (acc, q) => acc + (q.evaluation?.confidence || finalScore),
+                0
+              ) / evaluatedQuestions.length
+            )
+          : finalScore);
+
+      const domainScore =
+        sb.culturalFit?.score ??
+        sb.domainKnowledge?.score ??
+        (evaluatedQuestions.length > 0
+          ? Math.round(
+              evaluatedQuestions.reduce(
+                (acc, q) => acc + (q.evaluation?.roleFit || finalScore),
+                0
+              ) / evaluatedQuestions.length
+            )
+          : finalScore);
+
+      result = {
+        ...result,
+        overallScore: finalScore,
+        categoryBreakdown: {
+          technical: techScore,
+          communication: commScore,
+          problemSolving: probScore,
+          confidence: confScore,
+          domainKnowledge: domainScore,
+          practical: confScore,
+        },
+        metrics: {
+          ...(result.metrics || {}),
+          jobReadinessScore: result.metrics?.jobReadinessScore || finalScore,
+        },
+      };
+    }
+
     return res.status(200).json({
       success: true,
       data: {
         session: {
           ...session,
+          averageScore: result?.overallScore || averageScore,
           voiceEngineUsed:
             session.voiceEngineUsed ||
             (session.mode === "text" ? "none" : "local"),

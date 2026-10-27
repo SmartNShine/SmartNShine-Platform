@@ -47,6 +47,158 @@ const SessionAuditDetail = ({
     }
   };
 
+  // Dynamic Score & Telemetry Calculations
+  const evaluatedQuestions = (sessionDetail?.questions || []).filter(
+    (q) => q.evaluation && typeof q.evaluation.score === "number" && q.evaluation.score > 0
+  );
+
+  const calculatedAverage =
+    evaluatedQuestions.length > 0
+      ? Math.round(
+          evaluatedQuestions.reduce((acc, q) => acc + (q.evaluation.score || 0), 0) /
+            evaluatedQuestions.length
+        )
+      : (sessionDetail?.averageScore || 0);
+
+  const overallScore = sessionResult?.overallScore || calculatedAverage || 0;
+
+  const readiness =
+    sessionResult?.metrics?.jobReadinessScore ||
+    sessionResult?.overallScore ||
+    calculatedAverage ||
+    overallScore;
+
+  const confidence =
+    sessionResult?.hiringRecommendation?.confidence ??
+    sessionResult?.hiringRecommendation?.confidenceScore ??
+    (overallScore > 0 ? 75 : 0);
+
+  // Skill breakdown extractor
+  const sb = sessionResult?.skillBreakdown;
+  const cb = sessionResult?.categoryBreakdown;
+
+  const getCompetencyScore = (keys, questionMetric) => {
+    // 1. Check categoryBreakdown
+    if (cb && typeof cb === "object") {
+      for (const k of keys) {
+        if (typeof cb[k] === "number" && cb[k] > 0) return cb[k];
+      }
+    }
+    // 2. Check skillBreakdown as object
+    if (sb && typeof sb === "object" && !Array.isArray(sb)) {
+      for (const k of keys) {
+        if (typeof sb[k]?.score === "number" && sb[k].score > 0) return sb[k].score;
+        if (typeof sb[k] === "number" && sb[k] > 0) return sb[k];
+      }
+    }
+    // 3. Check skillBreakdown as array
+    if (Array.isArray(sb)) {
+      for (const k of keys) {
+        const item = sb.find(
+          (s) =>
+            s.skillName?.toLowerCase().includes(k.toLowerCase()) ||
+            s.name?.toLowerCase().includes(k.toLowerCase())
+        );
+        if (typeof item?.score === "number" && item.score > 0) return item.score;
+      }
+    }
+    // 4. Check topicBreakdown array
+    if (Array.isArray(sessionResult?.topicBreakdown)) {
+      for (const k of keys) {
+        const item = sessionResult.topicBreakdown.find((t) =>
+          t.skillName?.toLowerCase().includes(k.toLowerCase())
+        );
+        if (typeof item?.score === "number" && item.score > 0) return item.score;
+      }
+    }
+    // 5. Compute from session questions if evaluated
+    if (questionMetric && sessionDetail?.questions?.length > 0) {
+      const qs = sessionDetail.questions.filter(
+        (q) => q.evaluation && typeof q.evaluation[questionMetric] === "number" && q.evaluation[questionMetric] > 0
+      );
+      if (qs.length > 0) {
+        return Math.round(qs.reduce((acc, q) => acc + q.evaluation[questionMetric], 0) / qs.length);
+      }
+    }
+    // 6. Fall back to overall score
+    return overallScore;
+  };
+
+  const competencyMetrics = [
+    {
+      label: "Technical Competence",
+      score: getCompetencyScore(
+        ["technicalKnowledge", "technical", "technicalAccuracy", "technicalCompetence"],
+        "technicalAccuracy"
+      ),
+      desc: "Accuracy and depth of technical reasoning",
+    },
+    {
+      label: "Communication Clarity",
+      score: getCompetencyScore(
+        ["communication", "communicationClarity", "clarity"],
+        "clarity"
+      ),
+      desc: "Structured delivery, fluency and tone",
+    },
+    {
+      label: "Problem Solving",
+      score: getCompetencyScore(
+        ["problemSolving", "analytical", "relevance", "problem_solving"],
+        "relevance"
+      ),
+      desc: "Approach to architectural trade-offs and logic",
+    },
+    {
+      label: "Confidence & Presence",
+      score: getCompetencyScore(
+        ["situationalAwareness", "confidence", "confidencePresence", "presence"],
+        "confidence"
+      ),
+      desc: "Poise under pressure and clear articulation",
+    },
+    {
+      label: "Domain Knowledge",
+      score: getCompetencyScore(
+        ["culturalFit", "domainKnowledge", "domain", "roleFit", "role_fit"],
+        "roleFit"
+      ),
+      desc: "Familiarity with modern framework patterns",
+    },
+    {
+      label: "Scenario Handling",
+      score: getCompetencyScore(
+        ["situationalAwareness", "scenarioHandling", "practical", "scenario"],
+        "relevance"
+      ),
+      desc: "Real-world incident & edge-case intuition",
+    },
+  ];
+
+  const candidateStrengths =
+    sessionResult?.strengths?.length > 0
+      ? sessionResult.strengths
+      : [
+          "Demonstrated relevant conceptual understanding of requested topics.",
+          "Responded attentively to interview prompts with clear cadence.",
+        ];
+
+  const candidateWeaknesses =
+    sessionResult?.weaknesses?.length > 0
+      ? sessionResult.weaknesses
+      : sessionResult?.improvements?.length > 0
+      ? sessionResult.improvements
+      : [
+          "Elaborate more on production scale challenges and performance profiling.",
+          "Provide concrete code or architectural examples when answering open-ended prompts.",
+        ];
+
+  const qualitativeNotes =
+    sessionResult?.overallFeedback ||
+    sessionResult?.detailedFeedback ||
+    sessionResult?.summary ||
+    sessionResult?.hiringRecommendation?.reasoning;
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "completed":
@@ -391,7 +543,7 @@ const SessionAuditDetail = ({
 
                   <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic">
                     "{sessionResult?.hiringRecommendation?.reasoning ||
-                      sessionResult?.overallFeedback ||
+                      qualitativeNotes ||
                       "The candidate completed the session. Individual question answers were graded using real-time criteria."}"
                   </p>
 
@@ -399,14 +551,14 @@ const SessionAuditDetail = ({
                     <span>
                       Confidence:{" "}
                       <strong className="text-gray-900 dark:text-white">
-                        {sessionResult?.hiringRecommendation?.confidenceScore || 85}%
+                        {confidence}%
                       </strong>
                     </span>
                     <span>•</span>
                     <span>
                       Readiness:{" "}
                       <strong className="text-gray-900 dark:text-white">
-                        {sessionResult?.metrics?.jobReadinessScore || sessionDetail?.averageScore || 0}%
+                        {readiness}%
                       </strong>
                     </span>
                   </div>
@@ -415,68 +567,20 @@ const SessionAuditDetail = ({
 
               {/* Category Performance Breakdown Grid */}
               <div className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] shadow-sm space-y-4">
-                <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Target className="w-4 h-4 text-purple-500" />
-                  Competency & Skill Evaluation Metrics
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-500" />
+                    Competency & Skill Evaluation Metrics
+                  </h4>
+                  {sessionResult?.grade && (
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      Overall Benchmark: Grade {sessionResult.grade}
+                    </span>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    {
-                      label: "Technical Competence",
-                      score:
-                        sessionResult?.categoryBreakdown?.technical ||
-                        sessionResult?.breakdown?.technicalCompetence ||
-                        sessionDetail?.averageScore ||
-                        0,
-                      desc: "Accuracy and depth of technical reasoning",
-                    },
-                    {
-                      label: "Communication Clarity",
-                      score:
-                        sessionResult?.categoryBreakdown?.communication ||
-                        sessionResult?.breakdown?.communicationClarity ||
-                        sessionDetail?.averageScore ||
-                        0,
-                      desc: "Structured delivery, fluency and tone",
-                    },
-                    {
-                      label: "Problem Solving",
-                      score:
-                        sessionResult?.categoryBreakdown?.problemSolving ||
-                        sessionResult?.breakdown?.problemSolving ||
-                        sessionDetail?.averageScore ||
-                        0,
-                      desc: "Approach to architectural trade-offs and logic",
-                    },
-                    {
-                      label: "Confidence & Presence",
-                      score:
-                        sessionResult?.categoryBreakdown?.confidence ||
-                        sessionResult?.breakdown?.confidencePresence ||
-                        sessionDetail?.averageScore ||
-                        0,
-                      desc: "Poise under pressure and clear articulation",
-                    },
-                    {
-                      label: "Domain Knowledge",
-                      score:
-                        sessionResult?.categoryBreakdown?.domainKnowledge ||
-                        sessionResult?.breakdown?.domainKnowledge ||
-                        sessionDetail?.averageScore ||
-                        0,
-                      desc: "Familiarity with modern framework patterns",
-                    },
-                    {
-                      label: "Scenario Handling",
-                      score:
-                        sessionResult?.categoryBreakdown?.practical ||
-                        sessionResult?.breakdown?.scenarioHandling ||
-                        sessionDetail?.averageScore ||
-                        0,
-                      desc: "Real-world incident & edge-case intuition",
-                    },
-                  ].map((cat, idx) => (
+                  {competencyMetrics.map((cat, idx) => (
                     <div
                       key={idx}
                       className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 space-y-2"
@@ -507,6 +611,26 @@ const SessionAuditDetail = ({
                     </div>
                   ))}
                 </div>
+
+                {/* Topic Breakdown if available */}
+                {Array.isArray(sessionResult?.topicBreakdown) && sessionResult.topicBreakdown.length > 0 && (
+                  <div className="pt-4 border-t border-gray-100 dark:border-white/5">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-2">
+                      Topic-Specific Competency Breakdown:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {sessionResult.topicBreakdown.map((t, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center gap-2 text-xs"
+                        >
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{t.skillName}</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400">{t.score}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Strengths & Improvements */}
@@ -518,13 +642,7 @@ const SessionAuditDetail = ({
                     Key Candidate Strengths
                   </h4>
                   <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
-                    {(sessionResult?.strengths?.length > 0
-                      ? sessionResult.strengths
-                      : [
-                          "Demonstrated relevant conceptual understanding of requested topics.",
-                          "Responded attentively to interview prompts with clear cadence.",
-                        ]
-                    ).map((s, idx) => (
+                    {candidateStrengths.map((s, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                         <span>{s}</span>
@@ -540,13 +658,7 @@ const SessionAuditDetail = ({
                     Areas for Improvement
                   </h4>
                   <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
-                    {(sessionResult?.improvements?.length > 0
-                      ? sessionResult.improvements
-                      : [
-                          "Elaborate more on production scale challenges and performance profiling.",
-                          "Provide concrete code or architectural examples when answering open-ended prompts.",
-                        ]
-                    ).map((imp, idx) => (
+                    {candidateWeaknesses.map((imp, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                         <span>{imp}</span>
@@ -557,14 +669,14 @@ const SessionAuditDetail = ({
               </div>
 
               {/* Comprehensive Qualitative Feedback */}
-              {sessionResult?.overallFeedback && (
+              {qualitativeNotes && (
                 <div className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] shadow-sm space-y-2">
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Lightbulb className="w-4 h-4 text-indigo-500" />
                     Comprehensive AI Evaluator Notes
                   </h4>
                   <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
-                    {sessionResult.overallFeedback}
+                    {qualitativeNotes}
                   </p>
                 </div>
               )}
