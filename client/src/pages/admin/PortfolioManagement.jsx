@@ -353,33 +353,33 @@ export default function PortfolioManagement() {
   };
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto min-h-screen text-gray-900 dark:text-zinc-100">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 text-zinc-900 dark:text-zinc-100">
       {/* ─── 1. HEADER & TOP CONTROLS ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-200 dark:border-zinc-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <Globe className="w-6 h-6" />
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
+              <Globe className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-950 dark:text-white">
-                Portfolio Management
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                Public Portfolios
               </h1>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
-                Manage 13 visual portfolio themes, live simulator, user websites, and AI SEO intelligence.
+              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Manage visual portfolio themes, live simulator, user websites, and AI SEO intelligence.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               fetchStats();
               if (activeTab === "userPortfolios") fetchPortfolios(pagination.page);
               toast.success("Data refreshed");
             }}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-2xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${statsLoading || portfoliosLoading ? "animate-spin" : ""}`} />
             <span>Refresh</span>
@@ -387,85 +387,85 @@ export default function PortfolioManagement() {
 
           <button
             onClick={() => handleOpenSimulator("smartnshine")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-xs font-mono font-medium transition-colors cursor-pointer shadow-xs"
           >
-            <Laptop className="w-4 h-4" />
+            <Laptop className="w-3.5 h-3.5" />
             <span>Launch Theme Simulator</span>
           </button>
         </div>
       </div>
 
       {/* ─── 2. STATS BANNER ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xs">
-          <div className="flex items-center justify-between text-gray-500 dark:text-zinc-400 text-xs font-medium mb-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="p-3.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center justify-between text-zinc-500 text-xs font-mono uppercase tracking-wider mb-1">
             <span>Total Portfolios</span>
-            <Globe className="w-4 h-4 text-emerald-500" />
+            <Globe className="w-3.5 h-3.5 text-teal-500" />
           </div>
-          <div className="text-2xl font-black text-gray-950 dark:text-white">
+          <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-white">
             {stats.totalPortfolios || 0}
           </div>
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+          <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
             +{stats.last7DaysCount || 0} this week
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xs">
-          <div className="flex items-center justify-between text-gray-500 dark:text-zinc-400 text-xs font-medium mb-1">
+        <div className="p-3.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center justify-between text-zinc-500 text-xs font-mono uppercase tracking-wider mb-1">
             <span>Published Live</span>
-            <CheckCircle2 className="w-4 h-4 text-sky-500" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" />
           </div>
-          <div className="text-2xl font-black text-gray-950 dark:text-white">
+          <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-white">
             {stats.publishedPortfolios || 0}
           </div>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[11px] font-mono text-zinc-400">
             {stats.totalPortfolios ? Math.round((stats.publishedPortfolios / stats.totalPortfolios) * 100) : 0}% live rate
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xs">
-          <div className="flex items-center justify-between text-gray-500 dark:text-zinc-400 text-xs font-medium mb-1">
+        <div className="p-3.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center justify-between text-zinc-500 text-xs font-mono uppercase tracking-wider mb-1">
             <span>Draft Mode</span>
-            <Sliders className="w-4 h-4 text-amber-500" />
+            <Sliders className="w-3.5 h-3.5 text-amber-500" />
           </div>
-          <div className="text-2xl font-black text-gray-950 dark:text-white">
+          <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
             {stats.draftPortfolios || 0}
           </div>
-          <span className="text-[10px] text-amber-600 dark:text-amber-400">In-progress builds</span>
+          <span className="text-[11px] font-mono text-zinc-400">In-progress builds</span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xs">
-          <div className="flex items-center justify-between text-gray-500 dark:text-zinc-400 text-xs font-medium mb-1">
+        <div className="p-3.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center justify-between text-zinc-500 text-xs font-mono uppercase tracking-wider mb-1">
             <span>Total Views</span>
-            <TrendingUp className="w-4 h-4 text-purple-500" />
+            <TrendingUp className="w-3.5 h-3.5 text-purple-500" />
           </div>
-          <div className="text-2xl font-black text-gray-950 dark:text-white">
+          <div className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
             {stats.totalViews?.toLocaleString() || 0}
           </div>
-          <span className="text-[10px] text-purple-600 dark:text-purple-400">Public impressions</span>
+          <span className="text-[11px] font-mono text-zinc-400">Public impressions</span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xs">
-          <div className="flex items-center justify-between text-gray-500 dark:text-zinc-400 text-xs font-medium mb-1">
+        <div className="p-3.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center justify-between text-zinc-500 text-xs font-mono uppercase tracking-wider mb-1">
             <span>Active Themes</span>
-            <Palette className="w-4 h-4 text-fuchsia-500" />
+            <Palette className="w-3.5 h-3.5 text-violet-500" />
           </div>
-          <div className="text-2xl font-black text-gray-950 dark:text-white">
+          <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-white">
             {allThemesList.length}
           </div>
-          <span className="text-[10px] text-fuchsia-600 dark:text-fuchsia-400">100% Production ready</span>
+          <span className="text-[11px] font-mono text-zinc-400">Production ready</span>
         </div>
 
-        <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-xs">
-          <div className="flex items-center justify-between text-gray-500 dark:text-zinc-400 text-xs font-medium mb-1">
+        <div className="p-3.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center justify-between text-zinc-500 text-xs font-mono uppercase tracking-wider mb-1">
             <span>Top Engine</span>
-            <Crown className="w-4 h-4 text-amber-400" />
+            <Crown className="w-3.5 h-3.5 text-amber-400" />
           </div>
-          <div className="text-sm font-black text-gray-950 dark:text-white truncate mt-1">
+          <div className="text-base font-bold font-mono text-zinc-900 dark:text-white truncate mt-1">
             {stats.themeDistribution?.[0]?._id || "smartnshine"}
           </div>
-          <span className="text-[10px] text-gray-400">
-            {stats.themeDistribution?.[0]?.count || 0} deployments
+          <span className="text-[11px] font-mono text-zinc-400">
+            {stats.themeDistribution?.[0]?.count || 0} sites
           </span>
         </div>
       </div>

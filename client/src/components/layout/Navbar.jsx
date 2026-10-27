@@ -22,6 +22,7 @@ import {
   Tag,
   Home,
   FileText,
+  History,
 } from "lucide-react";
 
 const Navbar = ({ toggleSidebar, isSidebarOpen, promotion }) => {
@@ -69,6 +70,9 @@ const Navbar = ({ toggleSidebar, isSidebarOpen, promotion }) => {
     }
     if (path.startsWith("/ats-analyzer")) {
       return { title: "ATS Diagnostics", icon: Target, color: "text-emerald-600 dark:text-emerald-400" };
+    }
+    if (path.startsWith("/interview/history") || path.startsWith("/interview/result")) {
+      return { title: "Interview History & Reports", icon: History, color: "text-blue-600 dark:text-blue-400" };
     }
     if (path.startsWith("/interview")) {
       return { title: "AI Interview Studio", icon: Mic, color: "text-blue-600 dark:text-blue-400" };

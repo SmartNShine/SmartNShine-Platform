@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { History, Mic } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import ConfirmationModal from "@/components/common/modals/ConfirmationModal";
@@ -215,6 +216,32 @@ const AIInterview = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0A0A0B] text-gray-900 dark:text-white transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Navigation Switcher: New Interview vs Past Reports */}
+        {session.step === "setup" && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 p-4 rounded-2xl bg-white/80 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-sm">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Mic className="w-5 h-5 text-blue-500" />
+                AI Mock Interview Studio
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Practice role-specific mock interviews with live speech processing and comprehensive reports.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                to="/interview/history"
+                className="px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                id="btn-view-interview-history"
+              >
+                <History className="w-4 h-4" />
+                <span>Past Interviews & Reports</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Setup */}
         {session.step === "setup" && (
           <SetupStep

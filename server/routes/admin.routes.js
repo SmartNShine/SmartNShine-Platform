@@ -6,6 +6,7 @@ import {
   validateMongoId,
   validateUserId,
   validateTemplateId,
+  validateSessionId,
   validateContactStatusUpdate,
   validateFeedbackStatusUpdate,
   validateUserRoleUpdate,
@@ -224,7 +225,7 @@ router.get("/interviews/stats", getInterviewAdminStats);
 router.get("/interviews", getAllInterviewSessions);
 router.get("/interviews/pricing-config", getInterviewPricingConfig);
 router.patch("/interviews/pricing-config", updateInterviewPricingConfig);
-router.get("/interviews/:sessionId", validateMongoId, getInterviewSessionDetail);
+router.get("/interviews/:sessionId", validateSessionId, getInterviewSessionDetail);
 
 // Question Bank Management
 router.get("/questions", getAllAdminQuestions);

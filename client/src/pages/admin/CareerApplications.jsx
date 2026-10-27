@@ -41,179 +41,13 @@ import toast from "react-hot-toast";
 import { OPEN_ROLES } from "@/components/careers/careersData";
 import { careerApplicationAPI } from "@/api";
 
-// Enriched initial seed mock applications if database is fresh
-const SAMPLE_APPLICATIONS = [
-  {
-    _id: "app-1",
-    name: "Sarah Jenkins",
-    email: "sarah.j.growth@gmail.com",
-    phone: "+1 (415) 890-4421",
-    role: "Founding Growth & Viral Marketing Lead",
-    roleId: "founding-growth-marketing-lead",
-    department: "Marketing & Growth",
-    experience: "3-5 years",
-    availability: "Part-Time (10-20 hrs/week)",
-    startDate: "Immediate",
-    workingStyle: "Async-First with Weekly Sprints",
-    location: "San Francisco, CA (PST)",
-    timezone: "PST (UTC-8)",
-    portfolioUrl: "https://sarahjenkins.growth.design",
-    linkedinUrl: "https://linkedin.com/in/sarahjenkins-growth",
-    githubUrl: "",
-    otherUrl: "@sarahgrowthsf (TikTok & X)",
-    bestProjectUrl: "https://tiktok.com/@sarah_resumetips/video/7391823",
-    bestProjectDesc:
-      "Grew an educational resume critique TikTok account from 0 to 250,000 organic views in 90 days with zero paid ad spend.",
-    whyJoin:
-      "ATS algorithms have become ruthless black boxes that reject top-tier candidates before human eyes ever see their achievements. SmartNShine's live diagnostic engine and instant bullet rewriting solves a massive, painful problem. I want to build our organic acquisition engine from zero to one.",
-    scrappyStory:
-      "At my university, I ran a guerilla resume clinic. With zero budget, I set up a whiteboard in the engineering quad with a QR code to free templates. In 4 weeks we reviewed 1,400+ student resumes and built an active community of 3,200 job seekers.",
-    first30DaysPlan:
-      "1. Launch weekly 'ATS Teardown' short-form video series on TikTok and YouTube Shorts.\n2. Execute our Product Hunt and Hacker News Show HN launch.\n3. Partner with 20 top career creators on LinkedIn for organic co-marketing.\n4. Build an automated referral loop giving job seekers bonus AI scans for inviting friends.",
-    marketInsight:
-      "Most resume tools focus merely on visual formatting. Job seekers don't just want pretty layouts—they need actionable keyword parity scores and recruiter psychological triggers that guarantee callbacks.",
-    resumeName: "Sarah_Jenkins_Marketing_CV.pdf",
-    resumeSize: 1450000,
-    resumeData: "",
-    additionalNotes: "Excited to meet the dev founders! Happy to start with a 1-week trial sprint.",
-    status: "interviewing",
-    rating: 5,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    founderNotes: [
-      {
-        text: "Exceptional short-form video loops. Scheduling intro chat for Friday 4 PM PST.",
-        author: "Founder",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      },
-    ],
-  },
-  {
-    _id: "app-2",
-    name: "Priya Sharma",
-    email: "priya.sharma.campus@gmail.com",
-    phone: "+91 91234 56789",
-    role: "Founding Campus Ambassador & Community Lead",
-    roleId: "founding-campus-community-lead",
-    department: "Marketing & Growth",
-    experience: "Student / Community Lead",
-    availability: "Part-Time (10-15 hrs/week)",
-    startDate: "Immediate",
-    workingStyle: "Async-First with Weekly Sprints",
-    location: "Bengaluru, India (IST)",
-    timezone: "IST (UTC+5:30)",
-    portfolioUrl: "",
-    linkedinUrl: "https://linkedin.com/in/priyasharma-community",
-    githubUrl: "https://github.com/priyasharma-campus",
-    otherUrl: "Discord: @priya_comm#001",
-    bestProjectUrl: "https://discord.gg/campus-tech-prep",
-    bestProjectDesc:
-      "Founded and grew a 4,500+ student Discord community for tech internship preparation with daily resume roasting channels.",
-    whyJoin:
-      "Engineering students on campus are desperate for reliable tools to navigate campus placement season. SmartNShine's ATS scanner is leagues ahead of outdated college templates.",
-    scrappyStory:
-      "Organized a nationwide virtual hackathon across 18 universities with $0 budget by partnering with tech clubs and securing free SaaS API credits for prizes. 1,200+ students participated.",
-    first30DaysPlan:
-      "1. Build a network of 30 Campus Ambassadors across top engineering universities.\n2. Run weekly live Discord resume roast sessions with SmartNShine scoring.\n3. Distribute exclusive college placement promo links.\n4. Host monthly virtual portfolio teardowns with industry guest speakers.",
-    marketInsight:
-      "Students don't understand why their resumes get rejected. Giving them actionable diagnostic scores bridges the anxiety gap instantly.",
-    resumeName: "Priya_Sharma_Resume.pdf",
-    resumeSize: 980000,
-    resumeData: "",
-    additionalNotes: "Final year CS student with plenty of time for campus growth loops.",
-    status: "reviewed",
-    rating: 4,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    founderNotes: [
-      {
-        text: "Strong student community reach across tier-1 colleges. Great fit for Campus Lead.",
-        author: "Founder",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-      },
-    ],
-  },
-  {
-    _id: "app-3",
-    name: "Rohan Kulkarni",
-    email: "rohan.kulkarni@iitb.ac.in",
-    phone: "+91 98201 44512",
-    role: "Founding Business Development & Operations Partner",
-    roleId: "founding-business-operations-lead",
-    department: "Business & Strategy",
-    experience: "1-2 years",
-    availability: "Full-Time (30-40 hrs/week)",
-    startDate: "Within 1-2 Weeks",
-    workingStyle: "Daily Quick Syncs",
-    location: "Mumbai, India (IST)",
-    timezone: "IST (UTC+5:30)",
-    portfolioUrl: "",
-    linkedinUrl: "https://linkedin.com/in/rohankulkarni-ops",
-    githubUrl: "",
-    otherUrl: "",
-    bestProjectUrl: "https://placement.iitb.ac.in",
-    bestProjectDesc:
-      "Negotiated corporate recruitment partnerships with 45+ tech companies and structured bulk student training packages.",
-    whyJoin:
-      "I see huge institutional potential in B2B college licenses, coding bootcamp packages, and recruiter partnerships alongside the direct-to-consumer platform.",
-    scrappyStory:
-      "Closed 8 sponsorship deals in 2 weeks for our university entrepreneurship summit via cold outreach on LinkedIn with a 38% response rate.",
-    first30DaysPlan:
-      "1. Pitch bulk SmartNShine access to 25 coding bootcamps and placement departments.\n2. Structure affiliate partnerships with career consultants.\n3. Validate enterprise recruiter pricing for talent discovery.",
-    marketInsight:
-      "Bootcamps and placement cells spend thousands of hours manually reviewing resumes. Providing them a bulk dashboard is an untapped enterprise goldmine.",
-    resumeName: "Rohan_Kulkarni_Resume.pdf",
-    resumeSize: 1120000,
-    resumeData: "",
-    additionalNotes: "Ready for full-time commitment and strategic business operations.",
-    status: "pending",
-    rating: 4,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    founderNotes: [],
-  },
-  {
-    _id: "app-4",
-    name: "Liam O'Connor",
-    email: "liam.ai.systems@gmail.com",
-    phone: "+353 87 234 5678",
-    role: "Founding Full-Stack & AI Co-Engineer",
-    roleId: "founding-fullstack-ai-partner",
-    department: "Engineering",
-    experience: "3-5 years",
-    availability: "Moonlighting (Evenings & Weekends)",
-    startDate: "Immediate",
-    workingStyle: "Weekend Deep Work Sessions",
-    location: "Dublin, Ireland (GMT)",
-    timezone: "GMT (UTC+0)",
-    portfolioUrl: "https://liamoconnor.dev",
-    linkedinUrl: "https://linkedin.com/in/liam-oconnor-ai",
-    githubUrl: "https://github.com/liamoconnor",
-    otherUrl: "",
-    bestProjectUrl: "https://github.com/liamoconnor/puppeteer-pdf-vector",
-    bestProjectDesc:
-      "Built an open-source high-speed headless Puppeteer PDF rendering engine with custom font embedding and SVG export.",
-    whyJoin:
-      "The engineering challenges in pixel-perfect ATS-compliant vector PDF rendering and streaming LLM optimizations are super exciting. I want to build world-class tech with fellow founders.",
-    scrappyStory:
-      "Engineered an automated job scraper and resume matcher in Node.js that processed 10k postings daily with zero cloud costs using serverless cron pipelines.",
-    first30DaysPlan:
-      "1. Optimize Puppeteer PDF generation time from 2.5s to under 600ms.\n2. Implement OpenAI / Claude streaming response hooks for real-time bullet rewrites.\n3. Add Automated LinkedIn PDF profile importer.",
-    marketInsight:
-      "Most online PDF generators produce blurry canvas snapshots that ATS parsers fail to read. True vector PDF generation with text layer compliance is our biggest moat.",
-    resumeName: "Liam_OConnor_FullStack.pdf",
-    resumeSize: 1840000,
-    resumeData: "",
-    additionalNotes: "Love the codebase architecture. Ready to pair on weekend sprints.",
-    status: "shortlisted",
-    rating: 5,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(),
-    founderNotes: [
-      {
-        text: "Very strong GitHub repos with React & Puppeteer automation. Top candidate for tech co-lead.",
-        author: "Founder",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-      },
-    ],
-  },
-];
+// List of legacy mock candidate emails to purge from cached localStorage
+const MOCK_CANDIDATE_EMAILS = new Set([
+  "sarah.j.growth@gmail.com",
+  "priya.sharma.campus@gmail.com",
+  "rohan.kulkarni@iitb.ac.in",
+  "liam.ai.systems@gmail.com",
+]);
 
 export default function CareerApplications() {
   const [activeTab, setActiveTab] = useState("applications"); // 'applications' | 'roles'
@@ -245,24 +79,30 @@ export default function CareerApplications() {
         console.warn("Could not fetch remote career applications:", e);
       }
 
-      const localSaved = JSON.parse(
+      // Read local cache and filter out any legacy mock applications
+      const rawLocalSaved = JSON.parse(
         localStorage.getItem("smartnshine_admin_career_apps") || "[]"
       );
+      const localSaved = Array.isArray(rawLocalSaved)
+        ? rawLocalSaved.filter(
+            (a) =>
+              a &&
+              !String(a._id || "").startsWith("app-") &&
+              !MOCK_CANDIDATE_EMAILS.has(a.email)
+          )
+        : [];
 
-      // Merge remote and local saved cache uniquely
+      // Merge remote and clean local cache uniquely
       const combined = [...remoteApps, ...localSaved];
-      const existingIds = new Set(combined.map((a) => a._id || a.email));
-
-      // Include seed samples only if no other applications exist yet
-      const merged = combined.length > 0
-        ? Array.from(new Map(combined.map((item) => [item._id || item.email, item])).values())
-        : SAMPLE_APPLICATIONS;
+      const merged = Array.from(
+        new Map(combined.map((item) => [item._id || item.email, item])).values()
+      );
 
       setApplications(merged);
       localStorage.setItem("smartnshine_admin_career_apps", JSON.stringify(merged));
     } catch (err) {
       console.error("Error loading career applications:", err);
-      setApplications(SAMPLE_APPLICATIONS);
+      setApplications([]);
     } finally {
       setLoading(false);
     }
@@ -558,50 +398,102 @@ export default function CareerApplications() {
         </div>
       </div>
 
-      {/* Stats Cards Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Submissions</span>
+      {/* Stats Cards & Recruitment Funnel */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 uppercase tracking-wider">
+            <span>Submissions</span>
             <Users className="w-4 h-4 text-zinc-400" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold font-mono text-zinc-900 dark:text-white">
             {stats.total}
           </div>
-          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">All founding inquiries</div>
+          <div className="mt-1 text-xs text-zinc-400">Total founding inquiries</div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Pending Review</span>
+        <div className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center justify-between text-xs font-mono text-amber-500 uppercase tracking-wider">
+            <span>Pending Review</span>
             <Clock3 className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
             {stats.pending}
           </div>
-          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Requires founder review</div>
+          <div className="mt-1 text-xs text-zinc-400">Requires founder review</div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Intro Chats</span>
+        <div className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center justify-between text-xs font-mono text-purple-500 uppercase tracking-wider">
+            <span>Intro Chats</span>
             <Calendar className="w-4 h-4 text-purple-500" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
             {stats.interviewing}
           </div>
-          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">In discussions / scheduled</div>
+          <div className="mt-1 text-xs text-zinc-400">In discussions / scheduled</div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Shortlisted</span>
+        <div className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center justify-between text-xs font-mono text-emerald-500 uppercase tracking-wider">
+            <span>Shortlisted</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
             {stats.shortlisted}
           </div>
-          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Core candidates</div>
+          <div className="mt-1 text-xs text-zinc-400">Core candidate selections</div>
+        </div>
+      </div>
+
+      {/* Recruitment Pipeline Funnel */}
+      <div className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center justify-between mb-3 text-xs font-mono">
+          <span className="font-semibold text-zinc-900 dark:text-white uppercase tracking-wider">
+            Candidate Pipeline Flow
+          </span>
+          <span className="text-zinc-500">
+            {stats.total > 0 ? Math.round((stats.shortlisted / stats.total) * 100) : 0}% Shortlist Conversion
+          </span>
+        </div>
+        <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+          <div
+            style={{ width: `${stats.total > 0 ? Math.max(5, (stats.pending / stats.total) * 100) : 25}%` }}
+            className="bg-amber-500 transition-all duration-500"
+            title={`Pending: ${stats.pending}`}
+          />
+          <div
+            style={{ width: `${stats.total > 0 ? Math.max(5, (stats.reviewed / stats.total) * 100) : 25}%` }}
+            className="bg-blue-500 transition-all duration-500"
+            title={`Reviewed: ${stats.reviewed}`}
+          />
+          <div
+            style={{ width: `${stats.total > 0 ? Math.max(5, (stats.interviewing / stats.total) * 100) : 25}%` }}
+            className="bg-purple-500 transition-all duration-500"
+            title={`Interviewing: ${stats.interviewing}`}
+          />
+          <div
+            style={{ width: `${stats.total > 0 ? Math.max(5, (stats.shortlisted / stats.total) * 100) : 25}%` }}
+            className="bg-emerald-500 transition-all duration-500"
+            title={`Shortlisted: ${stats.shortlisted}`}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-3 text-[11px] font-mono text-zinc-500">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>Pending ({stats.pending})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500" />
+            <span>Reviewed ({stats.reviewed})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            <span>Chats ({stats.interviewing})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Shortlisted ({stats.shortlisted})</span>
+          </div>
         </div>
       </div>
 
@@ -633,7 +525,7 @@ export default function CareerApplications() {
         /* Applications Table Tab */
         <div className="space-y-4">
           {/* Search & Filter Controls */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-2xs">
+          <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             {/* Search */}
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -642,12 +534,12 @@ export default function CareerApplications() {
                 placeholder="Search candidates by name, email, role, answers, or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950 dark:focus:ring-white transition-all"
+                className="w-full pl-10 pr-4 py-1.5 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-950 dark:focus:ring-white transition-all font-mono"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600 cursor-pointer font-mono"
                 >
                   Clear
                 </button>
@@ -659,7 +551,7 @@ export default function CareerApplications() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3.5 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                className="px-3 py-1.5 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-700 dark:text-zinc-300 focus:outline-none"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -673,7 +565,7 @@ export default function CareerApplications() {
               <select
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="px-3.5 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                className="px-3 py-1.5 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-700 dark:text-zinc-300 focus:outline-none"
               >
                 <option value="all">All Roles</option>
                 <option value="marketing">Marketing & Growth</option>
@@ -685,7 +577,7 @@ export default function CareerApplications() {
           </div>
 
           {/* Applications List Table */}
-          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 overflow-hidden shadow-2xs">
+          <div className="rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 overflow-hidden">
             {loading ? (
               <div className="py-20 text-center text-zinc-500">
                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-zinc-400" />

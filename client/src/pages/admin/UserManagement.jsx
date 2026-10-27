@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback} from "react";
+import {useState, useEffect, useCallback, useMemo} from "react";
 import {useNavigate} from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -226,36 +226,116 @@ const UserManagement = () => {
     setFilters((prev) => ({...prev, page: newPage}));
   };
 
+  // Compute quick summary telemetry from current user list & pagination
+  const userStats = useMemo(() => {
+    const total = pagination.total || 0;
+    const active = users.filter((u) => u.status === "active").length;
+    const disabled = users.filter((u) => u.status === "disabled").length;
+    const totalAiCost = users.reduce((acc, u) => acc + (u.aiCostInr || 0), 0);
+    return {total, active, disabled, totalAiCost};
+  }, [users, pagination]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-3">
-            <UserIcon className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-xs font-medium text-cyan-400">
-              User Management
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-sky-500/10 border border-sky-500/20 rounded-full mb-2">
+            <UserIcon className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span className="text-xs font-semibold text-sky-600 dark:text-sky-400">
+              Identity & Access Management
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             User Management
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage users, roles, and permissions
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Manage customer accounts, administrative roles, statuses, and individual AI spend
           </p>
+        </div>
+        <button
+          onClick={fetchUsers}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold rounded-xl transition-all shadow-sm self-start sm:self-auto disabled:opacity-50"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>Refresh Accounts</span>
+        </button>
+      </div>
+
+      {/* KPI Ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Registered</p>
+            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1 font-mono">
+              {userStats.total.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+              All platform accounts
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+            <UserIcon className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Accounts</p>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+              {userStats.active} <span className="text-xs font-normal text-zinc-400">on page</span>
+            </p>
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+              Enabled & authorized
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <UserCheck className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Disabled / Suspended</p>
+            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1 font-mono">
+              {userStats.disabled} <span className="text-xs font-normal text-zinc-400">on page</span>
+            </p>
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+              Restricted access
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <UserX className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Tracked AI Spend</p>
+            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1 font-mono">
+              ₹{userStats.totalAiCost.toFixed(2)}
+            </p>
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+              Incurred across visible users
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <Eye className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white dark:bg-zinc-950 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-zinc-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder="Search by candidate name or email address..."
                 value={filters.search}
                 onChange={(e) =>
                   setFilters((prev) => ({
@@ -264,7 +344,7 @@ const UserManagement = () => {
                     page: 1,
                   }))
                 }
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 text-gray-900 dark:text-white placeholder-gray-500 transition-all"
+                className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>
@@ -276,17 +356,11 @@ const UserManagement = () => {
               onChange={(e) =>
                 setFilters((prev) => ({...prev, role: e.target.value, page: 1}))
               }
-              className="w-full px-4 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/40 text-gray-900 dark:text-white transition-all"
+              className="w-full px-3.5 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
             >
-              <option value="" className="bg-white dark:bg-[#1a1a1a]">
-                All Roles
-              </option>
-              <option value="user" className="bg-white dark:bg-[#1a1a1a]">
-                User
-              </option>
-              <option value="admin" className="bg-white dark:bg-[#1a1a1a]">
-                Admin
-              </option>
+              <option value="">All Account Roles</option>
+              <option value="user">User</option>
+              <option value="admin">Administrator</option>
             </select>
           </div>
 
@@ -301,117 +375,105 @@ const UserManagement = () => {
                   page: 1,
                 }))
               }
-              className="w-full px-4 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500/40 text-gray-900 dark:text-white transition-all"
+              className="w-full px-3.5 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
             >
-              <option value="" className="bg-white dark:bg-[#1a1a1a]">
-                All Status
-              </option>
-              <option value="active" className="bg-white dark:bg-[#1a1a1a]">
-                Active
-              </option>
-              <option value="disabled" className="bg-white dark:bg-[#1a1a1a]">
-                Disabled
-              </option>
+              <option value="">All Statuses</option>
+              <option value="active">Active Accounts</option>
+              <option value="disabled">Disabled Accounts</option>
             </select>
           </div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
+      <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 animate-pulse"></div>
+          <div className="flex items-center justify-center min-h-[300px]">
+            <div className="flex flex-col items-center gap-3">
+              <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+              <p className="text-xs font-medium text-zinc-500">Loading user accounts...</p>
+            </div>
           </div>
         ) : error ? (
-          <div className="p-6 text-center text-red-400">{error}</div>
+          <div className="p-8 text-center text-rose-500 text-sm font-medium">{error}</div>
         ) : users.length === 0 ? (
-          <div className="p-6 text-center text-gray-400">No users found</div>
+          <div className="p-8 text-center text-zinc-400 text-sm">No users found matching query</div>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+              <table className="w-full text-left">
+                <thead className="bg-zinc-50 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Stats
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      AI Money Used
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Joined
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-5 py-3.5">Candidate / User</th>
+                    <th className="px-4 py-3.5">Role</th>
+                    <th className="px-5 py-3.5">Usage Telemetry</th>
+                    <th className="px-5 py-3.5">AI Spend</th>
+                    <th className="px-4 py-3.5">Registration Date</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs">
                   {users.map((user) => (
                     <tr
                       key={user._id}
-                      className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {user.name}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {user.email}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-zinc-100 text-xs font-semibold">
+                            {user.name?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                              {user.name}
+                            </div>
+                            <div className="text-[11px] text-zinc-400">
+                              {user.email}
+                            </div>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <select
                           value={user.role}
                           onChange={(e) =>
                             handleRoleChange(user._id, e.target.value)
                           }
-                          className="text-sm bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-gray-900 dark:text-white"
+                          className="text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         >
-                          <option value="user" className="bg-white dark:bg-[#1a1a1a]">
-                            User
-                          </option>
-                          <option value="admin" className="bg-white dark:bg-[#1a1a1a]">
-                            Admin
-                          </option>
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
                         </select>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-primary-700 dark:text-primary-300 font-semibold">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                               {user.resumeCount || 0}
-                            </span>{" "}
-                            resumes
+                            </span>
+                            <span>resumes created</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-blue-500 dark:text-blue-400 font-semibold">
+                          <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                            <span className="font-mono font-medium text-sky-600 dark:text-sky-400">
                               {user.aiUsageCount || 0}
-                            </span>{" "}
-                            AI calls
+                            </span>
+                            <span>AI requests</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           ₹{(user.aiCostInr || 0).toFixed(2)}
                         </div>
-                        <div className="text-[11px] text-gray-400">
+                        <div className="text-[11px] text-zinc-400 font-mono">
                           {user.aiTokensUsed ? `${(user.aiTokensUsed / 1000).toFixed(1)}k tokens` : "0 tokens"}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                      <td className="px-4 py-3.5 whitespace-nowrap text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() =>
                               setEmailModal({
@@ -420,15 +482,15 @@ const UserManagement = () => {
                                 name: user.name,
                               })
                             }
-                            className="p-2 text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 rounded-lg transition-all"
+                            className="p-1.5 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-all"
                             title="Send email to user"
                           >
                             <Mail className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => navigate(`/admin/users/${user._id}`)}
-                            className="p-2 text-cyan-500 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 rounded-lg transition-all"
-                            title="Inspect user"
+                            className="p-1.5 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-all"
+                            title="Inspect user profile"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -439,13 +501,13 @@ const UserManagement = () => {
                                 user.status === "active" ? "disabled" : "active"
                               )
                             }
-                            className={`p-2 rounded-lg transition-all ${
+                            className={`p-1.5 rounded-lg transition-all ${
                               user.status === "active"
-                                ? "text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20"
-                                : "text-green-400 hover:bg-green-500/10 border border-transparent hover:border-green-500/20"
+                                ? "text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                                : "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                             }`}
                             title={
-                              user.status === "active" ? "Disable" : "Enable"
+                              user.status === "active" ? "Disable account" : "Enable account"
                             }
                           >
                             {user.status === "active" ? (
@@ -458,8 +520,8 @@ const UserManagement = () => {
                             onClick={() =>
                               handleDeleteUser(user._id, user.name)
                             }
-                            className="p-2 text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-lg transition-all"
-                            title="Delete"
+                            className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-all"
+                            title="Delete user"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -472,29 +534,29 @@ const UserManagement = () => {
             </div>
 
             {/* Pagination */}
-            <div className="bg-gray-50 dark:bg-white/5 px-6 py-4 flex items-center justify-between border-t border-gray-200 dark:border-white/10">
-              <div className="text-sm text-gray-400">
-                Showing {(pagination.page - 1) * filters.limit + 1} to{" "}
+            <div className="bg-zinc-50 dark:bg-zinc-900/60 px-5 py-3 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 text-xs">
+              <div className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
+                Showing {(pagination.page - 1) * filters.limit + 1} -{" "}
                 {Math.min(pagination.page * filters.limit, pagination.total)} of{" "}
                 {pagination.total} users
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={pagination.page === 1}
-                  className="p-2 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                  className="p-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-all"
                 >
-                  <ChevronLeft className="w-4 h-4 text-gray-400" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="text-sm text-gray-700 dark:text-gray-300 px-3">
-                  Page {pagination.page} of {pagination.totalPages}
+                <span className="text-zinc-700 dark:text-zinc-300 px-2 font-mono text-[11px]">
+                  Page {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={pagination.page === pagination.totalPages}
-                  className="p-2 bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                  className="p-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-all"
                 >
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

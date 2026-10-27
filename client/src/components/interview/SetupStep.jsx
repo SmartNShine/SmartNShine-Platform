@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Target,
   Briefcase,
@@ -17,6 +18,8 @@ import {
   Languages,
   Sparkles,
   Loader2,
+  Clock,
+  History,
 } from "lucide-react";
 import { INTERVIEWER_VOICES, INTERVIEW_LANGUAGES, TYPE_ICONS } from "./constants";
 import { InterviewerGraphic } from "./InterviewerGraphic";
@@ -71,10 +74,20 @@ export const SetupStep = ({
     <div className="space-y-8">
       {/* Interview Type Selection */}
       <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-xl p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Target className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-          Select Interview Type
-        </h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Select Interview Type
+          </h2>
+          <Link
+            to="/interview/history"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-semibold transition-all shadow-xs"
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Past Interviews & Reports</span>
+            <span>→</span>
+          </Link>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {config?.interviewTypes?.map((type) => {
             const Icon = TYPE_ICONS[type.id] || Sparkles;

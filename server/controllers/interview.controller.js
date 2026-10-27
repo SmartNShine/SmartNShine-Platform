@@ -165,6 +165,7 @@ export const createSession = async (req, res) => {
       targetSkills,
       totalQuestions: Math.min(Math.max(totalQuestions, 5), 15), // Clamp between 5-15
       status: "created",
+      startedAt: new Date(),
       voiceEngineUsed: mode === "text" ? "none" : voiceEngineUsed,
       personaUsed: mode === "text" ? "standard" : personaUsed,
       interviewLanguage: sarvamService.normalizeSttLanguage(interviewLanguage),
@@ -623,9 +624,14 @@ export const completeSession = async (req, res) => {
       return res.json({success: true, data: existingResult});
     }
 
-    // Mark session as completed
+    // Mark session as completed and calculate total duration
     session.status = "completed";
     session.completedAt = new Date();
+    const startTime = session.startedAt || session.createdAt || session.completedAt;
+    const computedSec = Math.max(1, Math.round((session.completedAt.getTime() - new Date(startTime).getTime()) / 1000));
+    if (!session.totalDurationSeconds || session.totalDurationSeconds <= 0) {
+      session.totalDurationSeconds = computedSec;
+    }
     await session.save().catch(() => {});
 
     // Generate comprehensive report with safe fallback

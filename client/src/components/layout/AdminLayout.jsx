@@ -11,7 +11,8 @@ import {
   Shield,
   LogOut,
   Menu,
-  FileBox, 
+  X,
+  FileBox,
   Activity,
   Moon,
   Sun,
@@ -27,10 +28,10 @@ import {
   XCircle,
   UserPlus,
   Loader2,
-  ShieldCheck,
   Bot,
-  Sliders,
   Globe,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import Logo from "@/components/common/Logo";
 import {useAuth} from "@/context/AuthContext";
@@ -54,13 +55,6 @@ const typeIcons = {
   security: ShieldAlert,
 };
 
-const severityBadgeStyles = {
-  info: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20 dark:text-cyan-400",
-  warning: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
-  error: "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400",
-  critical: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400",
-};
-
 const formatTimeAgo = (dateStr) => {
   if (!dateStr) return "";
   const now = new Date();
@@ -82,19 +76,20 @@ const AdminLayout = () => {
     toggleSidebarOpen,
     setIsSidebarOpenTrue,
     setIsSidebarOpenFalse,
-  ] = useToggle(true); // Open by default for desktop
+  ] = useToggle(true);
   const [
     isMobileMenuOpen,
     toggleMobileMenu,
     setIsMobileMenuOpenTrue,
     setIsMobileMenuOpenFalse,
   ] = useToggle(false);
+
   const location = useLocation();
   const navigate = useNavigate();
   const {user, logout} = useAuth();
   const {isDarkMode, toggleDarkMode} = useDarkMode();
   const [notificationStats, setNotificationStats] = useState(null);
-  
+
   // Notification popover state
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [quickNotifications, setQuickNotifications] = useState([]);
@@ -106,9 +101,9 @@ const AdminLayout = () => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setIsSidebarOpenTrue();
+        setIsMobileMenuOpenFalse();
       } else {
         setIsSidebarOpenFalse();
-        setIsMobileMenuOpenFalse();
       }
     };
 
@@ -117,74 +112,102 @@ const AdminLayout = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, [setIsSidebarOpenTrue, setIsSidebarOpenFalse, setIsMobileMenuOpenFalse]);
 
-  const menuItems = [
+  const navigationGroups = [
     {
-      path: "/admin/dashboard",
-      icon: LayoutDashboard,
-      label: "Dashboard",
-      color: "text-blue-500",
+      group: "Overview",
+      items: [
+        {
+          path: "/admin/dashboard",
+          icon: LayoutDashboard,
+          label: "Dashboard",
+          accentColor: "text-indigo-500",
+        },
+        {
+          path: "/admin/earnings",
+          icon: TrendingUp,
+          label: "Financials & Revenue",
+          accentColor: "text-emerald-500",
+        },
+      ],
     },
     {
-      path: "/admin/earnings",
-      icon: TrendingUp,
-      label: "Earnings",
-      color: "text-green-500",
+      group: "Core Management",
+      items: [
+        {
+          path: "/admin/users",
+          icon: Users,
+          label: "Users & Accounts",
+          accentColor: "text-sky-500",
+        },
+        {
+          path: "/admin/careers",
+          icon: UserPlus,
+          label: "Founding Candidates",
+          accentColor: "text-amber-500",
+        },
+        {
+          path: "/admin/templates",
+          icon: FileBox,
+          label: "Resume Templates",
+          accentColor: "text-violet-500",
+        },
+        {
+          path: "/admin/portfolios",
+          icon: Globe,
+          label: "Public Portfolios",
+          accentColor: "text-teal-500",
+        },
+        {
+          path: "/admin/questions",
+          icon: HelpCircle,
+          label: "Question Bank",
+          accentColor: "text-blue-500",
+        },
+      ],
     },
     {
-      path: "/admin/users",
-      icon: Users,
-      label: "User Management",
-      color: "text-cyan-500",
+      group: "AI & Platform Intelligence",
+      items: [
+        {
+          path: "/admin/interviews",
+          icon: Bot,
+          label: "AI Interviews & Costs",
+          accentColor: "text-purple-500",
+        },
+        {
+          path: "/admin/ai-analytics",
+          icon: Sparkles,
+          label: "AI Operations & Quotas",
+          accentColor: "text-rose-500",
+        },
+      ],
     },
     {
-      path: "/admin/careers",
-      icon: UserPlus,
-      label: "Founding Applications",
-      color: "text-amber-500",
-    },
-    {
-      path: "/admin/interviews",
-      icon: Bot,
-      label: "AI Interviews & Costs",
-      color: "text-purple-500",
-    },
-    {
-      path: "/admin/ai-analytics",
-      icon: Sparkles,
-      label: "AI Usage & Quotas",
-      color: "text-orange-500",
-    },
-    {
-      path: "/admin/questions",
-      icon: HelpCircle,
-      label: "Question Bank",
-      color: "text-indigo-400",
-    },
-    {
-      path: "/admin/templates",
-      icon: FileBox,
-      label: "Templates",
-      color: "text-fuchsia-500",
-    },
-    {
-      path: "/admin/portfolios",
-      icon: Globe,
-      label: "Portfolios",
-      color: "text-emerald-500",
-    },
-    {
-      path: "/admin/feedback",
-      icon: MessageSquare,
-      label: "Messages & Feedback",
-      color: "text-pink-500",
-    },
-    {
-      path: "/admin/settings",
-      icon: Settings,
-      label: "Settings",
-      color: "text-gray-500",
+      group: "Support & Logs",
+      items: [
+        {
+          path: "/admin/feedback",
+          icon: MessageSquare,
+          label: "Messages & Inquiries",
+          accentColor: "text-pink-500",
+        },
+        {
+          path: "/admin/notifications",
+          icon: Bell,
+          label: "Platform Alerts",
+          accentColor: "text-amber-500",
+        },
+        {
+          path: "/admin/settings",
+          icon: Settings,
+          label: "System Settings",
+          accentColor: "text-zinc-500",
+        },
+      ],
     },
   ];
+
+  const allMenuItems = navigationGroups.flatMap((g) => g.items);
 
   const handleLogout = () => {
     logout();
@@ -206,7 +229,7 @@ const AdminLayout = () => {
       const response = await getAdminNotifications({limit: 6});
       setQuickNotifications(response.data.data.notifications || []);
     } catch (error) {
-      console.error("Failed to load quick notifications:", error);
+      console.error("Failed to load notifications:", error);
     } finally {
       setLoadingNotifications(false);
     }
@@ -218,7 +241,6 @@ const AdminLayout = () => {
     return () => window.clearInterval(interval);
   }, [location.pathname]);
 
-  // Close notifications on location change or outside click
   useEffect(() => {
     setIsNotificationOpen(false);
   }, [location.pathname]);
@@ -268,7 +290,7 @@ const AdminLayout = () => {
         prev.map((item) => ({...item, status: "read"}))
       );
       fetchNotificationStats();
-    } catch (error) {
+    } catch {
       toast.error("Failed to mark all as read");
     }
   };
@@ -306,82 +328,173 @@ const AdminLayout = () => {
     }
   };
 
-  const toggleSidebar = () => {
-    toggleMobileMenu();
-  };
-
   const closeMobileMenu = () => {
     setIsMobileMenuOpenFalse();
   };
 
   const activeMenuItem =
-    menuItems.find((item) => location.pathname.startsWith(item.path)) ||
-    menuItems[0];
-  const ActiveIcon = activeMenuItem?.icon || LayoutDashboard;
+    allMenuItems.find((item) => location.pathname.startsWith(item.path)) ||
+    allMenuItems[0];
 
   return (
-    <div className="min-h-screen bg-gray-50/70 dark:bg-[#09090b] text-gray-900 dark:text-white overflow-x-hidden">
-      {/* Floating Top Navigation Bar */}
-      <header className="fixed top-3 left-3 right-3 sm:left-4 sm:right-4 z-30">
-        <div className="bg-white/80 dark:bg-[#121214]/85 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 rounded-2xl shadow-lg shadow-black/[0.03] dark:shadow-black/40 px-3 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between transition-all">
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Menu Toggle */}
+    <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white dark:selection:bg-indigo-500 dark:selection:text-white">
+      {/* Mobile Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 lg:hidden transition-opacity"
+          onClick={closeMobileMenu}
+        />
+      )}
+
+      {/* Docked Static Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800/80 flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Brand Header */}
+        <div className="h-16 border-b border-zinc-200 dark:border-zinc-800/80 px-5 flex items-center justify-between shrink-0 bg-white dark:bg-zinc-950">
+          <Link
+            to="/admin/dashboard"
+            onClick={closeMobileMenu}
+            className="flex items-center gap-3 group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center p-1.5 transition-transform group-hover:scale-95 shadow-xs">
+              <Logo
+                className="w-full h-full object-contain filter invert-0 dark:invert"
+                alt="SmartNShine logo"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-white leading-none">
+                SmartNShine
+              </span>
+              <span className="text-[10px] font-mono tracking-wider uppercase text-zinc-400 dark:text-zinc-500 mt-1">
+                Admin Console
+              </span>
+            </div>
+          </Link>
+
+          {/* Mobile Close Button */}
+          <button
+            onClick={closeMobileMenu}
+            className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 lg:hidden"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation Groups */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          {navigationGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              <div className="px-3 pb-1.5 text-[10px] font-mono font-semibold tracking-wider uppercase text-zinc-400 dark:text-zinc-500">
+                {group.group}
+              </div>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname.startsWith(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={closeMobileMenu}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      isActive
+                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs font-semibold"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900/80"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          isActive
+                            ? "text-indigo-400 dark:text-indigo-600"
+                            : `${item.accentColor} opacity-75 group-hover:opacity-100`
+                        }`}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-600 shrink-0" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-3 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950 shrink-0">
+          <Link
+            to="/dashboard"
+            onClick={closeMobileMenu}
+            className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-md border border-zinc-200 dark:border-zinc-800 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Candidate Portal</span>
+            </div>
+            <ExternalLink className="w-3 h-3 text-zinc-400" />
+          </Link>
+
+          <div className="mt-2.5 px-3 py-1.5 flex items-center justify-between text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">
+            <span>v2.4.0 • Enterprise</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">Live</span>
+            </span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Container Pinned Beside Docked Sidebar */}
+      <div className="lg:pl-64 flex flex-col flex-1 min-h-screen">
+        {/* Docked Top Header Bar */}
+        <header className="sticky top-0 z-30 h-16 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800/80 px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Mobile Drawer Trigger */}
             <button
-              onClick={() => {
-                if (window.innerWidth < 1024) {
-                  toggleMobileMenu();
-                } else {
-                  toggleSidebarOpen();
-                }
-              }}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-all text-gray-700 dark:text-gray-300"
-              aria-label="Toggle menu"
-              title="Toggle sidebar"
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 rounded-md border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              aria-label="Open sidebar menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             </button>
 
-            {/* Brand / Logo */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-purple-500/10 dark:bg-purple-500/20 rounded-xl flex items-center justify-center border border-purple-500/20 overflow-hidden shrink-0">
-                <Logo
-                  className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
-                  alt="SmartNShine logo"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white tracking-tight">
-                  Admin Panel
-                </h1>
-
-                {/* Active Menu Breadcrumb Pill */}
-                <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  <ActiveIcon className={`w-3.5 h-3.5 ${activeMenuItem.color || "text-purple-500"}`} />
-                  {activeMenuItem.label}
-                </span>
+            {/* Breadcrumb / Title */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-zinc-400 dark:text-zinc-500 hidden sm:inline">
+                Admin
+              </span>
+              <ChevronRight className="w-3 h-3 text-zinc-400 dark:text-zinc-600 hidden sm:inline" />
+              <div className="flex items-center gap-1.5 font-semibold text-zinc-900 dark:text-white">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span>{activeMenuItem?.label || "Console"}</span>
               </div>
             </div>
           </div>
 
-          {/* Right Action Items */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            {/* Notifications Popover Dropdown */}
+          {/* Right Action Tools */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Notifications Popover */}
             <div className="relative" ref={notificationDropdownRef}>
               <button
                 type="button"
                 onClick={handleToggleNotifications}
-                className={`relative p-2 sm:p-2.5 rounded-xl transition-all duration-200 border ${
+                className={`relative p-2 rounded-md border text-xs font-medium transition-colors ${
                   isNotificationOpen
-                    ? "bg-blue-50 dark:bg-blue-950/40 border-blue-400 dark:border-blue-500/50 text-blue-600 dark:text-blue-400"
-                    : "bg-gray-50/80 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-zinc-900 dark:border-white"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
-                title="Notifications"
-                aria-label="Notifications"
-                aria-expanded={isNotificationOpen}
+                aria-label="Platform Notifications"
               >
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Bell className="w-4 h-4" />
                 {notificationStats?.unread > 0 && (
-                  <span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-xs">
                     {notificationStats.unread > 99
                       ? "99+"
                       : notificationStats.unread}
@@ -389,43 +502,41 @@ const AdminLayout = () => {
                 )}
               </button>
 
-              {/* Mini Notification Popover Card */}
+              {/* Notification Popover Dropdown */}
               {isNotificationOpen && (
-                <div className="absolute right-0 mt-3 w-[340px] sm:w-[400px] max-w-[90vw] bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-                  {/* Header Bar */}
-                  <div className="px-4 py-3 border-b border-gray-100 dark:border-white/10 flex items-center justify-between bg-gray-50/70 dark:bg-zinc-900/60 backdrop-blur-md">
+                <div className="absolute right-0 mt-2 w-[360px] max-w-[90vw] bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                      <span className="font-semibold text-xs text-zinc-900 dark:text-white">
                         Notifications
                       </span>
                       {notificationStats?.unread > 0 && (
-                        <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                          {notificationStats.unread} new
+                        <span className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold">
+                          {notificationStats.unread} unread
                         </span>
                       )}
                     </div>
                     {notificationStats?.unread > 0 && (
                       <button
                         onClick={handleMarkAllRead}
-                        className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
+                        className="text-[11px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors"
                       >
-                        <CheckCheck className="w-3.5 h-3.5" />
+                        <CheckCheck className="w-3 h-3" />
                         Mark all read
                       </button>
                     )}
                   </div>
 
-                  {/* Notification List Content */}
-                  <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-100 dark:divide-white/5">
+                  <div className="max-h-[340px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60">
                     {loadingNotifications ? (
-                      <div className="p-8 flex flex-col items-center justify-center gap-2 text-gray-400">
-                        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                        <span className="text-xs">Loading alerts...</span>
+                      <div className="p-8 flex flex-col items-center justify-center gap-2 text-zinc-400">
+                        <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                        <span className="text-xs font-mono">Loading alerts...</span>
                       </div>
                     ) : quickNotifications.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                        <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                        <p className="text-xs font-medium">No notifications yet</p>
+                      <div className="p-8 text-center text-zinc-500 dark:text-zinc-400">
+                        <Bell className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                        <p className="text-xs">No notifications yet</p>
                       </div>
                     ) : (
                       quickNotifications.map((item) => {
@@ -435,47 +546,36 @@ const AdminLayout = () => {
                           <div
                             key={item._id}
                             onClick={() => handleNotificationItemClick(item)}
-                            className={`p-3.5 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-white/[0.04] cursor-pointer transition-colors ${
+                            className={`p-3.5 flex items-start gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 cursor-pointer transition-colors ${
                               isUnread
-                                ? "bg-blue-50/40 dark:bg-blue-950/20"
+                                ? "bg-indigo-50/40 dark:bg-indigo-950/20"
                                 : ""
                             }`}
                           >
-                            <div className="relative shrink-0 mt-0.5">
-                              <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-zinc-900 flex items-center justify-center border border-gray-200/60 dark:border-white/10 text-gray-700 dark:text-gray-300">
-                                <Icon className="w-4 h-4" />
-                              </div>
-                              {isUnread && (
-                                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-white dark:ring-zinc-950" />
-                              )}
+                            <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5">
+                              <Icon className="w-3.5 h-3.5 text-indigo-500" />
                             </div>
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-0.5">
-                                <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                                <p className="text-xs font-medium text-zinc-900 dark:text-white truncate">
                                   {item.title}
                                 </p>
-                                <span className="text-[10px] text-gray-400 shrink-0">
+                                <span className="text-[10px] font-mono text-zinc-400 shrink-0">
                                   {formatTimeAgo(item.createdAt)}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                                 {item.message}
                               </p>
-                              <div className="mt-1.5 flex items-center justify-between">
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium border ${
-                                    severityBadgeStyles[item.severity] ||
-                                    severityBadgeStyles.info
-                                  }`}
-                                >
+                              <div className="mt-2 flex items-center justify-between">
+                                <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
                                   {item.severity || "info"}
                                 </span>
                                 {isUnread && (
                                   <button
                                     onClick={(e) => handleSingleMarkRead(e, item._id)}
-                                    className="text-[10px] font-medium text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center gap-0.5 px-1 py-0.5 rounded transition-colors"
-                                    title="Mark as read"
+                                    className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5"
                                   >
                                     <Check className="w-3 h-3" />
                                     Read
@@ -489,140 +589,68 @@ const AdminLayout = () => {
                     )}
                   </div>
 
-                  {/* Footer Bar */}
-                  <div className="p-2 border-t border-gray-100 dark:border-white/10 bg-gray-50/70 dark:bg-zinc-900/60 backdrop-blur-md">
+                  <div className="p-2 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                     <Link
                       to="/admin/notifications"
                       onClick={() => setIsNotificationOpen(false)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-sm"
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-medium rounded-md bg-zinc-900 hover:bg-black text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 transition-colors"
                     >
-                      <span>Show Full Notifications</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <span>All Platform Alerts</span>
+                      <ArrowRight className="w-3 h-3" />
                     </Link>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* User Info */}
-            <div className="text-right hidden lg:block px-3 py-1.5 bg-gray-50/80 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
-              <p className="text-xs font-semibold text-gray-900 dark:text-white truncate max-w-[120px]">
-                {user?.name || "Admin"}
-              </p>
-              <p className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
-                Administrator
-              </p>
-            </div>
-
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 sm:p-2.5 bg-gray-50/80 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all border border-gray-200 dark:border-white/10"
+              className="p-2 rounded-md bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors"
               title={isDarkMode ? "Light Mode" : "Dark Mode"}
-              aria-label={
-                isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
-              }
+              aria-label="Toggle theme mode"
             >
               {isDarkMode ? (
-                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                <Moon className="w-4 h-4 text-zinc-600" />
               )}
             </button>
+
+            {/* Admin Identity Badge */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <div className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                {user?.name?.charAt(0)?.toUpperCase() || "A"}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-medium text-zinc-900 dark:text-white leading-none truncate max-w-[120px]">
+                  {user?.name || "Administrator"}
+                </p>
+                <p className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 leading-none mt-1">
+                  Superuser
+                </p>
+              </div>
+            </div>
 
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl transition-all border border-red-500/20 text-xs sm:text-sm font-semibold"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-medium transition-colors"
               aria-label="Logout"
             >
-              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
-          onClick={closeMobileMenu}
-        />
-      )}
-
-      {/* Floating Sidebar (Desktop & Mobile) */}
-      <aside
-        className={`fixed z-40 transition-all duration-300 overflow-hidden
-          /* Mobile Drawer */
-          ${
-            isMobileMenuOpen
-              ? "inset-y-3 left-3 w-72 bg-white/95 dark:bg-[#121214]/95 backdrop-blur-2xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl"
-              : "-translate-x-full lg:translate-x-0"
-          }
-          /* Desktop Floating Sidebar */
-          lg:top-20 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:bg-white/90 lg:dark:bg-[#121214]/90 lg:backdrop-blur-xl lg:border lg:border-gray-200/80 lg:dark:border-white/10 lg:shadow-xl lg:shadow-black/[0.03] lg:dark:shadow-black/40
-          ${isSidebarOpen ? "lg:w-64 lg:opacity-100" : "lg:w-0 lg:opacity-0 lg:pointer-events-none"}
-        `}
-      >
-        <div className="h-full flex flex-col justify-between overflow-y-auto p-3">
-          {/* Navigation Menu */}
-          <nav className="space-y-1">
-            <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              Admin Navigation
-            </div>
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
-
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={closeMobileMenu}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                    isActive
-                      ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white border border-transparent"
-                  }`}
-                >
-                  <Icon
-                    className={`w-4 h-4 flex-shrink-0 ${
-                      isActive ? "text-purple-600 dark:text-purple-400" : item.color
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Back to Site */}
-          <div className="pt-3 border-t border-gray-100 dark:border-white/10">
-            <Link
-              to="/dashboard"
-              onClick={closeMobileMenu}
-              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-semibold text-xs transition-all shadow-md shadow-purple-500/20"
-            >
-              <Shield className="w-4 h-4" />
-              <span>Back to Candidate Portal</span>
-            </Link>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main
-        className={`pt-20 sm:pt-24 transition-all duration-300 min-h-screen ${
-          isSidebarOpen ? "lg:ml-72" : "lg:ml-0"
-        }`}
-      >
-        <div className="p-3 sm:p-5 md:p-6 max-w-7xl mx-auto">
+        {/* Content Body Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
           <PageTransition key={location.pathname}>
             <Outlet />
           </PageTransition>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
