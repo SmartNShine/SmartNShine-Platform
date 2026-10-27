@@ -54,15 +54,27 @@ jobs:
           name: node-app
           path: .
       
-      - name: Login to Azure
+      - name: Deploy to Azure Web App (Publish Profile)
+        if: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D92532B6A3C44305917BD1A9537D4422 != '' }}
+        id: deploy-to-webapp-publish-profile
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'SmartNShine'
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D92532B6A3C44305917BD1A9537D4422 }}
+          package: ./release.zip
+
+      - name: Login to Azure (OIDC fallback)
+        if: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D92532B6A3C44305917BD1A9537D4422 == '' }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D92532B6A3C44305917BD1A9537D4422 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_967643D92A4D409EB0FD5180BBB75E1A }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E23374B9CE404AACA2B53B9BF027A6D8 }}
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
+      - name: Deploy to Azure Web App (OIDC fallback)
+        if: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D92532B6A3C44305917BD1A9537D4422 == '' }}
+        id: deploy-to-webapp-oidc
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'SmartNShine'
