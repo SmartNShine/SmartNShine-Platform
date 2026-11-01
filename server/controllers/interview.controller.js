@@ -7,6 +7,13 @@ import * as sarvamService from "../services/sarvam.service.js";
 import {transcribeAudioWithAI} from "../services/openai.service.js";
 import axios from "axios";
 import FormData from "form-data";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import logger from "../utils/logger.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Interview Controller
@@ -152,6 +159,17 @@ export const createSession = async (req, res) => {
       });
     }
 
+    const clampedTotalQuestions = Math.min(Math.max(totalQuestions, 5), 15);
+    const syllabus = interviewService.generateInterviewSyllabus({
+      role,
+      experienceLevel,
+      interviewType,
+      resumeText,
+      jobDescription,
+      totalQuestions: clampedTotalQuestions,
+      targetSkills,
+    });
+
     // Create session
     const session = new InterviewSession({
       userId,
@@ -163,7 +181,9 @@ export const createSession = async (req, res) => {
       resumeText,
       jobDescription,
       targetSkills,
-      totalQuestions: Math.min(Math.max(totalQuestions, 5), 15), // Clamp between 5-15
+      totalQuestions: clampedTotalQuestions,
+      syllabus,
+      currentCognitiveLevel: 2,
       status: "created",
       startedAt: new Date(),
       voiceEngineUsed: mode === "text" ? "none" : voiceEngineUsed,
@@ -225,9 +245,16 @@ export const startSession = async (req, res) => {
       });
     }
 
+    const firstPlan = session.syllabus?.[0] || {
+      category: "Core Technical Fundamentals",
+      cognitiveLevel: 2,
+      phase: "Phase 1: Foundations",
+      questionType: session.interviewType === "behavioral" ? "behavioral" : "technical",
+    };
+
     // Generate first question
     const questionConfig = {
-      interviewType: session.interviewType,
+      interviewType: firstPlan.questionType || session.interviewType,
       role: session.role,
       experienceLevel: session.experienceLevel,
       resumeText: session.resumeText,
@@ -235,8 +262,10 @@ export const startSession = async (req, res) => {
       targetSkills: session.targetSkills,
       previousQuestions: [],
       previousAnswers: [],
-      currentDifficulty: "medium",
+      currentDifficulty: (firstPlan.cognitiveLevel || 2) >= 4 ? "hard" : (firstPlan.cognitiveLevel || 2) <= 2 ? "easy" : "medium",
       questionNumber: 1,
+      targetCategory: firstPlan.category,
+      cognitiveLevel: firstPlan.cognitiveLevel || 2,
     };
 
     const questionData = await interviewService.generateQuestion(
@@ -244,18 +273,24 @@ export const startSession = async (req, res) => {
       req.user
     );
 
+    const cogLevel = firstPlan.cognitiveLevel || 2;
+    const cogMeta = interviewService.COGNITIVE_LEVELS?.[cogLevel] || null;
+
     // Add question to session
     session.addQuestion({
       questionText: questionData.question,
-      questionType: questionData.questionType,
-      category: questionData.category,
+      questionType: questionData.questionType || firstPlan.questionType,
+      category: questionData.category || firstPlan.category,
       difficulty: questionData.difficulty,
+      cognitiveLevel: cogLevel,
+      cognitiveMeta: cogMeta,
+      syllabusPhase: firstPlan.phase || "Phase 1: Foundations",
     });
 
     await session.save();
 
     console.log(
-      `✅ Interview session started: ${session._id} (mode: ${session.mode})`
+      `✅ Interview session started: ${session._id} (mode: ${session.mode}, cognitiveLevel: ${cogLevel})`
     );
 
     res.json({
@@ -268,7 +303,9 @@ export const startSession = async (req, res) => {
           number: 1,
           text: questionData.question,
           type: questionData.questionType,
-          category: questionData.category,
+          category: questionData.category || firstPlan.category,
+          cognitiveLevel: cogLevel,
+          cognitiveMeta: cogMeta,
           audio: null,
         },
         progress: {
@@ -334,21 +371,25 @@ export const submitAnswer = async (req, res) => {
     // Submit the answer
     session.submitAnswer(questionNumber, answer.trim(), answerMode);
 
-    // Evaluate the answer
-    const evaluation = await interviewService.evaluateAnswer(
-      {
-        question: currentQuestion.questionText,
-        answer: answer.trim(),
-        questionType: currentQuestion.questionType,
-        category: currentQuestion.category,
-        expectedKeywords: currentQuestion.expectedKeywords,
-        role: session.role,
-        experienceLevel: session.experienceLevel,
-      },
-      req.user
-    );
+    // Check if interview is complete
+    const answeredCount = session.questions.filter(
+      (q) => q.userAnswer || q.skipped
+    ).length;
+    const isComplete = answeredCount >= session.totalQuestions;
 
-    // Add evaluation to the question
+    // Process interview turn with unified turn intelligence engine
+    const turnResult = await interviewService.processInterviewTurn({
+      session,
+      currentQuestion,
+      answerText: answer.trim(),
+      userId,
+      isComplete,
+      detectedLanguage: "unknown",
+    });
+
+    const evaluation = turnResult.evaluation;
+
+    // Add comprehensive evaluation to the question
     session.addEvaluation(questionNumber, {
       score: evaluation.score,
       relevance: evaluation.relevance,
@@ -362,99 +403,42 @@ export const submitAnswer = async (req, res) => {
       suggestedAnswer: evaluation.suggestedAnswer,
       improvementTips: evaluation.improvementTips,
       feedback: evaluation.feedback,
+      starBreakdown: evaluation.starBreakdown,
+      depthAndTradeoffs: evaluation.depthAndTradeoffs,
+      evidenceAndGrounding: evaluation.evidenceAndGrounding,
     });
 
-    // Check if interview is complete
-    const answeredCount = session.questions.filter(
-      (q) => q.userAnswer || q.skipped
-    ).length;
-    const isComplete = answeredCount >= session.totalQuestions;
+    currentQuestion.turnDecision = turnResult.turnDecision;
+    currentQuestion.signals = turnResult.signals;
 
     let nextQuestion = null;
-    let shouldAskFollowUp =
-      evaluation.shouldAskFollowUp && !isComplete && Math.random() < 0.3;
 
-    if (!isComplete) {
-      // Determine if we should ask a follow-up or new question
-      if (shouldAskFollowUp) {
-        const followUpData = await interviewService.generateFollowUp(
-          {
-            previousQuestion: currentQuestion.questionText,
-            previousAnswer: answer.trim(),
-            followUpReason: evaluation.followUpReason,
-            role: session.role,
-            experienceLevel: session.experienceLevel,
-          },
-          req.user
-        );
+    if (!isComplete && turnResult.nextQuestion) {
+      const nq = turnResult.nextQuestion;
+      const isProbe = turnResult.turnDecision === interviewService.TURN_DECISIONS?.PROBE_DEEP;
 
-        session.addQuestion({
-          questionText: followUpData.question,
-          questionType: "follow-up",
-          category: currentQuestion.category,
-          difficulty: currentQuestion.difficulty,
-          isFollowUp: true,
-          parentQuestionNumber: questionNumber,
-        });
+      session.addQuestion({
+        questionText: nq.text,
+        questionType: isProbe ? "follow-up" : nq.questionType,
+        category: nq.category,
+        difficulty: nq.difficulty,
+        cognitiveLevel: nq.cognitiveLevel,
+        cognitiveMeta: nq.cognitiveMeta,
+        acknowledgmentBridge: nq.acknowledgmentBridge,
+        isFollowUp: isProbe,
+        parentQuestionNumber: isProbe ? questionNumber : undefined,
+      });
 
-        nextQuestion = {
-          number: session.questions.length,
-          text: followUpData.question,
-          type: "follow-up",
-          category: currentQuestion.category,
-          isFollowUp: true,
-        };
-      } else if (answeredCount < session.totalQuestions) {
-        // Generate next regular question
-        const previousQuestions = session.questions.map((q) => q.questionText);
-        const previousAnswers = session.questions.map(
-          (q) => q.userAnswer || ""
-        );
-
-        // Adaptive difficulty
-        const recentScores = session.questions
-          .slice(-3)
-          .map((q) => q.evaluation?.score || 50);
-        const avgRecentScore =
-          recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
-        let currentDifficulty = currentQuestion.difficulty;
-
-        if (avgRecentScore >= 80) currentDifficulty = "hard";
-        else if (avgRecentScore <= 40) currentDifficulty = "easy";
-        else currentDifficulty = "medium";
-
-        const questionConfig = {
-          interviewType: session.interviewType,
-          role: session.role,
-          experienceLevel: session.experienceLevel,
-          resumeText: session.resumeText,
-          jobDescription: session.jobDescription,
-          targetSkills: session.targetSkills,
-          previousQuestions,
-          previousAnswers,
-          currentDifficulty,
-          questionNumber: session.questions.length + 1,
-        };
-
-        const questionData = await interviewService.generateQuestion(
-          questionConfig,
-          req.user
-        );
-
-        session.addQuestion({
-          questionText: questionData.question,
-          questionType: questionData.questionType,
-          category: questionData.category,
-          difficulty: questionData.difficulty,
-        });
-
-        nextQuestion = {
-          number: session.questions.length,
-          text: questionData.question,
-          type: questionData.questionType,
-          category: questionData.category,
-        };
-      }
+      nextQuestion = {
+        number: session.questions.length,
+        text: nq.text,
+        type: isProbe ? "follow-up" : nq.questionType,
+        category: nq.category,
+        cognitiveLevel: nq.cognitiveLevel,
+        cognitiveMeta: nq.cognitiveMeta,
+        acknowledgmentBridge: nq.acknowledgmentBridge,
+        isFollowUp: isProbe,
+      };
     }
 
     // This will auto-transition to completed if all questions are answered
@@ -470,6 +454,8 @@ export const submitAnswer = async (req, res) => {
           strengths: evaluation.strengths,
           weaknesses: evaluation.weaknesses,
           improvementTips: evaluation.improvementTips,
+          starBreakdown: evaluation.starBreakdown,
+          signals: evaluation.signals,
         },
         progress: {
           current: answeredCount,
@@ -478,6 +464,8 @@ export const submitAnswer = async (req, res) => {
             (answeredCount / session.totalQuestions) * 100
           ),
         },
+        turnDecision: turnResult.turnDecision,
+        decisionReason: turnResult.decisionReason,
         isComplete,
         mode: session.mode,
       },
@@ -540,14 +528,25 @@ export const skipQuestion = async (req, res) => {
     let nextQuestion = null;
 
     if (!isComplete && answeredCount < session.totalQuestions) {
-      // Generate next question
+      // Advance to next syllabus item
+      const coverage = interviewService.calculateCompetencyCoverage(
+        session.syllabus || [],
+        session.questions || []
+      );
+      const nextPlan = coverage.nextPlannedItem || {
+        category: "General Technical",
+        cognitiveLevel: 2,
+        phase: "General",
+        questionType: "technical",
+      };
+
       const previousQuestions = session.questions.map((q) => q.questionText);
       const previousAnswers = session.questions.map(
         (q) => q.userAnswer || "(skipped)"
       );
 
       const questionConfig = {
-        interviewType: session.interviewType,
+        interviewType: nextPlan.questionType || session.interviewType,
         role: session.role,
         experienceLevel: session.experienceLevel,
         resumeText: session.resumeText,
@@ -555,8 +554,10 @@ export const skipQuestion = async (req, res) => {
         targetSkills: session.targetSkills,
         previousQuestions,
         previousAnswers,
-        currentDifficulty: "medium",
+        currentDifficulty: (nextPlan.cognitiveLevel || 2) >= 4 ? "hard" : (nextPlan.cognitiveLevel || 2) <= 2 ? "easy" : "medium",
         questionNumber: session.questions.length + 1,
+        targetCategory: nextPlan.category,
+        cognitiveLevel: nextPlan.cognitiveLevel || 2,
       };
 
       const questionData = await interviewService.generateQuestion(
@@ -564,18 +565,26 @@ export const skipQuestion = async (req, res) => {
         req.user
       );
 
+      const cogLevel = nextPlan.cognitiveLevel || 2;
+      const cogMeta = interviewService.COGNITIVE_LEVELS?.[cogLevel] || null;
+
       session.addQuestion({
         questionText: questionData.question,
-        questionType: questionData.questionType,
-        category: questionData.category,
+        questionType: questionData.questionType || nextPlan.questionType,
+        category: questionData.category || nextPlan.category,
         difficulty: questionData.difficulty,
+        cognitiveLevel: cogLevel,
+        cognitiveMeta: cogMeta,
+        syllabusPhase: nextPlan.phase,
       });
 
       nextQuestion = {
         number: session.questions.length,
         text: questionData.question,
         type: questionData.questionType,
-        category: questionData.category,
+        category: questionData.category || nextPlan.category,
+        cognitiveLevel: cogLevel,
+        cognitiveMeta: cogMeta,
         audio: null,
       };
     }
@@ -701,6 +710,8 @@ export const completeSession = async (req, res) => {
       sessionId: session._id,
       overallScore: reportData.overallScore || 70,
       grade: reportData.overallScore >= 80 ? "A" : reportData.overallScore >= 60 ? "B" : "C",
+      radarCompetencies: reportData.radarCompetencies || {},
+      studyRoadmap: reportData.studyRoadmap || [],
       skillBreakdown: reportData.skillBreakdown || [],
       topicBreakdown: reportData.topicBreakdown || [],
       strengths: reportData.strengths || [],
@@ -741,6 +752,26 @@ export const completeSession = async (req, res) => {
       aiModel: session.aiModel || "gpt-4",
       hiringRecommendation: reportData.hiringRecommendation || "Consider",
       isPremiumAnalysis: isPremiumUser(req.user),
+      videoRecordingUrl: session.videoRecordingUrl || null,
+      proctoringAudit: {
+        integrityScore: session.proctoringSummary?.integrityScore ?? 100,
+        flagCounts: session.proctoringSummary?.flagCounts || {
+          phone: 0,
+          gaze: 0,
+          multipleFaces: 0,
+          absent: 0,
+          tabSwitch: 0,
+        },
+        verdict: session.proctoringSummary?.verdict || "VERIFIED_CLEAN",
+        events: (session.proctoringEvents || []).map((e) => ({
+          timestampSeconds: e.timestampSeconds,
+          eventType: e.eventType,
+          severity: e.severity,
+          confidence: e.confidence,
+          snapshotUrl: e.snapshotUrl,
+          details: e.details,
+        })),
+      },
     });
 
     await result.save();
@@ -1083,15 +1114,19 @@ export const submitVoiceAnswer = async (req, res) => {
     console.log("  - req.body keys:", Object.keys(req.body || {}));
 
     if (!audioFile) {
-      console.error("❌ No audio file in request.");
-      console.error("  - req.files:", req.files);
-      console.error("  - req.body:", req.body);
+      logger.warn("Voice answer submitted with missing audio file", { sessionId, questionNumber });
       return res.status(400).json({
         success: false,
         error:
           "No audio file provided. Please record your answer and try again.",
       });
     }
+
+    logger.interview(sessionId, "VOICE_RECEIVED", `Voice answer clip received (${audioFile.size} bytes)`, {
+      questionNumber,
+      size: audioFile.size,
+      mimetype: audioFile.mimetype,
+    });
 
     if (!audioFile.buffer || audioFile.buffer.length === 0) {
       console.error("❌ Audio file has no buffer data!");
@@ -1293,11 +1328,17 @@ export const submitVoiceAnswer = async (req, res) => {
     }
 
     if (!transcribedText || !transcribedText.trim()) {
-      return res.status(400).json({
-        success: false,
-        error:
-          "Could not detect speech in the audio. Please speak clearly and try again.",
-      });
+      if (req.body.clientTranscript && req.body.clientTranscript.trim().length >= 4) {
+        transcribedText = req.body.clientTranscript.trim();
+        transcriptionProvider = "client-web-speech";
+        console.log(`ℹ️ Falling back to verified client speech transcript (${transcribedText.length} chars)`);
+      } else {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Could not detect speech in the audio. Please speak clearly and try again.",
+        });
+      }
     }
 
     // Now process the transcribed text as a regular answer
@@ -1316,6 +1357,12 @@ export const submitVoiceAnswer = async (req, res) => {
       console.log(`ℹ️ Question ${questionNumber} was previously answered. Updating with fresh voice transcription.`);
     }
 
+    logger.interview(sessionId, "STT_COMPLETED", `Voice answer transcribed via ${transcriptionProvider}`, {
+      provider: transcriptionProvider,
+      transcriptionChars: transcribedText.length,
+      questionNumber,
+    });
+
     // Submit or update the transcribed answer
     session.submitAnswer(
       parseInt(questionNumber),
@@ -1323,6 +1370,10 @@ export const submitVoiceAnswer = async (req, res) => {
       "voice"
     );
     currentQuestion.transcribedText = transcribedText.trim();
+    if (transcriptionLanguage) {
+      currentQuestion.transcriptionLanguage = transcriptionLanguage;
+      currentQuestion.languageProbability = languageProbability;
+    }
 
     // Check if interview is complete
     const answeredCount = session.questions.filter(
@@ -1330,76 +1381,78 @@ export const submitVoiceAnswer = async (req, res) => {
     ).length;
     const isComplete = answeredCount >= session.totalQuestions;
 
+    // Process interview turn in real time with unified turn intelligence engine
+    const turnResult = await interviewService.processInterviewTurn({
+      session,
+      currentQuestion,
+      answerText: transcribedText.trim(),
+      userId,
+      isComplete,
+      detectedLanguage: transcriptionLanguage || "unknown",
+    });
+
+    const evaluation = turnResult.evaluation;
+
+    // Add genuine evaluation to the question
+    session.addEvaluation(parseInt(questionNumber), {
+      score: evaluation.score,
+      relevance: evaluation.relevance,
+      technicalAccuracy: evaluation.technicalAccuracy,
+      clarity: evaluation.clarity,
+      confidence: evaluation.confidence,
+      roleFit: evaluation.roleFit,
+      strengths: evaluation.strengths,
+      weaknesses: evaluation.weaknesses,
+      missingKeywords: evaluation.missingKeywords,
+      suggestedAnswer: evaluation.suggestedAnswer,
+      improvementTips: evaluation.improvementTips,
+      feedback: evaluation.feedback,
+      starBreakdown: evaluation.starBreakdown,
+      depthAndTradeoffs: evaluation.depthAndTradeoffs,
+      evidenceAndGrounding: evaluation.evidenceAndGrounding,
+    });
+
+    currentQuestion.turnDecision = turnResult.turnDecision;
+    currentQuestion.signals = turnResult.signals;
+
     let nextQuestion = null;
 
-    if (!isComplete && answeredCount < session.totalQuestions) {
-      // Check if the next question already exists on the session
-      const existingNextQ = session.questions.find(
-        (q) => q.questionNumber === parseInt(questionNumber) + 1
-      );
+    if (!isComplete && turnResult.nextQuestion) {
+      const nq = turnResult.nextQuestion;
+      const isProbe = turnResult.turnDecision === interviewService.TURN_DECISIONS?.PROBE_DEEP;
 
-      if (existingNextQ) {
-        nextQuestion = {
-          number: existingNextQ.questionNumber,
-          text: existingNextQ.questionText,
-          type: existingNextQ.questionType,
-          category: existingNextQ.category,
-          audio: null,
-        };
-      } else {
-        // Generate next question
-        const previousQuestions = session.questions.map((q) => q.questionText);
-        const previousAnswers = session.questions.map((q) => q.userAnswer || "");
+      session.addQuestion({
+        questionText: nq.text,
+        questionType: isProbe ? "follow-up" : nq.questionType,
+        category: nq.category,
+        difficulty: nq.difficulty,
+        cognitiveLevel: nq.cognitiveLevel,
+        cognitiveMeta: nq.cognitiveMeta,
+        acknowledgmentBridge: nq.acknowledgmentBridge,
+        isFollowUp: isProbe,
+        parentQuestionNumber: isProbe ? parseInt(questionNumber) : undefined,
+      });
 
-        const recentScores = session.questions
-          .slice(-3)
-          .map((q) => q.evaluation?.score || 50);
-        const avgRecentScore =
-          recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
-        let currentDifficulty = "medium";
-        if (avgRecentScore >= 80) currentDifficulty = "hard";
-        else if (avgRecentScore <= 40) currentDifficulty = "easy";
-
-        const questionConfig = {
-          interviewType: session.interviewType,
-          role: session.role,
-          experienceLevel: session.experienceLevel,
-          resumeText: session.resumeText,
-          jobDescription: session.jobDescription,
-          targetSkills: session.targetSkills,
-          previousQuestions,
-          previousAnswers,
-          currentDifficulty,
-          questionNumber: session.questions.length + 1,
-        };
-
-        const questionData = await interviewService.generateQuestion(
-          questionConfig,
-          req.user
-        );
-
-        session.addQuestion({
-          questionText: questionData.question,
-          questionType: questionData.questionType,
-          category: questionData.category,
-          difficulty: questionData.difficulty,
-        });
-
-        nextQuestion = {
-          number: session.questions.length,
-          text: questionData.question,
-          type: questionData.questionType,
-          category: questionData.category,
-          audio: null,
-        };
-      }
+      nextQuestion = {
+        number: session.questions.length,
+        text: nq.text,
+        type: isProbe ? "follow-up" : nq.questionType,
+        category: nq.category,
+        cognitiveLevel: nq.cognitiveLevel,
+        cognitiveMeta: nq.cognitiveMeta,
+        acknowledgmentBridge: nq.acknowledgmentBridge,
+        difficulty: nq.difficulty,
+        audio: null,
+      };
     }
 
+    // Auto-complete if all questions answered
+    await interviewStateManager.checkAutoComplete(session);
     await session.save();
 
     const wordCount = transcribedText.trim().split(/\s+/).filter(Boolean).length;
 
-    // Fast response: return immediately to the candidate
+    // Return complete real-time evaluation and next question to the voice client
     res.json({
       success: true,
       data: {
@@ -1412,8 +1465,13 @@ export const submitVoiceAnswer = async (req, res) => {
           languageProbability,
         },
         evaluation: {
-          score: 75,
-          feedback: "Answer received and evaluated.",
+          score: evaluation.score,
+          feedback: evaluation.feedback,
+          strengths: evaluation.strengths,
+          weaknesses: evaluation.weaknesses,
+          improvementTips: evaluation.improvementTips,
+          starBreakdown: evaluation.starBreakdown,
+          signals: evaluation.signals,
         },
         progress: {
           current: answeredCount,
@@ -1422,55 +1480,204 @@ export const submitVoiceAnswer = async (req, res) => {
             (answeredCount / session.totalQuestions) * 100
           ),
         },
+        turnDecision: turnResult.turnDecision,
+        decisionReason: turnResult.decisionReason,
         nextQuestion,
         isComplete,
       },
     });
-
-    // Run deep rubric evaluation in the background without blocking conversational turn
-    (async () => {
-      try {
-        const evaluation = await interviewService.evaluateAnswer(
-          {
-            question: currentQuestion.questionText,
-            answer: transcribedText.trim(),
-            questionType: currentQuestion.questionType,
-            category: currentQuestion.category,
-            expectedKeywords: currentQuestion.expectedKeywords,
-            role: session.role,
-            experienceLevel: session.experienceLevel,
-          },
-          req.user
-        );
-
-        const updatedSession = await InterviewSession.findById(session._id);
-        if (updatedSession) {
-          updatedSession.addEvaluation(parseInt(questionNumber), {
-            score: evaluation.score,
-            relevance: evaluation.relevance,
-            technicalAccuracy: evaluation.technicalAccuracy,
-            clarity: evaluation.clarity,
-            confidence: evaluation.confidence,
-            roleFit: evaluation.roleFit,
-            strengths: evaluation.strengths,
-            weaknesses: evaluation.weaknesses,
-            missingKeywords: evaluation.missingKeywords,
-            suggestedAnswer: evaluation.suggestedAnswer,
-            improvementTips: evaluation.improvementTips,
-            feedback: evaluation.feedback,
-          });
-          await updatedSession.save();
-          console.log(`✅ Background evaluation saved for Q${questionNumber}`);
-        }
-      } catch (bgEvalError) {
-        console.error("⚠️ Background evaluation error:", bgEvalError.message);
-      }
-    })();
   } catch (error) {
     console.error("❌ Submit voice answer error:", error);
     res
       .status(500)
       .json({success: false, error: "Failed to process voice answer"});
+  }
+};
+
+/**
+ * Record a client-detected proctoring event
+ * POST /api/interview/sessions/:sessionId/proctoring/event
+ */
+export const recordProctoringEvent = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.userId || req.user._id;
+    const {
+      eventType,
+      severity = "medium",
+      confidence = 1,
+      timestampSeconds = 0,
+      details = "",
+      snapshotData = null,
+    } = req.body;
+
+    const validEvents = [
+      "PHONE_DETECTED",
+      "MULTIPLE_FACES",
+      "FACE_ABSENT",
+      "GAZE_DEVIATION",
+      "TAB_SWITCH",
+      "WINDOW_BLUR",
+      "PASTE_ATTEMPT",
+    ];
+
+    if (!validEvents.includes(eventType)) {
+      return res.status(400).json({ success: false, error: "Invalid proctoring event type" });
+    }
+
+    const session = await InterviewSession.findOne({ _id: sessionId, userId });
+    if (!session) {
+      return res.status(404).json({ success: false, error: "Session not found" });
+    }
+
+    // Optional snapshot image processing (if client provided base64 data URL)
+    let snapshotUrl = null;
+    if (snapshotData && typeof snapshotData === "string" && snapshotData.startsWith("data:image")) {
+      try {
+        const matches = snapshotData.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+        if (matches) {
+          const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
+          const buffer = Buffer.from(matches[2], "base64");
+          const snapshotsDir = path.join(__dirname, "..", "uploads", "interviews", "snapshots");
+          if (!fs.existsSync(snapshotsDir)) {
+            fs.mkdirSync(snapshotsDir, { recursive: true });
+          }
+          const filename = `snap-${sessionId}-${Date.now()}.${ext}`;
+          fs.writeFileSync(path.join(snapshotsDir, filename), buffer);
+          snapshotUrl = `/uploads/interviews/snapshots/${filename}`;
+        }
+      } catch (snapErr) {
+        console.warn("⚠️ Failed to persist proctoring snapshot:", snapErr.message);
+      }
+    }
+
+    const eventRecord = {
+      timestampSeconds: Number(timestampSeconds) || 0,
+      eventType,
+      severity,
+      confidence: Number(confidence) || 1,
+      snapshotUrl,
+      details,
+      createdAt: new Date(),
+    };
+
+    session.proctoringEvents = session.proctoringEvents || [];
+    session.proctoringEvents.push(eventRecord);
+
+    logger.proctor(sessionId, eventType, details || "Proctoring flag logged", {
+      severity,
+      confidence: Number(confidence) || 1,
+      timestampSeconds: Number(timestampSeconds) || 0,
+      hasSnapshot: Boolean(snapshotUrl),
+    });
+
+    // Compute updated flag counts
+    const flagCounts = { phone: 0, gaze: 0, multipleFaces: 0, absent: 0, tabSwitch: 0 };
+    let penaltyPoints = 0;
+
+    for (const ev of session.proctoringEvents) {
+      switch (ev.eventType) {
+        case "PHONE_DETECTED":
+          flagCounts.phone += 1;
+          penaltyPoints += 15;
+          break;
+        case "MULTIPLE_FACES":
+          flagCounts.multipleFaces += 1;
+          penaltyPoints += 15;
+          break;
+        case "FACE_ABSENT":
+          flagCounts.absent += 1;
+          penaltyPoints += 8;
+          break;
+        case "GAZE_DEVIATION":
+          flagCounts.gaze += 1;
+          penaltyPoints += 3;
+          break;
+        case "TAB_SWITCH":
+          flagCounts.tabSwitch += 1;
+          penaltyPoints += 5;
+          break;
+        case "WINDOW_BLUR":
+          penaltyPoints += 4;
+          break;
+        case "PASTE_ATTEMPT":
+          penaltyPoints += 5;
+          break;
+        default:
+          break;
+      }
+    }
+
+    const calculatedScore = Math.max(0, 100 - penaltyPoints);
+    let verdict = "VERIFIED_CLEAN";
+    if (calculatedScore < 70 || flagCounts.phone >= 2 || flagCounts.multipleFaces >= 2) {
+      verdict = "FLAGGED_SUSPICIOUS";
+    } else if (calculatedScore < 85 || flagCounts.tabSwitch >= 2 || flagCounts.absent >= 2) {
+      verdict = "REVIEW_RECOMMENDED";
+    }
+
+    session.proctoringSummary = {
+      integrityScore: calculatedScore,
+      flagCounts,
+      verdict,
+    };
+
+    await session.save();
+
+    res.json({
+      success: true,
+      data: {
+        summary: session.proctoringSummary,
+        event: eventRecord,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Record proctoring event error:", error);
+    res.status(500).json({ success: false, error: "Failed to record proctoring event" });
+  }
+};
+
+/**
+ * Upload the recorded interview session video
+ * POST /api/interview/sessions/:sessionId/video-recording
+ */
+export const uploadVideoRecording = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.userId || req.user._id;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "No video file provided" });
+    }
+
+    const session = await InterviewSession.findOne({ _id: sessionId, userId });
+    if (!session) {
+      return res.status(404).json({ success: false, error: "Session not found" });
+    }
+
+    const videoUrl = `/uploads/interviews/${req.file.filename}`;
+    session.hasVideoRecording = true;
+    session.videoRecordingUrl = videoUrl;
+    await session.save();
+
+    // If an InterviewResult already exists, synchronize the video recording URL
+    await InterviewResult.findOneAndUpdate(
+      { sessionId: session._id },
+      { $set: { videoRecordingUrl: videoUrl } }
+    ).catch(() => {});
+
+    console.log(`🎥 Video recording uploaded for session ${sessionId}: ${videoUrl}`);
+
+    res.json({
+      success: true,
+      data: {
+        videoRecordingUrl: videoUrl,
+        sizeBytes: req.file.size,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Upload video recording error:", error);
+    res.status(500).json({ success: false, error: "Failed to upload video recording" });
   }
 };
 
@@ -1487,4 +1694,6 @@ export default {
   getHistory,
   getStats,
   abandonSession,
+  recordProctoringEvent,
+  uploadVideoRecording,
 };

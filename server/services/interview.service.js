@@ -1,5 +1,24 @@
 import * as openaiService from "./openai.service.js";
 import AIUsage from "../models/AIUsage.model.js";
+import {
+  ROLE_ONTOLOGIES,
+  getOntologyForRole,
+  generateInterviewSyllabus,
+  calculateCompetencyCoverage,
+} from "./interview-syllabus.service.js";
+import {
+  COGNITIVE_LEVELS,
+  SENIORITY_BASELINES,
+  TURN_DECISIONS,
+  evaluateTurnProgression,
+  getCognitiveLevelPrompt,
+} from "./interview-difficulty.service.js";
+import {
+  analyzeAnswerSignals,
+  buildEvaluatorPrompt,
+} from "./interview-evaluator.service.js";
+import { processInterviewTurn } from "./interview-turn.service.js";
+import { generateExecutiveReport } from "./interview-report.service.js";
 
 /**
  * AI Interview Service
@@ -201,6 +220,7 @@ EVALUATION GUIDELINES:
 4. Suggest keywords/concepts that should have been mentioned
 5. Provide a better answer example for learning
 6. Give actionable improvement tips
+7. LANGUAGE POLICY (ENGLISH MANDATORY): English is the required interview language. If the candidate answers in another language (or substantial non-English code mixing), heavily deduct marks (deduct 25 to 40 points from score/clarity, cap total score at 50 max), record it in weaknesses, state it in feedback, and urge them to answer in English in improvementTips.
 
 RESPONSE FORMAT:
 Always respond with valid JSON in this exact format:
@@ -705,6 +725,12 @@ Make it conversational, like a real interviewer probing for more details.`;
  * @returns {Promise<Object>} - Comprehensive interview report
  */
 export async function generateReport(session, user) {
+  try {
+    return await generateExecutiveReport(session, user);
+  } catch (execError) {
+    console.warn("⚠️ Executive report error, falling back to legacy generator:", execError.message);
+  }
+
   const aiService = selectAIService(user);
   const startTime = Date.now();
 
@@ -845,13 +871,11 @@ export function getInterviewLimits() {
  * Get available roles for interview
  */
 export function getAvailableRoles() {
-  return Object.keys(ROLE_TOPICS).map((key) => ({
+  return Object.keys(ROLE_ONTOLOGIES).map((key) => ({
     id: key,
-    name: key
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" "),
-    topics: ROLE_TOPICS[key],
+    name: ROLE_ONTOLOGIES[key].title,
+    topics: ROLE_ONTOLOGIES[key].coreCategories,
+    keywords: ROLE_ONTOLOGIES[key].technicalKeywords,
   }));
 }
 
@@ -866,12 +890,31 @@ export function getExperienceLevels() {
   }));
 }
 
+export {
+  processInterviewTurn,
+  generateInterviewSyllabus,
+  calculateCompetencyCoverage,
+  evaluateTurnProgression,
+  generateExecutiveReport,
+  ROLE_ONTOLOGIES,
+  COGNITIVE_LEVELS,
+  TURN_DECISIONS,
+};
+
 export default {
   generateQuestion,
   evaluateAnswer,
   generateFollowUp,
   generateReport,
+  generateExecutiveReport,
+  processInterviewTurn,
+  generateInterviewSyllabus,
+  calculateCompetencyCoverage,
+  evaluateTurnProgression,
   getInterviewLimits,
   getAvailableRoles,
   getExperienceLevels,
+  ROLE_ONTOLOGIES,
+  COGNITIVE_LEVELS,
+  TURN_DECISIONS,
 };

@@ -7,7 +7,7 @@ import {
   checkInterviewLimit,
   checkVoiceAccess,
 } from "../middleware/interview.middleware.js";
-import {audioUpload} from "../config/multer.config.js";
+import {audioUpload, videoUpload} from "../config/multer.config.js";
 
 const router = express.Router();
 
@@ -112,6 +112,27 @@ router.post(
   authenticateToken,
   checkSubscription,
   interviewController.completeSession
+);
+
+/**
+ * Record a proctoring violation event
+ * POST /api/interview/sessions/:sessionId/proctoring/event
+ */
+router.post(
+  "/sessions/:sessionId/proctoring/event",
+  authenticateToken,
+  interviewController.recordProctoringEvent
+);
+
+/**
+ * Upload the recorded interview session video
+ * POST /api/interview/sessions/:sessionId/video-recording
+ */
+router.post(
+  "/sessions/:sessionId/video-recording",
+  authenticateToken,
+  videoUpload.single("video"),
+  interviewController.uploadVideoRecording
 );
 
 /**

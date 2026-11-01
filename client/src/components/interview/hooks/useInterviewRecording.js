@@ -7,9 +7,12 @@ import {
   EXTENDED_SILENCE_DURATION,
   VOCAL_SPEECH_THRESHOLD,
 } from "../constants";
+import remoteLogger from "@/utils/remoteLogger";
 
 export function useInterviewRecording({
   selectedMode,
+  selectedLanguage = "en-IN",
+  getSelectedLanguage,
   isInterviewActiveRef,
   interviewPhase,
   getInterviewPhase,
@@ -23,8 +26,12 @@ export function useInterviewRecording({
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
-  const [micFrequencyBins, setMicFrequencyBins] = useState([10, 10, 10, 10, 10, 10, 10, 10]);
+  const [micFrequencyBins, setMicFrequencyBins] = useState(new Array(16).fill(3));
   const [bargeInNotice, setBargeInNotice] = useState(false);
+  const [liveCandidateTranscript, setLiveCandidateTranscript] = useState("");
+  const [audioDevices, setAudioDevices] = useState([]);
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState("");
+  const [audioInputLevel, setAudioInputLevel] = useState(0);
 
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -38,6 +45,39 @@ export function useInterviewRecording({
   const bargeInCountRef = useRef(0);
   const animFrameIdRef = useRef(null);
   const speechConsecutiveFramesRef = useRef(0);
+  const speechRecognitionRef = useRef(null);
+  const lastTranscriptTimeRef = useRef(0);
+  const recorderRef = useRef(null);
+  const isRecordingRef = useRef(false);
+  const selectedAudioDeviceIdRef = useRef(selectedAudioDeviceId);
+  const accumulatedTranscriptRef = useRef("");
+
+  useEffect(() => {
+    selectedAudioDeviceIdRef.current = selectedAudioDeviceId;
+  }, [selectedAudioDeviceId]);
+
+  // Enumerate connected microphones
+  const refreshAudioDevices = useCallback(async () => {
+    try {
+      if (!navigator.mediaDevices?.enumerateDevices) return;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const inputs = devices.filter((d) => d.kind === "audioinput");
+      setAudioDevices(inputs);
+      if (inputs.length > 0 && !selectedAudioDeviceId) {
+        setSelectedAudioDeviceId(inputs[0].deviceId);
+      }
+    } catch (err) {
+      console.warn("Could not enumerate audio devices:", err);
+    }
+  }, [selectedAudioDeviceId]);
+
+  useEffect(() => {
+    refreshAudioDevices();
+    navigator.mediaDevices?.addEventListener?.("devicechange", refreshAudioDevices);
+    return () => {
+      navigator.mediaDevices?.removeEventListener?.("devicechange", refreshAudioDevices);
+    };
+  }, [refreshAudioDevices]);
 
   // 60fps audio waveform sampling & Barge-In Interruption Detection
   useEffect(() => {
@@ -51,7 +91,8 @@ export function useInterviewRecording({
         const dataArray = new Uint8Array(bufferLength);
         analyserRef.current.getByteFrequencyData(dataArray);
 
-        const binCount = 8;
+        // 16 responsive frequency bands across the vocal spectrum
+        const binCount = 16;
         const binSize = Math.max(1, Math.floor(bufferLength / binCount));
         const levels = [];
         let totalSum = 0;
@@ -63,24 +104,29 @@ export function useInterviewRecording({
           }
           const avg = sum / binSize;
           totalSum += avg;
-          const normalized = Math.max(8, Math.min(46, Math.round((avg / 255) * 40) + 8));
+          // When quiet, stay close to baseline 3px; when active, expand dynamically up to 52px
+          const normalized = avg < 5 ? 3 : Math.max(3, Math.min(52, Math.round((avg / 255) * 48) + 3));
           levels.push(normalized);
         }
 
         setMicFrequencyBins(levels);
 
         const avgVol = totalSum / binCount;
+        const normalizedVol = Math.min(100, Math.round((avgVol / 40) * 100));
+        setAudioInputLevel(normalizedVol);
+
         const isActuallyPlaying =
           isPlayingAudio &&
           audioElementRef.current &&
           !audioElementRef.current.paused &&
           audioElementRef.current.currentTime > 0.6;
 
-        const vocalEnergy = (levels[2] + levels[3] + levels[4] + levels[5]) / 4;
+        // Middle frequency vocal energy (human voice range)
+        const vocalEnergy = (levels[3] + levels[4] + levels[5] + levels[6] + levels[7] + levels[8]) / 6;
 
-        if (isActuallyPlaying && isInterviewActiveRef.current && selectedMode === "live" && vocalEnergy > 38 && avgVol > 36) {
+        if (isActuallyPlaying && isInterviewActiveRef.current && selectedMode === "live" && vocalEnergy > 26 && avgVol > 22) {
           bargeInCountRef.current += 1;
-          if (bargeInCountRef.current >= 5) {
+          if (bargeInCountRef.current >= 4) {
             console.log("⚡ Barge-in: Candidate interrupted AI speech.");
             bargeInCountRef.current = 0;
             setBargeInNotice(true);
@@ -91,7 +137,7 @@ export function useInterviewRecording({
           bargeInCountRef.current = Math.max(0, bargeInCountRef.current - 1);
         }
       } else {
-        setMicFrequencyBins([8, 8, 8, 8, 8, 8, 8, 8]);
+        setMicFrequencyBins(new Array(16).fill(3));
       }
 
       animFrameIdRef.current = requestAnimationFrame(sampleAudioLevels);
@@ -135,11 +181,6 @@ export function useInterviewRecording({
     await speakAndListen(silenceResponse, () => {
       hasUserSpokenRef.current = false;
       setInterviewPhase("waiting");
-      setTimeout(() => {
-        if (isInterviewActiveRef.current) {
-          startRecording(true);
-        }
-      }, 500);
     });
   }, [isInterviewActiveRef, mediaRecorder, selectedMode, setInterviewPhase, speakAndListen]);
 
@@ -167,36 +208,46 @@ export function useInterviewRecording({
     const now = Date.now();
     const recordingDuration = now - (recordingStartTimeRef.current || now);
 
-    // Hard safety cap: never exceed 27 seconds to guarantee staying under Sarvam AI 30s limit
-    if (recordingDuration >= 27000) {
-      console.log("⏱️ Max recording duration (27s) reached. Auto-submitting response...");
+    // Hard safety cap: never exceed 25 seconds to guarantee staying under Sarvam AI 30s limit
+    if (recordingDuration >= 25000) {
+      console.log("⏱️ Max recording duration (25s) reached. Submitting response to stay under audio limit...");
+      remoteLogger.warn("AUDIO_RECORDER", "Safety cap reached: 25s max recording duration reached. Auto-submitting turn.");
       stopRecording();
       return;
     }
 
     if (recordingDuration < MIN_RECORDING_DURATION) return;
 
-    const isVocalizing = vocalEnergy > VOCAL_SPEECH_THRESHOLD || average > (SILENCE_THRESHOLD + 12);
+    // Detect if user is actively vocalizing or live speech recognition is receiving text
+    const isVocalizing = vocalEnergy > VOCAL_SPEECH_THRESHOLD || average > SILENCE_THRESHOLD;
+    const isTranscribing = Date.now() - lastTranscriptTimeRef.current < 4000;
+    const isUserTalking = isVocalizing || isTranscribing;
 
-    if (isVocalizing) {
+    if (isUserTalking) {
       speechConsecutiveFramesRef.current += 1;
-      if (speechConsecutiveFramesRef.current >= 2) {
-        if (!hasUserSpokenRef.current) {
-          hasUserSpokenRef.current = true;
-          console.log("🗣️ User speech activity started.");
-        }
-        silenceStartRef.current = null;
+      const hasLiveWords = liveCandidateTranscript.trim().length >= 4;
+      // Require either recognized speech text OR 8 consecutive frames of vocal presence (~800ms) to confirm valid speech
+      if (!hasUserSpokenRef.current && (hasLiveWords || speechConsecutiveFramesRef.current >= 8)) {
+        hasUserSpokenRef.current = true;
+        console.log("🗣️ User speech activity confirmed with valid content.");
       }
+      silenceStartRef.current = null;
     } else {
       speechConsecutiveFramesRef.current = 0;
       if (hasUserSpokenRef.current) {
-        // User has spoken and is now silent
-        if (!silenceStartRef.current) {
-          silenceStartRef.current = now;
-        } else if (now - silenceStartRef.current >= SILENCE_DURATION) {
-          console.log(`🎤 Silence detected (${now - silenceStartRef.current}ms). Auto-submitting voice response...`);
-          stopRecording();
-          return;
+        const words = liveCandidateTranscript.trim().split(/\s+/).filter(Boolean);
+        // Candidate has manual control with "Done Recording & Submit".
+        // Never cut them off during normal thinking pauses; only fallback after 14s of total inactivity.
+        if (words.length >= 3) {
+          if (!silenceStartRef.current) {
+            silenceStartRef.current = now;
+          } else if (now - silenceStartRef.current >= 14000) {
+            console.log(`🎤 Extended silence (14s) after spoken answer. Auto-submitting response...`);
+            stopRecording();
+            return;
+          }
+        } else {
+          silenceStartRef.current = null;
         }
       } else {
         // User hasn't started speaking yet
@@ -208,6 +259,64 @@ export function useInterviewRecording({
       }
     }
   };
+
+  const startMicPreview = useCallback(async () => {
+    try {
+      if (streamRef.current && streamRef.current.active) return streamRef.current;
+      const deviceId = selectedAudioDeviceIdRef.current;
+      const constraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          ...(deviceId ? { deviceId: { ideal: deviceId } } : {}),
+        },
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx && (!audioContextRef.current || audioContextRef.current.state === "closed")) {
+          audioContextRef.current = new AudioCtx();
+          analyserRef.current = audioContextRef.current.createAnalyser();
+          analyserRef.current.fftSize = 256;
+          const source = audioContextRef.current.createMediaStreamSource(stream);
+          source.connect(analyserRef.current);
+        }
+      } catch (err) {
+        console.warn("AudioContext setup warning in preview:", err);
+      }
+
+      await refreshAudioDevices();
+      return stream;
+    } catch (err) {
+      console.warn("Microphone preview error:", err);
+      return null;
+    }
+  }, [refreshAudioDevices]);
+
+  const switchAudioDevice = useCallback(
+    async (deviceId) => {
+      setSelectedAudioDeviceId(deviceId);
+      selectedAudioDeviceIdRef.current = deviceId;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (isRecordingRef.current) {
+        stopRecording();
+        setTimeout(() => {
+          if (isInterviewActiveRef.current) {
+            startRecording(true);
+          }
+        }, 400);
+      } else {
+        startMicPreview();
+      }
+    },
+    [isInterviewActiveRef, startMicPreview]
+  );
 
   const startRecording = async (autoStart = false) => {
     if (!isInterviewActiveRef.current) return;
@@ -223,13 +332,22 @@ export function useInterviewRecording({
     try {
       let stream = streamRef.current;
       if (!stream || !stream.active) {
-        stream = await navigator.mediaDevices.getUserMedia({
+        const preferredDeviceId = selectedAudioDeviceIdRef.current || selectedAudioDeviceId;
+        const audioConstraints = {
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
+            ...(preferredDeviceId ? { deviceId: { ideal: preferredDeviceId } } : {}),
           },
-        });
+        };
+
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+        } catch (constraintErr) {
+          console.warn("⚠️ Audio constraint failed, falling back to default mic:", constraintErr.message);
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
         streamRef.current = stream;
 
         try {
@@ -246,9 +364,14 @@ export function useInterviewRecording({
         }
 
         silenceStartRef.current = null;
-        recordingStartTimeRef.current = Date.now();
         hasUserSpokenRef.current = false;
       }
+
+      silenceStartRef.current = null;
+      recordingStartTimeRef.current = Date.now();
+      hasUserSpokenRef.current = false;
+      accumulatedTranscriptRef.current = "";
+      setLiveCandidateTranscript("");
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
@@ -259,18 +382,83 @@ export function useInterviewRecording({
       const recorder = new MediaRecorder(stream, { mimeType });
       const chunks = [];
 
+      // Start Web Speech API live recognition for immediate live captions if supported
+      try {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+          if (speechRecognitionRef.current) {
+            try { speechRecognitionRef.current.stop(); } catch (_) {}
+          }
+          const recognition = new SpeechRec();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          const chosenLang = getSelectedLanguage ? getSelectedLanguage() : selectedLanguage;
+          const speechLang =
+            chosenLang && chosenLang !== "unknown"
+              ? chosenLang
+              : "en-IN";
+          recognition.lang = speechLang;
+
+          recognition.onresult = (event) => {
+            let interim = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                accumulatedTranscriptRef.current += event.results[i][0].transcript + " ";
+              } else {
+                interim += event.results[i][0].transcript;
+              }
+            }
+            const liveText = (accumulatedTranscriptRef.current + interim).trim();
+            if (liveText) {
+              setLiveCandidateTranscript(liveText);
+              hasUserSpokenRef.current = true;
+              lastTranscriptTimeRef.current = Date.now();
+              silenceStartRef.current = null;
+            }
+          };
+
+          recognition.onerror = (e) => {
+            console.warn("Live speech recognition notice:", e.error);
+          };
+
+          // Continuous auto-restart on Chrome pauses so transcription never dies mid-sentence
+          recognition.onend = () => {
+            if (isRecordingRef.current && speechRecognitionRef.current) {
+              try {
+                recognition.start();
+              } catch (_) {}
+            }
+          };
+
+          recognition.start();
+          speechRecognitionRef.current = recognition;
+        }
+      } catch (sttErr) {
+        console.warn("Could not initiate live SpeechRecognition:", sttErr);
+      }
+
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunks.push(e.data);
       };
 
       recorder.onstop = async () => {
+        isRecordingRef.current = false;
         if (silenceCheckIntervalRef.current) {
           clearInterval(silenceCheckIntervalRef.current);
           silenceCheckIntervalRef.current = null;
         }
+        if (speechRecognitionRef.current) {
+          try { speechRecognitionRef.current.stop(); } catch (_) {}
+          speechRecognitionRef.current = null;
+        }
         setIsRecording(false);
 
         const blob = new Blob(chunks, { type: mimeType });
+        remoteLogger.info("AUDIO_RECORDER", `Voice clip finalized: ${blob.size} bytes (${mimeType})`, {
+          bytes: blob.size,
+          mimeType,
+          transcriptWords: liveCandidateTranscript.trim().split(/\s+/).filter(Boolean).length,
+        });
         if (selectedMode !== "live") {
           stream.getTracks().forEach((track) => track.stop());
         }
@@ -285,13 +473,16 @@ export function useInterviewRecording({
         }
 
         if (onVoiceSubmit) {
-          await onVoiceSubmit(blob);
+          await onVoiceSubmit(blob, liveCandidateTranscript);
         }
       };
 
+      recorderRef.current = recorder;
       setMediaRecorder(recorder);
+      lastTranscriptTimeRef.current = 0;
       setAudioChunks(chunks);
       recorder.start(1000);
+      isRecordingRef.current = true;
       setIsRecording(true);
 
       if (selectedMode === "live") {
@@ -313,21 +504,32 @@ export function useInterviewRecording({
   startRecordingRef.current = startRecording;
 
   const stopRecording = () => {
+    isRecordingRef.current = false;
     if (silenceCheckIntervalRef.current) {
       clearInterval(silenceCheckIntervalRef.current);
       silenceCheckIntervalRef.current = null;
     }
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch (_) {}
+      speechRecognitionRef.current = null;
+    }
 
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
+    const rec = recorderRef.current || mediaRecorder;
+    if (rec && rec.state === "recording") {
+      rec.stop();
       setIsRecording(false);
     }
   };
 
   const cleanupAudioStreams = () => {
+    isRecordingRef.current = false;
     if (silenceCheckIntervalRef.current) {
       clearInterval(silenceCheckIntervalRef.current);
       silenceCheckIntervalRef.current = null;
+    }
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch (_) {}
+      speechRecognitionRef.current = null;
     }
     if (mediaRecorder && mediaRecorder.state === "recording") {
       mediaRecorder.stop();
@@ -344,6 +546,7 @@ export function useInterviewRecording({
       analyserRef.current = null;
     }
     setIsRecording(false);
+    setLiveCandidateTranscript("");
   };
 
   return {
@@ -353,11 +556,20 @@ export function useInterviewRecording({
     audioChunks,
     micFrequencyBins,
     bargeInNotice,
+    liveCandidateTranscript,
+    setLiveCandidateTranscript,
     startRecording,
     stopRecording,
     startRecordingRef,
     hasUserSpokenRef,
     silencePromptCountRef,
     cleanupAudioStreams,
+    audioDevices,
+    selectedAudioDeviceId,
+    setSelectedAudioDeviceId,
+    switchAudioDevice,
+    refreshAudioDevices,
+    audioInputLevel,
+    startMicPreview,
   };
 }

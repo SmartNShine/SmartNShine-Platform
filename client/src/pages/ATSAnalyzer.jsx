@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import SEO from "@/components/common/SEO";
 import { resumeAPI } from "@/api/api";
+import { useAuth } from "@/context/AuthContext";
 import { useToggle } from "@/hooks";
 import { handleApiError } from "@/utils/errorHandler";
+import { Sparkles } from "lucide-react";
 import {
   ATSAnalyzerBanner,
   ATSJobDescriptionInput,
@@ -17,6 +19,7 @@ import {
 
 export default function ATSAnalyzer() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [jobDescription, setJobDescription] = useState("");
   const [selectedResume, setSelectedResume] = useState(null);
   const [useCareerProfile, setUseCareerProfile] = useState(false);
@@ -68,6 +71,20 @@ export default function ATSAnalyzer() {
   };
 
   const handleAnalyze = async () => {
+    if (!user) {
+      toast("Please create a free account to run your AI ATS analysis", {
+        icon: "✨",
+        duration: 3500,
+      });
+      navigate("/register", {
+        state: {
+          from: { pathname: "/ats-analyzer" },
+          message: "Create your free account to run your AI ATS resume scan and see keyword gaps.",
+        },
+      });
+      return;
+    }
+
     if (!jobDescription.trim()) {
       toast.error("Please enter a job description", {
         icon: "📝",
@@ -179,9 +196,31 @@ export default function ATSAnalyzer() {
         }}
       />
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <div className="workspace-container py-6 sm:py-8 space-y-6">
         {/* Ambient Top Hero Banner */}
         <ATSAnalyzerBanner />
+
+        {/* Guest Conversion Card */}
+        {!user && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 dark:border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Free Instant ATS Diagnostic</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">Create your free account or sign in with Google to get instant keyword gap reports and recommendations.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/register", { state: { from: { pathname: "/ats-analyzer" }, message: "Create your free account to run your AI ATS analysis." } })}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black text-xs font-extrabold whitespace-nowrap active:scale-95 transition-all shadow-md cursor-pointer shrink-0"
+            >
+              Sign Up Free (Instant) →
+            </button>
+          </div>
+        )}
 
         {/* If no analysis result, show the initial input & empty/loading state */}
         {!analysisResult ? (

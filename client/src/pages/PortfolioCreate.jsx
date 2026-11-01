@@ -53,7 +53,7 @@ export default function PortfolioCreate() {
         noindex={true}
       />
 
-      <main className="flex-1 px-4 sm:px-8 lg:px-12 py-8 max-w-5xl w-full mx-auto space-y-6">
+      <main className="flex-1 workspace-container py-8 space-y-6">
         {/* Sleek Minimal Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-zinc-400">
           <Link

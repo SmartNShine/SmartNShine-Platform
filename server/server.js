@@ -40,6 +40,7 @@ import portfolioRoutes from "./routes/portfolio.routes.js";
 import careerRoutes from "./routes/career.routes.js";
 import careerApplicationRoutes from "./routes/careerApplication.routes.js";
 import superAdminRoutes from "./routes/superAdmin.routes.js";
+import logRoutes from "./routes/log.routes.js";
 import Template from "./models/Template.model.js";
 import Portfolio from "./models/Portfolio.model.js";
 import Settings from "./models/Settings.model.js";
@@ -245,6 +246,9 @@ mongoose.connection.on("disconnected", () => {
   console.warn("⚠️  MongoDB disconnected");
 });
 
+// Serve uploaded interview recordings & snapshots statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/resume", resumeRoutes);
@@ -262,6 +266,7 @@ app.use("/api/portfolio", portfolioRoutes); // Portfolio builder routes
 app.use("/api/career", careerRoutes); // Career profile & personalized Q&A routes
 app.use("/api/career-applications", careerApplicationRoutes); // Founding team career application submissions & admin routes
 app.use("/api/super-admin", superAdminRoutes); // Super Admin panel & environment management routes
+app.use("/api/logs", logRoutes); // Centralized Observability & Agent Logs routes
 
 // Helper to escape HTML attributes safely
 function escapeHtml(str) {

@@ -83,6 +83,9 @@ export const submitVoiceAnswer = async (
   if (typeof options === "object" && options?.languageCode) {
     formData.append("languageCode", options.languageCode);
   }
+  if (typeof options === "object" && options?.clientTranscript) {
+    formData.append("clientTranscript", options.clientTranscript);
+  }
 
   console.log("📤 Submitting voice answer:", {
     sessionId,
@@ -212,6 +215,9 @@ export const transcribeAudioOnly = async (audioFile, options = {}) => {
   formData.append("audio", audioFile);
   if (options.languageCode) {
     formData.append("languageCode", options.languageCode);
+  }
+  if (options.clientTranscript) {
+    formData.append("clientTranscript", options.clientTranscript);
   }
 
   console.log("📤 Transcribing audio (no evaluation):", audioFile.name, audioFile.size, "bytes");

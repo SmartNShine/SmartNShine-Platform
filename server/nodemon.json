@@ -11,6 +11,7 @@
     ],
     "ignore": [
         "uploads/*",
+        "logs/*",
         "*.log",
         "*.md",
         "node_modules",

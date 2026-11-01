@@ -121,6 +121,15 @@ export const deleteContactMessage = (id) => adminAPI.delete(`/contacts/${id}`);
 
 // Admin Logs
 export const getAdminLogs = (params) => adminAPI.get("/logs", {params});
+export const getSystemLogs = (params) =>
+  axios.get(`${API_URL}/logs/admin`, {
+    headers: { Authorization: `Bearer ${authStorage.getToken()}` },
+    params,
+  });
+export const clearSystemLogs = () =>
+  axios.delete(`${API_URL}/logs/admin`, {
+    headers: { Authorization: `Bearer ${authStorage.getToken()}` },
+  });
 
 // Admin Notifications
 export const getAdminNotifications = (params) =>

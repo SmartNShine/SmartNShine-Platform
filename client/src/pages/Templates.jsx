@@ -27,6 +27,7 @@ import {
   TemplatePreviewModal,
 } from "@/components/templatesGallery";
 import { resumeAPI } from "@/api/api";
+import { useAuth } from "@/context/AuthContext";
 import {
   CheckCircle2,
   ChevronDown,
@@ -391,6 +392,7 @@ const normalizeTplId = (id) =>
 
 export default function Templates() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
   const templateParam = searchParams.get("template");
@@ -539,6 +541,26 @@ export default function Templates() {
       achievements: [],
       customSections: [],
     };
+
+    if (!user) {
+      navigate("/register", {
+        state: {
+          from: {
+            pathname: "/editor",
+            state: {
+              resumeData: blankResumeData,
+              isNewResume: true,
+              templateSelected: true,
+              selectedTemplate: templateId,
+              fromTemplates: true,
+            },
+          },
+          message: "Create your free account to customize and download this template.",
+        },
+      });
+      return;
+    }
+
     navigate("/editor", {
       state: {
         resumeData: blankResumeData,
@@ -639,7 +661,7 @@ export default function Templates() {
         customFaqs={pageFaqs}
       />
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10">
+      <div className="workspace-container py-6 sm:py-10 space-y-10">
         {/* Top Hero Banner with Category Filters */}
         <TemplatesBanner
           categories={CATEGORIES}
@@ -657,7 +679,7 @@ export default function Templates() {
         />
 
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-6">
           {filteredTemplates.map((template) => (
             <TemplateCard
               key={template.id}

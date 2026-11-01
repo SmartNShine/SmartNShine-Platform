@@ -280,7 +280,7 @@ export default function Contact() {
         url="https://www.smartnshine.app/contact"
       />
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+      <div className="workspace-container py-6 sm:py-8 space-y-8">
         {/* Top Hero Banner */}
         <ContactBanner activeTab={activeTab} setActiveTab={setActiveTab} />
 

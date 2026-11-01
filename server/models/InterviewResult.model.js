@@ -76,6 +76,14 @@ const interviewResultSchema = new mongoose.Schema(
         feedback: String,
       },
     },
+    // 5D Executive Radar Competencies
+    radarCompetencies: {
+      technicalDepth: { score: { type: Number, default: 0 }, summary: String },
+      architecturalTradeoffs: { score: { type: Number, default: 0 }, summary: String },
+      evidenceAndGrounding: { score: { type: Number, default: 0 }, summary: String },
+      starProblemSolving: { score: { type: Number, default: 0 }, summary: String },
+      communicationSignal: { score: { type: Number, default: 0 }, summary: String },
+    },
     // Topic-wise Breakdown (e.g., JavaScript, React, System Design)
     topicBreakdown: [skillBreakdownSchema],
     // Strengths & Weaknesses
@@ -123,6 +131,14 @@ const interviewResultSchema = new mongoose.Schema(
         type: {type: String, enum: ["article", "video", "course", "book"]},
       },
     ],
+    // 14-Day Growth Roadmap
+    studyRoadmap: [
+      {
+        day: String,
+        focus: String,
+        recommendedResource: String,
+      },
+    ],
     // Summary
     summary: {
       type: String,
@@ -139,6 +155,36 @@ const interviewResultSchema = new mongoose.Schema(
       averageTimePerQuestion: {type: Number, default: 0}, // in seconds
       totalDuration: {type: Number, default: 0}, // in seconds
       questionsAboveThreshold: {type: Number, default: 0}, // questions with score >= 70
+    },
+    // Video & Proctoring Audit
+    videoRecordingUrl: {
+      type: String,
+      default: null,
+    },
+    proctoringAudit: {
+      integrityScore: { type: Number, min: 0, max: 100, default: 100 },
+      flagCounts: {
+        phone: { type: Number, default: 0 },
+        gaze: { type: Number, default: 0 },
+        multipleFaces: { type: Number, default: 0 },
+        absent: { type: Number, default: 0 },
+        tabSwitch: { type: Number, default: 0 },
+      },
+      verdict: {
+        type: String,
+        enum: ["VERIFIED_CLEAN", "REVIEW_RECOMMENDED", "FLAGGED_SUSPICIOUS"],
+        default: "VERIFIED_CLEAN",
+      },
+      events: [
+        {
+          timestampSeconds: Number,
+          eventType: String,
+          severity: String,
+          confidence: Number,
+          snapshotUrl: String,
+          details: String,
+        },
+      ],
     },
     // Comparison & Progress
     comparisonData: {
