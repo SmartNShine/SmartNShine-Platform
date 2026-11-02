@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import {
   Globe,
@@ -44,36 +44,6 @@ import {
 } from "@/api/admin.api";
 import { ConfirmationModal } from "@/components/common";
 import { portfolioThemes } from "@/components/portfolio/themes/themeRegistry";
-import PortfolioThemeRenderer from "@/components/portfolio/PortfolioThemeRenderer";
-import React, { Component } from "react";
-
-// Safe Error Boundary for Live Preview Simulator
-class PreviewErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("Portfolio Preview Boundary Error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-8 text-center text-red-500 bg-red-500/10 rounded-2xl border border-red-500/20">
-          <p className="font-bold">Failed to load live preview</p>
-          <p className="text-xs text-red-400 mt-1">{this.state.error?.message}</p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 // Sample demo resume data for simulator
 const SAMPLE_PORTFOLIO_RESUME = {
@@ -182,6 +152,52 @@ export default function PortfolioManagement() {
   const [previewDevice, setPreviewDevice] = useState("desktop"); // "desktop" | "tablet" | "mobile"
   const [previewMode, setPreviewMode] = useState("light"); // "light" | "dark"
   const [previewAccent, setPreviewAccent] = useState("");
+  const previewFrameRef = useRef(null);
+
+  const previewPayload = useMemo(() => ({
+    portfolio: {
+      ...SAMPLE_PORTFOLIO_RESUME,
+      themeId: selectedThemeId,
+      themeAccent: previewAccent,
+      title: SAMPLE_PORTFOLIO_RESUME.name,
+      professionalTitle: SAMPLE_PORTFOLIO_RESUME.title,
+      tagline: "I build digital products that make complex things feel simple.",
+      about: "Specialized in Swiss precision typography, reactive state architecture, and micro-interactions.",
+      contact: {
+        email: SAMPLE_PORTFOLIO_RESUME.email,
+        phone: SAMPLE_PORTFOLIO_RESUME.phone,
+      },
+    },
+    resume: SAMPLE_PORTFOLIO_RESUME,
+    customThemeMode: previewMode,
+  }), [selectedThemeId, previewAccent, previewMode]);
+
+  const sendPreviewState = useCallback(() => {
+    previewFrameRef.current?.contentWindow?.postMessage({
+      type: "admin-portfolio-preview:update",
+      payload: previewPayload,
+    }, window.location.origin);
+  }, [previewPayload]);
+
+  useEffect(() => {
+    if (!simulatorOpen) return;
+
+    const handlePreviewMessage = (event) => {
+      if (event.origin !== window.location.origin ||
+          event.source !== previewFrameRef.current?.contentWindow) return;
+
+      if (event.data?.type === "admin-portfolio-preview:ready") {
+        sendPreviewState();
+      } else if (event.data?.type === "admin-portfolio-preview:mode" &&
+                 ["light", "dark"].includes(event.data.mode)) {
+        setPreviewMode(event.data.mode);
+      }
+    };
+
+    window.addEventListener("message", handlePreviewMessage);
+    sendPreviewState();
+    return () => window.removeEventListener("message", handlePreviewMessage);
+  }, [simulatorOpen, sendPreviewState]);
 
   // AI SEO Modal state
   const [seoModalOpen, setSeoModalOpen] = useState(false);
@@ -948,11 +964,11 @@ export default function PortfolioManagement() {
 
           {/* Simulator Canvas Frame */}
           <div
-            className="flex-1 w-full overflow-hidden flex items-center justify-center"
+            className="flex-1 min-h-0 w-full overflow-hidden flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className={`h-full overflow-y-auto rounded-3xl border border-gray-300 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl transition-all duration-300 ${
+              className={`h-full min-h-0 overflow-hidden rounded-3xl border border-gray-300 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl transition-[width] duration-300 ${
                 previewDevice === "desktop"
                   ? "w-full"
                   : previewDevice === "tablet"
@@ -960,29 +976,13 @@ export default function PortfolioManagement() {
                   : "w-[390px] max-w-full"
               }`}
             >
-              <PreviewErrorBoundary>
-                <PortfolioThemeRenderer
-                  themeId={selectedThemeId}
-                  portfolioData={{
-                    themeId: selectedThemeId,
-                    themeAccent: previewAccent,
-                    title: "Alex Vance",
-                    professionalTitle: "Full Stack Engineer & Design Systems Architect",
-                    tagline: "I build digital products that make complex things feel simple.",
-                    about: "Specialized in Swiss precision typography, reactive state architecture, and micro-interactions.",
-                    location: "San Francisco, CA",
-                    experience: SAMPLE_PORTFOLIO_RESUME.experience,
-                    education: SAMPLE_PORTFOLIO_RESUME.education,
-                    skills: SAMPLE_PORTFOLIO_RESUME.skills,
-                    projects: SAMPLE_PORTFOLIO_RESUME.projects,
-                    certifications: SAMPLE_PORTFOLIO_RESUME.certifications,
-                    achievements: SAMPLE_PORTFOLIO_RESUME.achievements,
-                  }}
-                  resumeSnapshot={SAMPLE_PORTFOLIO_RESUME}
-                  isPublic={false}
-                  customThemeMode={previewMode}
-                />
-              </PreviewErrorBoundary>
+              <iframe
+                ref={previewFrameRef}
+                src="/admin/portfolio-preview"
+                title="Portfolio theme simulator preview"
+                onLoad={sendPreviewState}
+                className="block h-full w-full border-0"
+              />
             </div>
           </div>
         </div>

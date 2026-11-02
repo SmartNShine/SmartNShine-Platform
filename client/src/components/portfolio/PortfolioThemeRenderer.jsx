@@ -9,14 +9,19 @@ const PortfolioThemeRenderer = ({
   resume,
   projects,
   mode = "public",
+  customThemeMode,
+  onThemeModeChange,
   onContactClick,
   onProjectClick,
   onResumeClick,
   resumeDownloadUrl,
 }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [localDarkMode, setIsDarkMode] = useState(false);
+  const isControlled = customThemeMode === "light" || customThemeMode === "dark";
+  const isDarkMode = isControlled ? customThemeMode === "dark" : localDarkMode;
 
   useEffect(() => {
+    if (isControlled) return;
     // Check initial preference or localStorage
     const savedTheme = localStorage.getItem("portfolio-theme");
     const systemPrefersDark =
@@ -30,9 +35,13 @@ const PortfolioThemeRenderer = ({
       setIsDarkMode(false);
       document.documentElement.classList.remove("dark");
     }
-  }, []);
+  }, [isControlled]);
 
   const toggleDarkMode = () => {
+    if (isControlled) {
+      onThemeModeChange?.(isDarkMode ? "light" : "dark");
+      return;
+    }
     setIsDarkMode((current) => {
       const next = !current;
 
