@@ -362,6 +362,8 @@ const interviewSessionSchema = new mongoose.Schema(
             "TAB_SWITCH",
             "WINDOW_BLUR",
             "PASTE_ATTEMPT",
+            "IDENTITY_SWITCH",
+            "PROCTORING_OFFLINE",
           ],
         },
         severity: {
@@ -370,6 +372,11 @@ const interviewSessionSchema = new mongoose.Schema(
           default: "medium",
         },
         confidence: { type: Number, default: 1 },
+        durationMs: { type: Number, default: 0 },
+        evidenceCount: { type: Number, default: 0 },
+        faceCount: { type: Number, default: null },
+        detectorVersion: { type: String, default: "unknown" },
+        meta: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
         snapshotUrl: { type: String, default: null },
         details: { type: String, default: "" },
         createdAt: { type: Date, default: Date.now },
@@ -383,12 +390,21 @@ const interviewSessionSchema = new mongoose.Schema(
         multipleFaces: { type: Number, default: 0 },
         absent: { type: Number, default: 0 },
         tabSwitch: { type: Number, default: 0 },
+        identitySwitch: { type: Number, default: 0 },
+        offline: { type: Number, default: 0 },
       },
       verdict: {
         type: String,
         enum: ["VERIFIED_CLEAN", "REVIEW_RECOMMENDED", "FLAGGED_SUSPICIOUS"],
         default: "VERIFIED_CLEAN",
       },
+    },
+    proctoringHeartbeat: {
+      enabled: { type: Boolean, default: false },
+      lastSeenAt: Date,
+      lastReceivedAt: Date,
+      offline: { type: Boolean, default: false },
+      detectorVersion: { type: String, default: "unknown" },
     },
     metadata: {
       browserInfo: String,
@@ -405,6 +421,7 @@ const interviewSessionSchema = new mongoose.Schema(
 interviewSessionSchema.index({userId: 1, status: 1});
 interviewSessionSchema.index({userId: 1, createdAt: -1});
 interviewSessionSchema.index({interviewType: 1, status: 1});
+interviewSessionSchema.index({status: 1, "proctoringHeartbeat.enabled": 1, "proctoringHeartbeat.lastSeenAt": 1});
 
 // Virtual for calculating overall progress
 interviewSessionSchema.virtual("progress").get(function () {

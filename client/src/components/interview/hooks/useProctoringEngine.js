@@ -1,449 +1,252 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import axios from "@/api/api";
+import { recordProctoringEvent, sendProctoringHeartbeat } from "@/api/interview.api";
 import toast from "react-hot-toast";
-import { getFaceLandmarker, getObjectDetector, cleanupVisionModels } from "@/lib/vision/visionModels";
+import { getFaceLandmarker, getObjectDetector } from "@/lib/vision/visionModels";
 import { extractHeadPose, extractGazeFromBlendshapes, isAttentionDiverted } from "@/lib/vision/gazeCalculator";
+import { TemporalEvidence, CandidateContinuity, faceDescriptor, DETECTOR_VERSION } from "../proctoring/temporalEvidence";
 import remoteLogger from "@/utils/remoteLogger";
 
-export function useProctoringEngine({
-  videoRef,
-  sessionId,
-  isInterviewActive,
-  interviewStartTime,
-  onViolation,
-}) {
-  const [proctoringState, setProctoringState] = useState({
-    status: "initializing", // initializing | active | warning | critical
-    message: "Initializing AI integrity guard...",
-    integrityScore: 100,
-    flagsCount: 0,
-  });
+const DETAILS = {
+  PHONE_DETECTED: "Mobile phone detected. Remove it from the camera view.",
+  MULTIPLE_FACES: "Only the candidate may be visible. Another person was detected.",
+  FACE_ABSENT: "Please remain visible and keep the camera unobstructed.",
+  IDENTITY_SWITCH: "Candidate continuity changed. Please remain alone and clearly visible.",
+  GAZE_DEVIATION: "Please look directly at the interview screen.",
+};
+const SEVERE = new Set(["PHONE_DETECTED", "MULTIPLE_FACES", "IDENTITY_SWITCH"]);
 
+export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, interviewStartTime, onViolation }) {
+  const [proctoringState, setProctoringState] = useState({ status: "initializing", message: "Initializing AI integrity guard...", integrityScore: 100, flagsCount: 0 });
   const [activeAlert, setActiveAlert] = useState(null);
   const [isPhoneInView, setIsPhoneInView] = useState(false);
   const [recentViolations, setRecentViolations] = useState([]);
-
-  // Internal tracking refs
+  const [stabilizedEvents, setStabilizedEvents] = useState([]);
   const landmarkerRef = useRef(null);
   const detectorRef = useRef(null);
-  const isRunningRef = useRef(false);
-  const animFrameIdRef = useRef(null);
   const analysisCanvasRef = useRef(null);
-  const lastFaceCheckTimeRef = useRef(0);
-  const lastObjectCheckTimeRef = useRef(0);
+  const alertTimerRef = useRef(null);
+  const lastLoggedRef = useRef({});
+  const healthRef = useRef({ faceAt: 0, objectAt: 0 });
+  const evidenceRef = useRef(new TemporalEvidence());
+  const continuityRef = useRef(new CandidateContinuity());
+  const runtimeRef = useRef({});
+  const startedAtRef = useRef(Date.now());
+  // Keep animation/heartbeat loops stable across transcript and score renders.
+  runtimeRef.current = { sessionId, isInterviewActive, interviewStartTime, onViolation };
 
-  // Temporal debouncing durations
-  const absentTimeRef = useRef(0);
-  const multipleFaceTimeRef = useRef(0);
-  const gazeAwayTimeRef = useRef(0);
-  const phoneDetectionsCountRef = useRef(0);
-  const phoneMissingFramesRef = useRef(0);
-  const lastLoggedFlagTimeRef = useRef({});
-  const isWindowBlurredRef = useRef(false);
-  const isTabHiddenRef = useRef(false);
-
-  // Helper to capture a lightweight 320x240 compressed WebP snapshot from the video element
-  const captureSnapshot = useCallback(() => {
-    if (!videoRef.current || videoRef.current.videoWidth === 0) return null;
-
-    try {
-      if (!analysisCanvasRef.current) {
-        const c = document.createElement("canvas");
-        c.width = 320;
-        c.height = 240;
-        analysisCanvasRef.current = c;
-      }
-      const canvas = analysisCanvasRef.current;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL("image/webp", 0.6);
-    } catch (err) {
-      console.warn("Could not capture proctoring snapshot:", err);
-      return null;
-    }
-  }, [videoRef]);
-
-  // Dispatch an infraction event to the server and update local state
-  const logViolation = useCallback(
-    async ({ eventType, severity = "medium", confidence = 1, details = "" }) => {
-      if (!isInterviewActive) return;
-
-      // Rate limit duplicate flags of the exact same event type to once every 3.5 seconds
-      const now = Date.now();
-      const lastTime = lastLoggedFlagTimeRef.current[eventType] || 0;
-      if (now - lastTime < 3500) return;
-      lastLoggedFlagTimeRef.current[eventType] = now;
-
-      const elapsedSeconds = interviewStartTime
-        ? Math.max(0, Math.round((now - interviewStartTime) / 1000))
-        : 0;
-
-      const snapshotData = captureSnapshot();
-
-      // Show temporary HUD alert
-      setActiveAlert({ eventType, details, severity });
-      setTimeout(() => setActiveAlert(null), 4000);
-
-      // Instant user-facing notification
-      if (eventType === "PHONE_DETECTED") {
-        toast.error("Prohibited Device: Mobile phone detected in camera view", {
-          id: "proctor-alert-phone",
-          icon: "📱",
-          duration: 4000,
-        });
-      } else if (eventType === "GAZE_DEVIATION") {
-        toast("Please look directly at the screen", {
-          id: "proctor-alert-gaze",
-          icon: "👀",
-          duration: 3000,
-        });
-      } else if (eventType === "MULTIPLE_FACES") {
-        toast.error("Integrity Alert: Multiple people detected in camera frame", {
-          id: "proctor-alert-faces",
-          icon: "👥",
-          duration: 4000,
-        });
-      } else if (eventType === "FACE_ABSENT") {
-        toast.error("Please remain visible in the camera frame", {
-          id: "proctor-alert-absent",
-          icon: "⚠️",
-          duration: 3000,
-        });
-      }
-
-      onViolation?.({ eventType, details, severity });
-      remoteLogger.proctor(sessionId, eventType, details, { severity, confidence, elapsedSeconds });
-
-      if (sessionId) {
-        try {
-          const response = await axios.post(`/interview/sessions/${sessionId}/proctoring/event`, {
-            eventType,
-            severity,
-            confidence,
-            timestampSeconds: elapsedSeconds,
-            details,
-            snapshotData,
-          });
-
-          if (response.data.success) {
-            const summary = response.data.data.summary;
-            setProctoringState((prev) => ({
-              ...prev,
-              status: summary.verdict === "VERIFIED_CLEAN" ? "active" : "warning",
-              integrityScore: summary.integrityScore,
-              flagsCount: prev.flagsCount + 1,
-              message: details || "Integrity event logged",
-            }));
-
-            setRecentViolations((prev) => [
-              {
-                eventType,
-                timestampSeconds: elapsedSeconds,
-                details,
-                severity,
-                timeString: new Date().toLocaleTimeString(),
-              },
-              ...prev.slice(0, 9),
-            ]);
-          }
-        } catch (err) {
-          console.warn("Failed to transmit proctoring event to server:", err);
-        }
-      } else {
-        // Fallback local score deduction if previewing without session ID
-        setProctoringState((prev) => ({
-          ...prev,
-          status: "warning",
-          integrityScore: Math.max(40, prev.integrityScore - 15),
-          flagsCount: prev.flagsCount + 1,
-          message: details || "Integrity event logged",
-        }));
-      }
-    },
-    [captureSnapshot, interviewStartTime, isInterviewActive, onViolation, sessionId]
-  );
-
-  // Initialize vision models
-  useEffect(() => {
-    let isCancelled = false;
-
-    const initVision = async () => {
-      try {
-        const [fl, od] = await Promise.all([getFaceLandmarker(), getObjectDetector()]);
-        if (!isCancelled) {
-          landmarkerRef.current = fl;
-          detectorRef.current = od;
-          setProctoringState((prev) => ({
-            ...prev,
-            status: "active",
-            message: "AI Integrity Guard Active & Verified",
-          }));
-          console.log("🛡️ Proctoring engine ready with hardware acceleration.");
-        }
-      } catch (err) {
-        console.warn("Could not initialize vision models for proctoring:", err.message);
-        if (!isCancelled) {
-          setProctoringState((prev) => ({
-            ...prev,
-            status: "active",
-            message: "Proctoring active (Browser integrity mode)",
-          }));
-        }
-      }
-    };
-
-    initVision();
-
-    return () => {
-      isCancelled = true;
-    };
+  const applySummary = useCallback((summary) => {
+    if (!summary) return;
+    setProctoringState((previous) => {
+      const flagsCount = Object.values(summary.flagCounts || {}).reduce((sum, count) => sum + count, 0);
+      if (flagsCount < previous.flagsCount) return previous;
+      return {
+        ...previous,
+        status: summary.verdict === "FLAGGED_SUSPICIOUS" ? "critical" : summary.verdict === "REVIEW_RECOMMENDED" ? "warning" : "active",
+        message: summary.verdict === "VERIFIED_CLEAN" ? "Visual proctoring active" : "Interview integrity events recorded for review.",
+        integrityScore: summary.integrityScore,
+        flagsCount,
+      };
+    });
   }, []);
 
-  // Main video analysis frame loop
+  const captureSnapshot = useCallback(() => {
+    const video = videoRef.current;
+    if (!video?.videoWidth) return null;
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 320;
+      canvas.height = 240;
+      canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+      return canvas.toDataURL("image/webp", 0.6);
+    } catch { return null; }
+  }, [videoRef]);
+
+  const logViolation = useCallback(async (evidence) => {
+    const runtime = runtimeRef.current;
+    if (!runtime.isInterviewActive) return;
+    const { eventType } = evidence;
+    const now = Date.now();
+    if (now - (lastLoggedRef.current[eventType] || 0) < 3500) return;
+    lastLoggedRef.current[eventType] = now;
+    const severity = evidence.severity || (SEVERE.has(eventType) ? "high" : eventType === "GAZE_DEVIATION" ? "low" : "medium");
+    const payload = {
+      confidence: 1, durationMs: 0, evidenceCount: 0, faceCount: null,
+      detectorVersion: DETECTOR_VERSION, meta: {}, ...evidence, severity,
+      details: evidence.details || DETAILS[eventType] || "Integrity event recorded",
+      timestampSeconds: Math.max(0, Math.round((now - (runtime.interviewStartTime || startedAtRef.current)) / 1000)),
+      snapshotData: SEVERE.has(eventType) ? captureSnapshot() : null,
+    };
+    setActiveAlert(payload);
+    clearTimeout(alertTimerRef.current);
+    alertTimerRef.current = setTimeout(() => setActiveAlert(null), 6000);
+    setProctoringState((previous) => ({ ...previous, status: severity === "high" ? "critical" : "warning", message: payload.details }));
+    if (severity === "high") toast.error(payload.details, { id: `proctor-${eventType}`, duration: 4000 });
+    else toast(payload.details, { id: `proctor-${eventType}`, duration: 4000 });
+    runtime.onViolation?.(payload);
+    remoteLogger.proctor(runtime.sessionId, eventType, payload.details, { severity, confidence: payload.confidence, durationMs: payload.durationMs });
+    setRecentViolations((previous) => [{ ...payload, snapshotData: undefined, timeString: new Date().toLocaleTimeString() }, ...previous.slice(0, 9)]);
+    if (!runtime.sessionId) return;
+    try {
+      const response = await recordProctoringEvent(runtime.sessionId, payload);
+      if (runtimeRef.current.sessionId === runtime.sessionId && runtimeRef.current.isInterviewActive && response.success) applySummary(response.data.summary);
+    } catch (error) {
+      console.warn("Failed to transmit proctoring event:", error.message);
+      setProctoringState((previous) => ({ ...previous, status: "warning", message: "Proctoring connection interrupted. Check your network." }));
+    }
+  }, [applySummary, captureSnapshot]);
+
   useEffect(() => {
-    if (!isInterviewActive || !videoRef.current) return;
+    let cancelled = false;
+    Promise.all([getFaceLandmarker(), getObjectDetector()]).then(([face, object]) => {
+      if (cancelled) return;
+      landmarkerRef.current = face;
+      detectorRef.current = object;
+      setProctoringState((previous) => ({ ...previous, status: "initializing", message: "Waiting for camera analysis..." }));
+    }).catch((error) => {
+      console.warn("Vision proctoring unavailable:", error.message);
+      if (!cancelled) setProctoringState((previous) => ({ ...previous, status: "warning", message: "Visual proctoring unavailable. Reload to retry." }));
+    });
+    return () => { cancelled = true; clearTimeout(alertTimerRef.current); };
+  }, []);
 
-    isRunningRef.current = true;
-    let lastTimestamp = performance.now();
+  useEffect(() => {
+    startedAtRef.current = Date.now();
+    evidenceRef.current = new TemporalEvidence();
+    continuityRef.current = new CandidateContinuity();
+    healthRef.current = { faceAt: 0, objectAt: 0 };
+    lastLoggedRef.current = {};
+    clearTimeout(alertTimerRef.current);
+    setActiveAlert(null);
+    setIsPhoneInView(false);
+    setRecentViolations([]);
+    setStabilizedEvents([]);
+    setProctoringState({ status: "initializing", message: "Waiting for camera analysis...", integrityScore: 100, flagsCount: 0 });
+  }, [sessionId]);
 
-    const processFrame = () => {
-      if (!isRunningRef.current) return;
-
-      const now = performance.now();
-      const dt = (now - lastTimestamp) / 1000;
-      lastTimestamp = now;
-
-      const video = videoRef.current;
-
-      if (video && video.readyState >= 2 && !video.paused) {
-        const shouldCheckFace =
-          landmarkerRef.current && now - lastFaceCheckTimeRef.current >= 200;
-        const shouldCheckObject =
-          detectorRef.current && now - lastObjectCheckTimeRef.current >= 220;
-
-        // 1. FACE LANDMARKER & GAZE ANALYSIS (~5 FPS / every 200ms on offscreen canvas)
-        if (shouldCheckFace) {
-          lastFaceCheckTimeRef.current = now;
-
-          if (!analysisCanvasRef.current) {
-            const c = document.createElement("canvas");
-            c.width = 320;
-            c.height = 240;
-            analysisCanvasRef.current = c;
-          }
-          const canvas = analysisCanvasRef.current;
-          const ctx = canvas.getContext("2d", { willReadFrequently: true });
-          ctx.drawImage(video, 0, 0, 320, 240);
-
-          try {
-            const results = landmarkerRef.current.detectForVideo(canvas, now);
-
-            if (!results.faceLandmarks || results.faceLandmarks.length === 0) {
-              // 0 Faces: Candidate absent or out of frame
-              absentTimeRef.current += dt;
-              gazeAwayTimeRef.current = 0;
-              multipleFaceTimeRef.current = 0;
-
-              if (absentTimeRef.current >= 4.0) {
-                logViolation({
-                  eventType: "FACE_ABSENT",
-                  severity: "medium",
-                  details: "Candidate not visible in camera frame",
-                });
-                absentTimeRef.current = 0;
-              }
-            } else if (results.faceLandmarks.length > 1) {
-              // > 1 Faces: Multiple people detected in camera view
-              multipleFaceTimeRef.current += dt;
-              absentTimeRef.current = 0;
-              gazeAwayTimeRef.current = 0;
-
-              if (multipleFaceTimeRef.current >= 2.0) {
-                logViolation({
-                  eventType: "MULTIPLE_FACES",
-                  severity: "high",
-                  details: "Multiple people detected in interview frame",
-                });
-                multipleFaceTimeRef.current = 0;
-              }
-            } else {
-              // Exactly 1 Face: Check head orientation and eye gaze
-              absentTimeRef.current = 0;
-              multipleFaceTimeRef.current = 0;
-
-              const matrix = results.facialTransformationMatrixes?.[0]?.data;
-              const blendshapes = results.faceBlendshapes?.[0];
-
-              const headPose = extractHeadPose(matrix);
-              const gazeBlendshape = extractGazeFromBlendshapes(blendshapes);
-
-              const assessment = isAttentionDiverted({ headPose, gazeBlendshape });
-
-              if (assessment.isDiverted) {
-                gazeAwayTimeRef.current += dt;
-                if (gazeAwayTimeRef.current >= 4.0) {
-                  logViolation({
-                    eventType: "GAZE_DEVIATION",
-                    severity: "low",
-                    details: `Looking away from screen (${assessment.reason})`,
-                  });
-                  gazeAwayTimeRef.current = 0;
-                }
-              } else {
-                gazeAwayTimeRef.current = Math.max(0, gazeAwayTimeRef.current - dt * 2);
-              }
-            }
-          } catch (e) {
-            // Frame inference error; keep loop alive
-          }
-        }
-
-        // 2. PROHIBITED OBJECT DETECTION (Mobile phone/device/cheat materials, every ~220ms on hardware-accelerated video)
-        if (shouldCheckObject) {
-          lastObjectCheckTimeRef.current = now;
-
-          try {
-            const detections = detectorRef.current.detectForVideo(video, now);
-            let phoneFound = false;
-            let matchedCategory = "";
-            let bestScore = 0;
-
-            if (detections && detections.detections) {
-              for (const det of detections.detections) {
-                for (const cat of det.categories || []) {
-                  const name = cat.categoryName?.toLowerCase() || "";
-                  const score = cat.score || 0;
-
-                  // Target specifically mobile/cell phones with high confidence >= 0.48
-                  // Never trigger on laptops, microphones, or background clutter
-                  const isCellPhone =
-                    (name === "cell phone" ||
-                      name.includes("cell phone") ||
-                      name === "phone" ||
-                      name === "mobile phone" ||
-                      name === "telephone") &&
-                    !name.includes("laptop") &&
-                    !name.includes("microphone");
-
-                  if (isCellPhone && score >= 0.48) {
-                    phoneFound = true;
-                    matchedCategory = "mobile phone";
-                    bestScore = Math.max(bestScore, score);
-                    console.log(`📱 Cell phone detected! Class: "${name}", confidence: ${(score * 100).toFixed(1)}%`);
-                    break;
-                  }
-                }
-                if (phoneFound) break;
-              }
-            }
-
-            if (phoneFound) {
-              phoneMissingFramesRef.current = 0;
-              phoneDetectionsCountRef.current += 1;
-              // Require 3 consecutive detection frames (~660ms) to eliminate background noise & hand position blips
-              if (phoneDetectionsCountRef.current >= 3) {
-                setIsPhoneInView(true);
-                logViolation({
-                  eventType: "PHONE_DETECTED",
-                  severity: "high",
-                  details: `Mobile phone detected in camera view (${Math.round(bestScore * 100)}% match)`,
-                });
-              }
-            } else {
-              phoneMissingFramesRef.current += 1;
-              if (phoneMissingFramesRef.current >= 3) {
-                setIsPhoneInView(false);
-                phoneDetectionsCountRef.current = 0;
-              }
-            }
-          } catch (e) {
-            console.warn("Object detector frame inference warning:", e.message);
-          }
-        }
-      }
-
-      animFrameIdRef.current = requestAnimationFrame(processFrame);
-    };
-
-    animFrameIdRef.current = requestAnimationFrame(processFrame);
-
-    return () => {
-      isRunningRef.current = false;
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
-    };
-  }, [isInterviewActive, logViolation, videoRef]);
-
-  // 3. BROWSER ENVIRONMENT INTEGRITY LISTENERS (Tab Switch, Blur, Paste)
   useEffect(() => {
     if (!isInterviewActive) return;
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        if (!isTabHiddenRef.current) {
-          isTabHiddenRef.current = true;
-          console.warn("⚠️ Tab switch detected.");
-          logViolation({
-            eventType: "TAB_SWITCH",
-            severity: "medium",
-            details: "Candidate switched browser tabs or minimized window",
-          });
+    let frameId;
+    let lastFaceAt = 0;
+    let lastObjectAt = 0;
+    let lastVideoTime = -1;
+    let lastStateSyncAt = 0;
+    const observe = (eventType, sample) => {
+      const event = evidenceRef.current.observe(eventType, sample);
+      if (event) void logViolation(event);
+    };
+    const processFrame = () => {
+      const now = performance.now();
+      const video = videoRef.current;
+      const track = video?.srcObject?.getVideoTracks?.()[0];
+      const cameraReady = video?.readyState >= 2 && !video.paused && !video.ended && track?.readyState === "live" && track.enabled && !track.muted;
+      // A frozen video must not keep the heartbeat healthy or accumulate evidence.
+      if (cameraReady && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        if (landmarkerRef.current && now - lastFaceAt >= 200) {
+          lastFaceAt = now;
+          try {
+            if (!analysisCanvasRef.current) {
+              analysisCanvasRef.current = document.createElement("canvas");
+              analysisCanvasRef.current.width = 320;
+              analysisCanvasRef.current.height = 240;
+            }
+            const canvas = analysisCanvasRef.current;
+            canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+            const results = landmarkerRef.current.detectForVideo(canvas, now);
+            healthRef.current.faceAt = Date.now();
+            const faces = results.faceLandmarks || [];
+            healthRef.current.faceCount = faces.length;
+            const common = { now, faceCount: faces.length, confidence: 0.8 };
+            observe("MULTIPLE_FACES", { ...common, present: faces.length > 1 });
+            observe("FACE_ABSENT", { ...common, present: faces.length === 0 });
+            const continuity = continuityRef.current.observe(faces.length === 1 ? faceDescriptor(faces[0]) : null, now);
+            observe("IDENTITY_SWITCH", { ...common, present: continuity.changed, confidence: continuity.confidence, meta: { signal: "face-geometry-continuity", difference: continuity.difference || 0 } });
+            const assessment = faces.length === 1 ? isAttentionDiverted({
+              headPose: extractHeadPose(results.facialTransformationMatrixes?.[0]?.data),
+              gazeBlendshape: extractGazeFromBlendshapes(results.faceBlendshapes?.[0]),
+            }) : { isDiverted: false };
+            observe("GAZE_DEVIATION", { ...common, present: assessment.isDiverted });
+          } catch { /* Failed inference is not evidence of absence or recovery. */ }
         }
-      } else {
-        isTabHiddenRef.current = false;
+        if (detectorRef.current && now - lastObjectAt >= 250) {
+          lastObjectAt = now;
+          try {
+            const results = detectorRef.current.detectForVideo(video, now);
+            healthRef.current.objectAt = Date.now();
+            let confidence = 0;
+            for (const detection of results.detections || []) {
+              for (const category of detection.categories || []) {
+                if (["cell phone", "phone", "mobile phone", "telephone"].includes(category.categoryName?.toLowerCase())) confidence = Math.max(confidence, category.score || 0);
+              }
+            }
+            observe("PHONE_DETECTED", { now, present: confidence >= 0.6, confidence, faceCount: healthRef.current.faceCount ?? null });
+            setIsPhoneInView(evidenceRef.current.isActive("PHONE_DETECTED"));
+          } catch { /* The heartbeat reports persistent inference failure. */ }
+        }
+      }
+      if (now - lastStateSyncAt >= 250) {
+        lastStateSyncAt = now;
+        const faceHealthy = Date.now() - healthRef.current.faceAt < 5000;
+        const objectHealthy = Date.now() - healthRef.current.objectAt < 5000;
+        const active = Object.keys(DETAILS).filter((type) => evidenceRef.current.isActive(type) && (type === "PHONE_DETECTED" ? objectHealthy : faceHealthy));
+        setStabilizedEvents((previous) => previous.join() === active.join() ? previous : active);
+        if (!objectHealthy) setIsPhoneInView(false);
+      }
+      frameId = requestAnimationFrame(processFrame);
+    };
+    frameId = requestAnimationFrame(processFrame);
+    return () => cancelAnimationFrame(frameId);
+  }, [isInterviewActive, sessionId, logViolation, videoRef]);
+
+  useEffect(() => {
+    if (!isInterviewActive || !sessionId) return;
+    let cancelled = false;
+    let timer;
+    const heartbeat = async () => {
+      const now = Date.now();
+      const detectorHealthy = now - healthRef.current.faceAt < 5000 && now - healthRef.current.objectAt < 5000;
+      try {
+        const response = await sendProctoringHeartbeat(sessionId, { detectorHealthy, detectorVersion: DETECTOR_VERSION });
+        if (cancelled) return;
+        if (detectorHealthy && !response.data.offline) applySummary(response.data.summary);
+        else setProctoringState((previous) => ({ ...previous, status: "warning", message: "Camera or detector unavailable. Restore the camera and keep this tab open." }));
+      } catch {
+        if (!cancelled) setProctoringState((previous) => ({ ...previous, status: "warning", message: "Proctoring connection interrupted. Retrying..." }));
+      } finally {
+        // Retry well within the server's 60-second grace period; no overlapping requests.
+        if (!cancelled) timer = setTimeout(heartbeat, 10000);
       }
     };
+    void heartbeat();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [isInterviewActive, sessionId, applySummary]);
 
-    const handleWindowBlur = () => {
-      if (!isWindowBlurredRef.current) {
-        isWindowBlurredRef.current = true;
-        console.warn("⚠️ Window lost focus.");
-        logViolation({
-          eventType: "WINDOW_BLUR",
-          severity: "low",
-          details: "Interview window lost focus to another application",
-        });
-      }
-    };
-
-    const handleWindowFocus = () => {
-      isWindowBlurredRef.current = false;
-    };
-
-    const handlePaste = (e) => {
-      // Check if candidate is pasting into an input or textarea
-      const target = e.target;
-      if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT")) {
-        console.warn("⚠️ Unauthorized paste attempt in interview input.");
-        logViolation({
-          eventType: "PASTE_ATTEMPT",
-          severity: "medium",
-          details: "Candidate attempted to paste external text into answer box",
-        });
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleWindowBlur);
-    window.addEventListener("focus", handleWindowFocus);
-    document.addEventListener("paste", handlePaste);
-
+  useEffect(() => {
+    if (!isInterviewActive) return;
+    const visibility = () => { if (document.hidden) void logViolation({ eventType: "TAB_SWITCH", details: "Candidate switched tabs or minimized the window" }); };
+    const blur = () => { void logViolation({ eventType: "WINDOW_BLUR", severity: "low", details: "Interview window lost focus" }); };
+    const paste = (event) => { if (["TEXTAREA", "INPUT"].includes(event.target?.tagName)) void logViolation({ eventType: "PASTE_ATTEMPT", details: "External text pasted into the answer input" }); };
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("blur", blur);
+    document.addEventListener("paste", paste);
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleWindowBlur);
-      window.removeEventListener("focus", handleWindowFocus);
-      document.removeEventListener("paste", handlePaste);
+      document.removeEventListener("visibilitychange", visibility);
+      window.removeEventListener("blur", blur);
+      document.removeEventListener("paste", paste);
+      clearTimeout(alertTimerRef.current);
     };
   }, [isInterviewActive, logViolation]);
 
+  const persistentEvent = stabilizedEvents.find((type) => SEVERE.has(type)) || stabilizedEvents[0];
+  const stabilizedAlert = persistentEvent ? {
+    eventType: persistentEvent,
+    details: DETAILS[persistentEvent],
+    severity: SEVERE.has(persistentEvent) ? "high" : "medium",
+  } : null;
   return {
     proctoringState,
-    activeAlert,
-    isPhoneInView,
-    recentViolations,
-    captureSnapshot,
-    logViolation,
+    activeAlert: stabilizedAlert?.severity === "high" ? stabilizedAlert : activeAlert || stabilizedAlert,
+    isPhoneInView, recentViolations, captureSnapshot, logViolation,
   };
 }
 

@@ -11,6 +11,8 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import logger from "../utils/logger.js";
+import { EVENT_WEIGHTS, normalizeProctoringEvent } from "../services/proctoring-scoring.js";
+import { appendProctoringEvent, checkOfflineProctoring } from "../services/proctoring.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -634,6 +636,7 @@ export const completeSession = async (req, res) => {
     }
 
     // Mark session as completed and calculate total duration
+    await checkOfflineProctoring(session);
     session.status = "completed";
     session.completedAt = new Date();
     const startTime = session.startedAt || session.createdAt || session.completedAt;
@@ -705,6 +708,9 @@ export const completeSession = async (req, res) => {
     } catch (_) {}
 
     // Create result document
+    // Event requests may have arrived while answers/report generation were running.
+    const auditSession = await InterviewSession.findById(sessionId)
+      .select("proctoringSummary proctoringEvents").lean();
     const result = new InterviewResult({
       userId,
       sessionId: session._id,
@@ -754,20 +760,25 @@ export const completeSession = async (req, res) => {
       isPremiumAnalysis: isPremiumUser(req.user),
       videoRecordingUrl: session.videoRecordingUrl || null,
       proctoringAudit: {
-        integrityScore: session.proctoringSummary?.integrityScore ?? 100,
-        flagCounts: session.proctoringSummary?.flagCounts || {
+        integrityScore: auditSession.proctoringSummary?.integrityScore ?? 100,
+        flagCounts: auditSession.proctoringSummary?.flagCounts || {
           phone: 0,
           gaze: 0,
           multipleFaces: 0,
           absent: 0,
           tabSwitch: 0,
         },
-        verdict: session.proctoringSummary?.verdict || "VERIFIED_CLEAN",
-        events: (session.proctoringEvents || []).map((e) => ({
+        verdict: auditSession.proctoringSummary?.verdict || "VERIFIED_CLEAN",
+        events: (auditSession.proctoringEvents || []).map((e) => ({
           timestampSeconds: e.timestampSeconds,
           eventType: e.eventType,
           severity: e.severity,
           confidence: e.confidence,
+          durationMs: e.durationMs,
+          evidenceCount: e.evidenceCount,
+          faceCount: e.faceCount,
+          detectorVersion: e.detectorVersion,
+          meta: e.meta,
           snapshotUrl: e.snapshotUrl,
           details: e.details,
         })),
@@ -1505,29 +1516,27 @@ export const recordProctoringEvent = async (req, res) => {
     const {
       eventType,
       severity = "medium",
-      confidence = 1,
       timestampSeconds = 0,
       details = "",
       snapshotData = null,
     } = req.body;
 
-    const validEvents = [
-      "PHONE_DETECTED",
-      "MULTIPLE_FACES",
-      "FACE_ABSENT",
-      "GAZE_DEVIATION",
-      "TAB_SWITCH",
-      "WINDOW_BLUR",
-      "PASTE_ATTEMPT",
-    ];
+    const validEvents = Object.keys(EVENT_WEIGHTS);
 
     if (!validEvents.includes(eventType)) {
       return res.status(400).json({ success: false, error: "Invalid proctoring event type" });
+    }
+    if (!["low", "medium", "high"].includes(severity)) {
+      return res.status(400).json({ success: false, error: "Invalid proctoring severity" });
     }
 
     const session = await InterviewSession.findOne({ _id: sessionId, userId });
     if (!session) {
       return res.status(404).json({ success: false, error: "Session not found" });
+    }
+
+    if (session.status !== "in-progress") {
+      return res.status(409).json({ success: false, error: "Proctoring requires an active session" });
     }
 
     // Optional snapshot image processing (if client provided base64 data URL)
@@ -1551,89 +1560,59 @@ export const recordProctoringEvent = async (req, res) => {
       }
     }
 
-    const eventRecord = {
-      timestampSeconds: Number(timestampSeconds) || 0,
-      eventType,
-      severity,
-      confidence: Number(confidence) || 1,
-      snapshotUrl,
-      details,
-      createdAt: new Date(),
-    };
-
-    session.proctoringEvents = session.proctoringEvents || [];
-    session.proctoringEvents.push(eventRecord);
+    const eventRecord = normalizeProctoringEvent({ ...req.body, snapshotUrl });
+    const updated = await appendProctoringEvent(sessionId, eventRecord, { userId });
+    if (!updated) {
+      return res.status(409).json({ success: false, error: "Session is no longer active" });
+    }
 
     logger.proctor(sessionId, eventType, details || "Proctoring flag logged", {
       severity,
-      confidence: Number(confidence) || 1,
+      confidence: eventRecord.confidence,
       timestampSeconds: Number(timestampSeconds) || 0,
       hasSnapshot: Boolean(snapshotUrl),
     });
 
-    // Compute updated flag counts
-    const flagCounts = { phone: 0, gaze: 0, multipleFaces: 0, absent: 0, tabSwitch: 0 };
-    let penaltyPoints = 0;
-
-    for (const ev of session.proctoringEvents) {
-      switch (ev.eventType) {
-        case "PHONE_DETECTED":
-          flagCounts.phone += 1;
-          penaltyPoints += 15;
-          break;
-        case "MULTIPLE_FACES":
-          flagCounts.multipleFaces += 1;
-          penaltyPoints += 15;
-          break;
-        case "FACE_ABSENT":
-          flagCounts.absent += 1;
-          penaltyPoints += 8;
-          break;
-        case "GAZE_DEVIATION":
-          flagCounts.gaze += 1;
-          penaltyPoints += 3;
-          break;
-        case "TAB_SWITCH":
-          flagCounts.tabSwitch += 1;
-          penaltyPoints += 5;
-          break;
-        case "WINDOW_BLUR":
-          penaltyPoints += 4;
-          break;
-        case "PASTE_ATTEMPT":
-          penaltyPoints += 5;
-          break;
-        default:
-          break;
-      }
-    }
-
-    const calculatedScore = Math.max(0, 100 - penaltyPoints);
-    let verdict = "VERIFIED_CLEAN";
-    if (calculatedScore < 70 || flagCounts.phone >= 2 || flagCounts.multipleFaces >= 2) {
-      verdict = "FLAGGED_SUSPICIOUS";
-    } else if (calculatedScore < 85 || flagCounts.tabSwitch >= 2 || flagCounts.absent >= 2) {
-      verdict = "REVIEW_RECOMMENDED";
-    }
-
-    session.proctoringSummary = {
-      integrityScore: calculatedScore,
-      flagCounts,
-      verdict,
-    };
-
-    await session.save();
-
     res.json({
       success: true,
       data: {
-        summary: session.proctoringSummary,
+        summary: updated.proctoringSummary,
         event: eventRecord,
       },
     });
   } catch (error) {
     console.error("❌ Record proctoring event error:", error);
     res.status(500).json({ success: false, error: "Failed to record proctoring event" });
+  }
+};
+
+export const recordProctoringHeartbeat = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user._id;
+    const session = await InterviewSession.findOne({ _id: req.params.sessionId, userId }).lean();
+    if (!session) return res.status(404).json({ success: false, error: "Session not found" });
+    if (session.status !== "in-progress") return res.status(409).json({ success: false, error: "Session is not active" });
+    // Check the previous gap BEFORE acknowledging recovery, including after a server restart.
+    await checkOfflineProctoring(session);
+    const now = new Date();
+    const healthy = req.body.detectorHealthy === true;
+    const set = {
+      "proctoringHeartbeat.enabled": true,
+      "proctoringHeartbeat.lastReceivedAt": now,
+      "proctoringHeartbeat.detectorVersion": typeof req.body.detectorVersion === "string" ? req.body.detectorVersion.slice(0, 100) : "unknown",
+    };
+    if (healthy) {
+      set["proctoringHeartbeat.lastSeenAt"] = now;
+      set["proctoringHeartbeat.offline"] = false;
+    } else if (!session.proctoringHeartbeat?.lastSeenAt) {
+      set["proctoringHeartbeat.lastSeenAt"] = now;
+    }
+    const updated = await InterviewSession.findOneAndUpdate({ _id: session._id, userId, status: "in-progress" }, { $set: set }, { new: true });
+    if (!updated) return res.status(409).json({ success: false, error: "Session is not active" });
+    res.json({ success: true, data: { summary: updated.proctoringSummary, offline: updated.proctoringHeartbeat.offline } });
+  } catch (error) {
+    console.error("Proctoring heartbeat error:", error.message);
+    res.status(500).json({ success: false, error: "Failed to record proctoring heartbeat" });
   }
 };
 
@@ -1695,5 +1674,6 @@ export default {
   getStats,
   abandonSession,
   recordProctoringEvent,
+  recordProctoringHeartbeat,
   uploadVideoRecording,
 };

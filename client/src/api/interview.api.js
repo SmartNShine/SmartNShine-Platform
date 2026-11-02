@@ -42,6 +42,16 @@ export const startSession = async (sessionId) => {
   return response.data;
 };
 
+export const recordProctoringEvent = async (sessionId, payload) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/event`, payload);
+  return response.data;
+};
+
+export const sendProctoringHeartbeat = async (sessionId, payload) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/heartbeat`, payload, { timeout: 8000 });
+  return response.data;
+};
+
 /**
  * Submit text answer
  * @param {string} sessionId - Session ID
@@ -307,6 +317,8 @@ export default {
   getInterviewConfig,
   createSession,
   startSession,
+  recordProctoringEvent,
+  sendProctoringHeartbeat,
   submitAnswer,
   submitVoiceAnswer,
   skipQuestion,

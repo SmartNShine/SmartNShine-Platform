@@ -119,6 +119,12 @@ router.post(
  * POST /api/interview/sessions/:sessionId/proctoring/event
  */
 router.post(
+  "/sessions/:sessionId/proctoring/heartbeat",
+  authenticateToken,
+  interviewController.recordProctoringHeartbeat
+);
+
+router.post(
   "/sessions/:sessionId/proctoring/event",
   authenticateToken,
   interviewController.recordProctoringEvent

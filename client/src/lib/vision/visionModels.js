@@ -74,6 +74,8 @@ export async function getFaceLandmarker() {
       outputFacialTransformationMatrixes: true,
       runningMode: "VIDEO",
       numFaces: 4, // Enables detecting multiple people in frame
+      minFaceDetectionConfidence: 0.7,
+      minFacePresenceConfidence: 0.7,
     });
     console.log("⚡ FaceLandmarker initialized with GPU delegate");
   } catch (gpuError) {
@@ -87,6 +89,8 @@ export async function getFaceLandmarker() {
       outputFacialTransformationMatrixes: true,
       runningMode: "VIDEO",
       numFaces: 4,
+      minFaceDetectionConfidence: 0.7,
+      minFacePresenceConfidence: 0.7,
     });
     console.log("ℹ️ FaceLandmarker initialized with CPU delegate");
   }

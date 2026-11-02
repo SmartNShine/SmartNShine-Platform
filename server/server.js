@@ -622,6 +622,7 @@ async function checkVoiceServices() {
 }
 
 import { startCleanupJob } from "./services/interview-cleanup.service.js";
+import { startProctoringWatchdog } from "./services/proctoring.service.js";
 
 // Start server
 app.listen(PORT, () => {
@@ -630,6 +631,7 @@ app.listen(PORT, () => {
 
   // Start background jobs
   startCleanupJob();
+  startProctoringWatchdog();
 
   // Check voice services after startup (non-blocking)
   checkVoiceServices();

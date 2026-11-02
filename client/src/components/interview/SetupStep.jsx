@@ -109,6 +109,7 @@ export const SetupStep = ({
   const { isDarkMode } = useDarkMode();
   const [roleSearch, setRoleSearch] = useState("");
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [proctoringAccepted, setProctoringAccepted] = useState(false);
 
   const currentInterviewer =
     INTERVIEWER_VOICES[selectedVoice] || INTERVIEWER_VOICES.shubh;
@@ -982,10 +983,24 @@ export const SetupStep = ({
               </div>
             </div>
 
+            <div className="space-y-2 text-xs text-zinc-600 dark:text-zinc-300">
+              <p className="font-semibold">Proctored interview requirements</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Only you, the candidate, may be visible.</li>
+                <li>Keep phones out of frame and do not use them.</li>
+                <li>Keep your camera active, unobstructed, and well lit.</li>
+              </ul>
+              <p>Repeated severe violations may flag interview integrity. Evidence snapshots are captured for stabilized severe detections.</p>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={proctoringAccepted} onChange={(event) => setProctoringAccepted(event.target.checked)} className="mt-0.5" />
+                <span>I understand and agree to these proctoring requirements.</span>
+              </label>
+            </div>
+
             <button
               type="button"
-              onClick={onStart}
-              disabled={isSubmitting || !isReadyToStart}
+              onClick={() => { if (proctoringAccepted) onStart(); }}
+              disabled={isSubmitting || !isReadyToStart || !proctoringAccepted}
               className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 text-white font-bold text-sm shadow-md shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
             >
               {isSubmitting ? (

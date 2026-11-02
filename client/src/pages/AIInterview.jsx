@@ -160,7 +160,7 @@ const AIInterview = () => {
     isInterviewActive: session.step === "interview",
     interviewStartTime: session.session?.startedAt
       ? new Date(session.session.startedAt).getTime()
-      : Date.now(),
+      : null,
   });
 
   // Auto-start camera once when entering live interview

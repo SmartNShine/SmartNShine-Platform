@@ -190,6 +190,12 @@ export const ExecutiveStudioStage = ({
             </div>
           </div>
 
+          {proctoringState?.status === "warning" && !activeAlert && (
+            <p role="status" className="relative z-20 px-4 py-2 text-center text-xs text-amber-200 bg-black/70">
+              {proctoringState.message}
+            </p>
+          )}
+
           {/* D. Overlaid Question & Live Speech Stage (Permanently Visible Question) */}
           <div className="relative z-20 w-full max-w-3xl mx-auto flex flex-col items-center gap-2.5 mt-auto">
             {/* Audio Waveform Pills */}
