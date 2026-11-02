@@ -5,7 +5,7 @@
     "environment": "rehearsal",
     "context": "desktop-linux",
     "endpoint": "unix:///var/run/docker.sock",
-    "project": "codity-deploy-test-bbcb793f8ff4",
+    "project": "codity-deploy-test-e7380ed85e59",
     "resource": "app",
     "port": 18080
   },
