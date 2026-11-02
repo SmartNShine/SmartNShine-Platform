@@ -98,4 +98,42 @@ export const audioUpload = multer({
   },
 });
 
+// Video upload configuration for recorded interview sessions
+const videoDir = path.join(uploadsDir, "interviews");
+if (!fs.existsSync(videoDir)) {
+  fs.mkdirSync(videoDir, { recursive: true });
+}
+
+const videoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, videoDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".webm";
+    const filename = `session-${req.params.sessionId || "rec"}-${Date.now()}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const videoFileFilter = (req, file, cb) => {
+  const allowedExts = [".webm", ".mp4", ".mkv"];
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedMimes = ["video/webm", "video/mp4", "video/x-matroska", "application/octet-stream"];
+
+  if (allowedExts.includes(ext) || allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid video format. Allowed: webm, mp4"), false);
+  }
+};
+
+export const videoUpload = multer({
+  storage: videoStorage,
+  fileFilter: videoFileFilter,
+  limits: {
+    fileSize: 250 * 1024 * 1024, // 250MB limit
+  },
+});
+
+
 export default upload;

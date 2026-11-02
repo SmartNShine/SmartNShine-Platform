@@ -33,9 +33,9 @@ export const validateRegister = [
     .withMessage("Name is required")
     .isLength({min: 2, max: 100})
     .withMessage("Name must be between 2 and 100 characters")
-    .matches(/^[a-zA-Z\s'-]+$/)
+    .matches(/^[a-zA-Z\s'.-]+$/)
     .withMessage(
-      "Name can only contain letters, spaces, hyphens, and apostrophes"
+      "Name can only contain letters, spaces, dots, hyphens, and apostrophes"
     ),
 
   body("email")
@@ -57,11 +57,9 @@ export const validateRegister = [
     .withMessage("Password is required")
     .isLength({min: 8, max: 128})
     .withMessage("Password must be between 8 and 128 characters")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/
-    )
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
 
   body("role")
@@ -123,11 +121,9 @@ export const validateResetPassword = [
     .withMessage("Password is required")
     .isLength({min: 8, max: 128})
     .withMessage("Password must be between 8 and 128 characters")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/
-    )
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
 
   handleValidationErrors,
@@ -146,11 +142,9 @@ export const validateChangePassword = [
     .withMessage("New password is required")
     .isLength({min: 8, max: 128})
     .withMessage("Password must be between 8 and 128 characters")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/
-    )
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
 
   handleValidationErrors,

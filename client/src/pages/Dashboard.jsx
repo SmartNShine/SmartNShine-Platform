@@ -216,7 +216,7 @@ export default function Dashboard() {
         noindex={true}
       />
 
-      <main className="flex-1 px-4 sm:px-8 lg:px-12 py-8 max-w-[1600px] w-full mx-auto space-y-8">
+      <main className="flex-1 workspace-container py-8 space-y-8">
         {/* Banner Section */}
         <DashboardBanner
           userName={user?.name}
@@ -248,7 +248,7 @@ export default function Dashboard() {
               </h2>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {resumes.map((resume) => (
                 <ResumeCard
                   key={resume._id}

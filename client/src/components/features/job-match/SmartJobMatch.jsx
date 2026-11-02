@@ -314,7 +314,7 @@ const SmartJobMatch = ({resumeData}) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
+      <div className="workspace-container py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
@@ -333,7 +333,7 @@ const SmartJobMatch = ({resumeData}) => {
 
         {/* Search Keywords Display */}
         {searchKeywords.length > 0 && (
-          <div className="max-w-5xl mx-auto mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          <div className="w-full mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Matching based on your skills:
             </h3>
@@ -352,7 +352,7 @@ const SmartJobMatch = ({resumeData}) => {
 
         {/* View Mode Tabs (Matches / Saved Jobs) */}
         {matchedJobs.length > 0 && (
-          <div className="max-w-5xl mx-auto mb-6">
+          <div className="w-full mb-6">
             <div className="flex gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-2">
               <button
                 onClick={() => setViewMode("matches")}
@@ -382,7 +382,7 @@ const SmartJobMatch = ({resumeData}) => {
 
         {/* Filters */}
         {matchedJobs.length > 0 && (
-          <div className="max-w-5xl mx-auto mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="w-full mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             {/* Job Type Filter */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -493,7 +493,7 @@ const SmartJobMatch = ({resumeData}) => {
 
         {/* Find Matches Button */}
         {matchedJobs.length === 0 && !loading && (
-          <div className="max-w-5xl mx-auto mb-8 text-center">
+          <div className="w-full mb-8 text-center">
             <button
               onClick={() => fetchSmartMatches()}
               disabled={loading}
@@ -527,7 +527,7 @@ const SmartJobMatch = ({resumeData}) => {
 
         {/* Matched Jobs */}
         {!loading && matchedJobs.length > 0 && (
-          <div className="max-w-5xl mx-auto">
+          <div className="w-full">
             {/* Stats */}
             <div className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg p-6">
               <div className="flex items-center justify-between">

@@ -271,12 +271,21 @@ export default function EvilChartsLandingMatrix() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           ) : (
-            <Link
-              to="/login"
-              className="font-bold text-zinc-900 dark:text-zinc-200 hover:text-black dark:hover:text-white hover:underline"
-            >
-              Sign In →
-            </Link>
+            <div className="flex items-center gap-2.5">
+              <Link
+                to="/login"
+                className="font-medium text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:underline text-xs sm:text-sm"
+              >
+                Sign In
+              </Link>
+              <span className="text-zinc-300 dark:text-zinc-700">•</span>
+              <Link
+                to="/register"
+                className="font-bold text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 hover:underline text-xs sm:text-sm"
+              >
+                Create Free Account →
+              </Link>
+            </div>
           )}
         </div>
       </div>

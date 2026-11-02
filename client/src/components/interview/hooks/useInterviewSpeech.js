@@ -63,9 +63,7 @@ export function useInterviewSpeech({
 
       if (advanceToListening && isInterviewActiveRef.current) {
         setInterviewPhase("waiting");
-        if (selectedMode === "live" && voiceAvailable) {
-          setManagedSpeechTimeout(() => startRecordingRef.current?.(true), 300);
-        }
+        // User will manually click Record Answer when ready to speak
       }
     },
     [clearSpeechTimeouts, isInterviewActiveRef, selectedMode, setInterviewPhase, setManagedSpeechTimeout, startRecordingRef, voiceAvailable]

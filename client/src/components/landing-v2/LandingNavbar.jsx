@@ -152,15 +152,15 @@ export default function LandingNavbar() {
                   </Link>
 
                   <Link
-                    to="/upload"
-                    className={`inline-flex items-center gap-1.5 rounded-full border border-black/[0.1] dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/12 text-zinc-900 dark:text-white font-light whitespace-nowrap transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                    to="/register"
+                    className={`inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-bold whitespace-nowrap transition-all shadow-md active:scale-95 cursor-pointer ${
                       isScrolled
                         ? "px-3.5 xl:px-4 py-1.5 text-xs xl:text-sm"
                         : "px-5 sm:px-6 py-2.5 text-sm sm:text-base"
                     }`}
                   >
                     <span>Start Free</span>
-                    <ArrowRight className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-zinc-500 dark:text-zinc-400" />
+                    <ArrowRight className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-black stroke-[2.2]" />
                   </Link>
                 </>
               )}
@@ -211,7 +211,7 @@ export default function LandingNavbar() {
                     Sign In
                   </Link>
                   <Link
-                    to="/upload"
+                    to="/register"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center justify-center py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-black text-xs font-extrabold shadow-sm active:scale-95 transition-all"
                   >

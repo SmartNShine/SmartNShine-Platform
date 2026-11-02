@@ -16,6 +16,7 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Indian / Global English",
     badge: "Default",
+    avatarImage: "/images/interviewer_shubh.jpg",
   },
   anushka: {
     id: "anushka",
@@ -25,6 +26,7 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Indian / Global English",
     badge: "Popular",
+    avatarImage: "/images/interviewer_anushka.jpg",
   },
   amartya: {
     id: "amartya",
@@ -34,6 +36,7 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Deep Professional",
     badge: "Executive",
+    avatarImage: "/images/interviewer_shubh.jpg",
   },
   meera: {
     id: "meera",
@@ -43,6 +46,7 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Clear & Warm",
     badge: "Leadership",
+    avatarImage: "/images/interviewer_anushka.jpg",
   },
   arvind: {
     id: "arvind",
@@ -52,6 +56,7 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Conversational Pace",
     badge: "Dynamic",
+    avatarImage: "/images/interviewer_shubh.jpg",
   },
   rachel: {
     id: "rachel",
@@ -61,6 +66,7 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Global English",
     badge: "Specialist",
+    avatarImage: "/images/interviewer_rachel.jpg",
   },
 };
 
@@ -112,10 +118,10 @@ export const CONVERSATION_PHASES = {
   COMPLETED: "completed",
 };
 
-// Human Voice Activity & Silence detection settings (Tuned for fan/ambient noise resilience)
-export const SILENCE_THRESHOLD = 32; // Audio level below this is considered silence (avoids fan/AC false triggers)
-export const VOCAL_SPEECH_THRESHOLD = 38; // Vocal presence required to confirm user is speaking
-export const SILENCE_DURATION = 2200; // 2.2 seconds of silence to automatically end recording
-export const MIN_RECORDING_DURATION = 1800; // 1.8s minimum recording duration
-export const EXTENDED_SILENCE_DURATION = 12000; // 12 seconds - user hasn't said anything at all
-export const MAX_WAITING_SILENCE = 16000; // 16 seconds - max time to wait before prompting again
+// Human Voice Activity & Silence detection settings (Tuned for conversational pause & mic sensitivity)
+export const SILENCE_THRESHOLD = 14; // Audio level below this is considered quiet
+export const VOCAL_SPEECH_THRESHOLD = 18; // Vocal presence required to confirm user speech activity
+export const SILENCE_DURATION = 7000; // 7.0 seconds of sustained quiet after spoken answer before auto-submitting
+export const MIN_RECORDING_DURATION = 4000; // 4.0s minimum duration before silence checking starts
+export const EXTENDED_SILENCE_DURATION = 20000; // 20 seconds if user hasn't spoken at all
+export const MAX_WAITING_SILENCE = 25000; // 25 seconds - max time to wait before prompting again

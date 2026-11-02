@@ -1,6 +1,5 @@
 import {Outlet, useLocation} from "react-router-dom";
-import {useState, useEffect} from "react";
-import {useToggle} from "@/hooks";
+import {useState, useEffect, useCallback} from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
@@ -8,14 +7,29 @@ import {PageTransition, FestiveSaleBanner} from "@/components/common";
 import {getPricing} from "@/api/subscription.api";
 
 const Layout = () => {
-  const [
-    isSidebarOpen,
-    toggleSidebar,
-    setIsSidebarOpenTrue,
-    setIsSidebarOpenFalse,
-  ] = useToggle(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("smartnshine_sidebar_open");
+      if (saved !== null) {
+        return saved === "true";
+      }
+      return window.innerWidth >= 1024;
+    }
+    return false;
+  });
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const location = useLocation();
   const [promotion, setPromotion] = useState(null);
+
+  const handleSetSidebarOpen = useCallback((value) => {
+    setIsSidebarOpen((prev) => {
+      const next = typeof value === "boolean" ? value : !prev;
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        localStorage.setItem("smartnshine_sidebar_open", String(next));
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -35,21 +49,24 @@ const Layout = () => {
     };
   }, []);
 
-
-  // Auto-open sidebar on desktop
+  // Responsive sidebar handling with desktop persistence
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpenTrue();
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
       } else {
-        setIsSidebarOpenFalse();
+        const saved = localStorage.getItem("smartnshine_sidebar_open");
+        if (saved !== null) {
+          setIsSidebarOpen(saved === "true");
+        } else {
+          setIsSidebarOpen(true);
+        }
       }
     };
 
-    handleResize(); // Set initial state
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [setIsSidebarOpenTrue, setIsSidebarOpenFalse]);
+  }, []);
 
   const isWorkspace = [
     "/dashboard",
@@ -69,34 +86,47 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#09090b]">
-      {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={toggleSidebar} />
+      {/* Sidebar - Suppressed in Fullscreen Focus Mode */}
+      {!isFocusMode && (
+        <Sidebar isOpen={isSidebarOpen} setIsOpen={handleSetSidebarOpen} />
+      )}
 
       {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-72" : "lg:ml-28"
+          isFocusMode
+            ? "ml-0"
+            : isSidebarOpen
+            ? "lg:ml-64"
+            : "lg:ml-20"
         }`}
       >
-        {/* Fixed Top Navbar */}
-        <Navbar
-          toggleSidebar={toggleSidebar}
-          isSidebarOpen={isSidebarOpen}
-        />
+        {/* Fixed Top Navbar - Suppressed in Fullscreen Focus Mode */}
+        {!isFocusMode && (
+          <Navbar
+            toggleSidebar={() => handleSetSidebarOpen()}
+            isSidebarOpen={isSidebarOpen}
+            promotion={promotion}
+          />
+        )}
 
-        {/* Page Content: Starts below Navbar (pt-14 or pt-16) */}
-        <main className="flex-1 pt-14 lg:pt-16 w-full bg-[#f8fafc] dark:bg-[#09090b]">
-          {promotion && promotion.enabled && !isWorkspace && (
+        {/* Page Content: Starts below Navbar unless in full-screen Focus Mode */}
+        <main
+          className={`flex-1 w-full bg-[#f8fafc] dark:bg-[#09090b] ${
+            isFocusMode ? "pt-0" : "pt-14 lg:pt-16"
+          }`}
+        >
+          {promotion && promotion.enabled && !isWorkspace && !isFocusMode && (
             <FestiveSaleBanner promotion={promotion} />
           )}
 
           <PageTransition key={location.pathname}>
-            <Outlet />
+            <Outlet context={{ isFocusMode, setIsFocusMode }} />
           </PageTransition>
         </main>
 
-        {/* Footer (Hidden on dashboard and workspace pages) */}
-        {!isWorkspace && <Footer />}
+        {/* Footer (Hidden on dashboard, workspace pages, and focus mode) */}
+        {!isWorkspace && !isFocusMode && <Footer />}
       </div>
     </div>
   );

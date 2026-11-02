@@ -174,7 +174,7 @@ const SmartJobMatchPage = () => {
     <div>
       {/* Resume Selector - Always show to indicate which resume is being used */}
       <div className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
+        <div className="workspace-container py-4">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <div className="flex items-center gap-3 flex-1">
               <div className="flex items-center gap-2">

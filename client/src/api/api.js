@@ -70,6 +70,8 @@ api.interceptors.response.use(
         const publicPaths = [
           "/",
           "/templates",
+          "/ats-analyzer",
+          "/ats-resume-checker",
           "/pricing",
           "/contact",
           "/careers",

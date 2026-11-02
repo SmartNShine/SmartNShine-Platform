@@ -1,6 +1,7 @@
 import {useEffect} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {useAuth} from "@/context/AuthContext";
+import {authStorage} from "@/utils/storage";
 import {Loader2} from "lucide-react";
 
 /**
@@ -32,9 +33,6 @@ const AuthCallback = () => {
       // Handle successful OAuth
       if (token) {
         try {
-          // Store token in localStorage
-          localStorage.setItem("token", token);
-
           // Fetch user data
           const response = await fetch(
             `${import.meta.env.VITE_API_URL}/auth/me`,
@@ -46,9 +44,19 @@ const AuthCallback = () => {
           );
 
           if (response.ok) {
-            const userData = await response.json();
-            setUserData(userData);
-            navigate("/dashboard");
+            const data = await response.json();
+            const user = data.user || data;
+            authStorage.setToken(token);
+            authStorage.setUser(user);
+            setUserData(user);
+
+            const savedFrom = sessionStorage.getItem("auth_redirect_after_login");
+            if (savedFrom) {
+              sessionStorage.removeItem("auth_redirect_after_login");
+              navigate(savedFrom, { replace: true });
+            } else {
+              navigate("/dashboard", { replace: true });
+            }
           } else {
             throw new Error("Failed to fetch user data");
           }

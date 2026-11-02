@@ -150,28 +150,22 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         ></div>
       )}
 
-      {/* Floating Sidebar (curved from top and bottom, not connected to screen) */}
+      {/* Docked Static Sidebar (stick to screen left edge) */}
       <aside
-        className={`fixed z-50 overflow-hidden will-change-transform will-change-[width] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-          /* Detached floating offsets: space at top, bottom, and left */
-          top-3 bottom-3 left-3 lg:top-3.5 lg:bottom-3.5 lg:left-3.5
-          /* Curvature at top and bottom */
-          rounded-2xl lg:rounded-3xl
-          /* Elevated floating surface */
-          bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-xl
-          border border-gray-200/85 dark:border-white/10
-          shadow-[0_10px_35px_-5px_rgba(0,0,0,0.08),0_2px_8px_-2px_rgba(0,0,0,0.04)]
-          dark:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7),0_0_1px_1px_rgba(255,255,255,0.05)]
+        className={`fixed inset-y-0 left-0 z-50 h-screen transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+          bg-white dark:bg-[#0c0c0e]
+          border-r border-gray-200/80 dark:border-white/10
+          shadow-xs dark:shadow-[1px_0_0_0_rgba(255,255,255,0.04)]
           ${
             isOpen
-              ? "translate-x-0 w-[calc(100vw-1.5rem)] max-w-72 lg:w-64"
-              : "-translate-x-[120%] w-64 lg:translate-x-0 lg:w-20"
+              ? "translate-x-0 w-64"
+              : "-translate-x-full lg:translate-x-0 lg:w-20"
           }
         `}
       >
         <div className="flex flex-col h-full">
           {/* Logo Section */}
-          <div className="h-16 flex items-center justify-between px-3.5 border-b border-gray-200/80 dark:border-white/10">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200/80 dark:border-white/10 shrink-0">
             {/* Expanded Logo */}
             {isOpen ? (
               <>
@@ -190,9 +184,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
                 {/* Toggle Button (Desktop) */}
                 <button
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="hidden lg:flex items-center justify-center w-8 h-8 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200 flex-shrink-0"
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-150 flex-shrink-0 cursor-pointer"
                   title="Collapse sidebar"
+                  aria-label="Collapse sidebar"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -202,7 +198,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               <div className="w-full flex flex-col items-center justify-center gap-1.5 py-1">
                 <Link
                   to={user ? "/dashboard" : "/"}
-                  className="flex items-center justify-center p-0.5 rounded-xl hover:opacity-85 transition-opacity"
+                  className="flex items-center justify-center p-0.5 rounded-lg hover:opacity-85 transition-opacity"
                   title="SmartNShine Dashboard"
                 >
                   <Logo
@@ -211,12 +207,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   />
                 </Link>
                 <button
+                  type="button"
                   onClick={() => setIsOpen(true)}
-                  className="w-8 h-4.5 rounded-full bg-zinc-100 dark:bg-zinc-800/90 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200/80 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center transition-all active:scale-90 shadow-2xs cursor-pointer group"
+                  className="w-8 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition-colors cursor-pointer"
                   title="Expand sidebar"
                   aria-label="Expand sidebar"
                 >
-                  <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
@@ -385,15 +382,27 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-gray-200/80 dark:border-white/10 p-3">
+          <div className="border-t border-gray-200/80 dark:border-white/10 p-3 shrink-0">
             {isOpen ? (
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center font-medium">
-                © 2026 SmartNShine
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                  © 2026 SmartNShine
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="hidden lg:flex items-center justify-center p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Collapse sidebar"
+                  aria-label="Collapse sidebar"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ) : (
               <button
+                type="button"
                 onClick={() => setIsOpen(true)}
-                className="hidden lg:flex items-center justify-center w-full py-1.5 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all cursor-pointer"
+                className="hidden lg:flex items-center justify-center w-full py-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-colors cursor-pointer"
                 title="Expand sidebar"
                 aria-label="Expand sidebar"
               >

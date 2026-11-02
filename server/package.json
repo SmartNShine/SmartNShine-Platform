@@ -17,6 +17,7 @@
         "migrate:resume-titles": "node --env-file=.env scripts/migrateResumeTitles.js",
         "migrate:users": "node --env-file=.env scripts/migrateUsers.js",
         "test:models": "node --env-file=.env scripts/testModels.js",
+        "test:interview": "node --test tests/proctoring.test.js tests/interview-algorithm.test.js",
         "cleanup:plans:dry": "node scripts/cleanup-production-plans.js --dry-run",
         "cleanup:plans:backup": "node scripts/cleanup-production-plans.js --backup --force",
         "cleanup:plans": "node scripts/cleanup-production-plans.js --force"
