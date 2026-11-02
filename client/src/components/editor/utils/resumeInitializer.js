@@ -1,3 +1,5 @@
+import { normalizeQrCode } from "./qrCode";
+
 /**
  * Normalizes resume data from API or navigation state to ensure all expected
  * fields, defaults, contacts, and section arrays are safely defined.
@@ -7,6 +9,7 @@
  */
 export function normalizeResumeData(rawData) {
   const data = { ...(rawData || {}) };
+  data.qrCode = normalizeQrCode(data.qrCode);
 
   if (!data.targetJobRole) {
     data.targetJobRole = "software-engineer";

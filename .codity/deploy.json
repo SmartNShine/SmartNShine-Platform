@@ -13,8 +13,8 @@
     {"path": ".codity/rehearsal.py", "digest": "a11d5a73917eac6a4a7a67a813a72d4daef8830fcf0ef698323a652a897acf99"},
     {"path": ".codity/Dockerfile", "digest": "ed2e15e2cc8d86171044991b7b6ddcecbd7bdbb86b0a281c33489f50e835382e"},
     {"path": "client/static-server.mjs", "digest": "9161bce66ace6e96253bf656ae4b318b19878290fde4c718a05a407ee98e496b"},
-    {"path": "client/package.json", "digest": "4ebd9aea979c36af52ed4269cb8f0d232403754d359a392f465257d054d27b9b"},
-    {"path": "client/package-lock.json", "digest": "d63bde18ef8954e5e05cbeadb843c895dc6061c796de23f602994dd365db8159"},
+    {"path": "client/package.json", "digest": "b119cd75f17aa0e252a67b4bf85e61cda7eb4f483978584b2d67943cc3fc3464"},
+    {"path": "client/package-lock.json", "digest": "8a15ce6330a0dba9f6c554cbe129736af909a4481f9aac863d59d099f20c31ab"},
     {"path": "client/vite.config.js", "digest": "a83f076952f1ec18b36d25d150c69f8267275564f01c0359952fe6fd0a797743"},
     {"path": "client/prerender-seo.mjs", "digest": "761084270b046a3594460ea51b8cfa39cbb512f3dd98f3a45b62506b48fd3fb1"}
   ],
