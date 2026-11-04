@@ -1,6 +1,6 @@
 # ==============================================================================
 # SmartNShine - Elite Search Engine & AI Agent (GEO / LLM) Robots Configuration
-# Website: https://www.smartnshine.app
+# Website: https://www.smartnshine.in
 # Updated: 2026-08-29
 # ==============================================================================
 
@@ -147,5 +147,5 @@ Disallow: /
 # ------------------------------------------------------------------------------
 # 5. SITEMAP & LLM DECLARATIONS
 # ------------------------------------------------------------------------------
-Sitemap: https://www.smartnshine.app/sitemap.xml
-Host: https://www.smartnshine.app
+Sitemap: https://www.smartnshine.in/sitemap.xml
+Host: https://www.smartnshine.in

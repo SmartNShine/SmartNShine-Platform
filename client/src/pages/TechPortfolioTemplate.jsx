@@ -73,18 +73,18 @@ const TechPortfolioTemplate = () => {
         <meta property="og:type" content="website" />
         <meta property="og:title" content={seoConfig.title} />
         <meta property="og:description" content={seoConfig.description} />
-        <meta property="og:image" content={seoConfig.ogImage || "https://www.smartnshine.app/social-preview.png"} />
-        <meta property="og:url" content="https://www.smartnshine.app/tech-portfolio" />
+        <meta property="og:image" content={seoConfig.ogImage || "https://www.smartnshine.in/social-preview.png"} />
+        <meta property="og:url" content="https://www.smartnshine.in/tech-portfolio" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={seoConfig.title} />
         <meta name="twitter:description" content={seoConfig.description} />
-        <meta name="twitter:image" content={seoConfig.ogImage || "https://www.smartnshine.app/social-preview.png"} />
+        <meta name="twitter:image" content={seoConfig.ogImage || "https://www.smartnshine.in/social-preview.png"} />
         <meta name="twitter:creator" content={seoConfig.twitterHandle || "@smartnshine"} />
 
         {/* Canonical */}
-        <link rel="canonical" href="https://www.smartnshine.app/tech-portfolio" />
+        <link rel="canonical" href="https://www.smartnshine.in/tech-portfolio" />
 
         {/* Theme Color */}
         <meta name="theme-color" content="#000000" />
@@ -96,7 +96,7 @@ const TechPortfolioTemplate = () => {
             "@type": "ProfilePage",
             "name": seoConfig.title,
             "description": seoConfig.description,
-            "url": "https://www.smartnshine.app/tech-portfolio",
+            "url": "https://www.smartnshine.in/tech-portfolio",
             "mainEntity": {
               "@type": "Person",
               "name": personalInfo.name,

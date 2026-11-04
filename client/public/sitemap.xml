@@ -10,24 +10,24 @@
   <!-- 1. CORE LANDING & CONVERSION HUBS (Priority 1.0)                       -->
   <!-- ====================================================================== -->
   <url>
-    <loc>https://www.smartnshine.app/</loc>
+    <loc>https://www.smartnshine.in/</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>SmartNShine AI ATS Resume Builder - Create Interview-Ready Resumes</image:title>
       <image:caption>AI-powered resume builder with 98% ATS pass score, instant export, and smart job matching.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates</loc>
+    <loc>https://www.smartnshine.in/templates</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Professional ATS Resume Templates - 98% Recruiter Pass Rate</image:title>
       <image:caption>Browse top-rated professional ATS resume templates for software engineers, executives, and freshers.</image:caption>
     </image:image>
@@ -37,54 +37,54 @@
   <!-- 2. HIGH-INTENT TEMPLATE CATEGORY HUBS (Priority 0.95)                  -->
   <!-- ====================================================================== -->
   <url>
-    <loc>https://www.smartnshine.app/templates?category=professional</loc>
+    <loc>https://www.smartnshine.in/templates?category=professional</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Professional ATS Resume Format - Corporate &amp; Enterprise Standard</image:title>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?category=tech</loc>
+    <loc>https://www.smartnshine.in/templates?category=tech</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Developer Tech Resume Templates - GitHub &amp; Stack Focus</image:title>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?category=leadership</loc>
+    <loc>https://www.smartnshine.in/templates?category=leadership</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Executive Leadership Resume Templates - Strategic Results</image:title>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?category=creative</loc>
+    <loc>https://www.smartnshine.in/templates?category=creative</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?category=modern</loc>
+    <loc>https://www.smartnshine.in/templates?category=modern</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?category=minimal</loc>
+    <loc>https://www.smartnshine.in/templates?category=minimal</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
@@ -94,205 +94,205 @@
   <!-- 3. INDIVIDUAL ATS RESUME TEMPLATES (Google Images & Search Targets)   -->
   <!-- ====================================================================== -->
   <url>
-    <loc>https://www.smartnshine.app/templates?template=silicon-valley</loc>
+    <loc>https://www.smartnshine.in/templates?template=silicon-valley</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/tech.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/tech.webp</image:loc>
       <image:title>Silicon Valley Tech Lead ATS Resume Template</image:title>
       <image:caption>High-craft modern tech lead developer resume template with ATS-safe metric highlighting.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=latex-academic</loc>
+    <loc>https://www.smartnshine.in/templates?template=latex-academic</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/classic.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/classic.webp</image:loc>
       <image:title>Stanford / LaTeX Academic Pro ATS Resume Template</image:title>
       <image:caption>Mathematical precision LaTeX academic serif resume format with 95+ ATS score.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=nordic-split</loc>
+    <loc>https://www.smartnshine.in/templates?template=nordic-split</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/modern.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/modern.webp</image:loc>
       <image:title>Nordic Two-Column Architect ATS Resume Template</image:title>
       <image:caption>Asymmetric split-rail ATS-safe two column resume template for managers and senior architects.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=executive</loc>
+    <loc>https://www.smartnshine.in/templates?template=executive</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/professional.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/professional.webp</image:loc>
       <image:title>The Wall Street &amp; Ivy League Executive ATS Resume Template</image:title>
       <image:caption>Dignified Ivy League executive format with Oxford rules and centered masthead.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=classic</loc>
+    <loc>https://www.smartnshine.in/templates?template=classic</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/classic.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/classic.webp</image:loc>
       <image:title>Free ATS Resume Template - Classic Format (Word &amp; PDF)</image:title>
       <image:caption>Free downloadable ATS-friendly classic resume template with 99% pass score for experienced professionals and freshers.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/classic.png</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/classic.png</image:loc>
       <image:title>Classic ATS Resume Template High Resolution Preview</image:title>
       <image:caption>Classic single-column serif resume format optimized for Taleo, Workday, and Greenhouse ATS scanners.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=modern</loc>
+    <loc>https://www.smartnshine.in/templates?template=modern</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/modern.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/modern.webp</image:loc>
       <image:title>Modern Two-Column ATS Resume Template (Free Download)</image:title>
       <image:caption>Linear &amp; modern minimalist two-column ATS resume format with timeline rail and skill badges.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/modern.png</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/modern.png</image:loc>
       <image:title>Modern Two-Column ATS Resume Format Preview</image:title>
       <image:caption>Contemporary resume design for software engineers, product managers, and modern professionals.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=minimal</loc>
+    <loc>https://www.smartnshine.in/templates?template=minimal</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/minimal.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/minimal.webp</image:loc>
       <image:title>Minimal Single-Column ATS Resume Template (99% ATS Score)</image:title>
       <image:caption>Swiss typography minimalist single-column resume format guaranteed to fit on 1 page and parse 100% on all ATS systems.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/minimal.png</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/minimal.png</image:loc>
       <image:title>Minimal Black and White ATS Resume Template HD</image:title>
       <image:caption>Clean black and white resume layout with hairline dividers and space-efficient typography.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=professional</loc>
+    <loc>https://www.smartnshine.in/templates?template=professional</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/professional.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/professional.webp</image:loc>
       <image:title>Professional Elite ATS Resume Template - Corporate Format</image:title>
       <image:caption>Corporate standard ATS-compliant resume template engineered for enterprise positions and senior job applicants.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/professional.png</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/professional.png</image:loc>
       <image:title>Professional Elite ATS Resume Format Full Preview</image:title>
       <image:caption>Balanced corporate layout with structured work experience sections and high recruiter response rate.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=professional-2</loc>
+    <loc>https://www.smartnshine.in/templates?template=professional-2</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/professional2.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/professional2.webp</image:loc>
       <image:title>Executive Minimalist Single-Column Resume Template</image:title>
       <image:caption>Executive single-column resume template highlighting career milestones, leadership achievements, and quantifiable results.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=tech</loc>
+    <loc>https://www.smartnshine.in/templates?template=tech</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/tech.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/tech.webp</image:loc>
       <image:title>Software Engineer Tech Stack ATS Resume Template</image:title>
       <image:caption>Developer resume format emphasizing technical skills, frameworks, cloud architecture, and GitHub repositories.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/tech.png</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/tech.png</image:loc>
       <image:title>Developer Tech Stack Resume Template HD Preview</image:title>
       <image:caption>Terminal-inspired developer format with clean skill capsules and commit-style project highlights.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=creative-2</loc>
+    <loc>https://www.smartnshine.in/templates?template=creative-2</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/creative2.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/creative2.webp</image:loc>
       <image:title>Creative 2.0 Modern ATS Resume Template</image:title>
       <image:caption>Vibrant modern creative template with dynamic badges, balanced whitespace, and 95+ ATS parser compatibility.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=strategic-leader</loc>
+    <loc>https://www.smartnshine.in/templates?template=strategic-leader</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/strategic-leader.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/strategic-leader.webp</image:loc>
       <image:title>Strategic Leadership Executive ATS Resume Template</image:title>
       <image:caption>Strategic leadership resume template emphasizing team building, P&amp;L ownership, and business revenue growth.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=impact-pro</loc>
+    <loc>https://www.smartnshine.in/templates?template=impact-pro</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/impact-pro.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/impact-pro.webp</image:loc>
       <image:title>Impact Pro Metrics-Driven ATS Resume Template</image:title>
       <image:caption>Metrics-first bold ATS resume design highlighting quantifiable revenue growth and ROI metrics.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=github-style</loc>
+    <loc>https://www.smartnshine.in/templates?template=github-style</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/github-style.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/github-style.webp</image:loc>
       <image:title>GitHub Style Software Engineer ATS Resume Template</image:title>
       <image:caption>GitHub open-source styled resume layout optimized for developers, tech leads, and contributors.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/templates?template=structured-photo</loc>
+    <loc>https://www.smartnshine.in/templates?template=structured-photo</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/templates/structured-photo.webp</image:loc>
+      <image:loc>https://www.smartnshine.in/templates/structured-photo.webp</image:loc>
       <image:title>Structured Photo Pro International CV Resume Template</image:title>
       <image:caption>Structured international standard CV format with elegant typography and clean section layouts.</image:caption>
     </image:image>
@@ -302,35 +302,35 @@
   <!-- 4. DEVELOPER & PROFESSIONAL PORTFOLIO BUILDER (Priority 0.95)          -->
   <!-- ====================================================================== -->
   <url>
-    <loc>https://www.smartnshine.app/tech-portfolio</loc>
+    <loc>https://www.smartnshine.in/tech-portfolio</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Free 3D Interactive Developer Portfolio Builder - GitHub Synced</image:title>
       <image:caption>Generate a dark-mode interactive tech portfolio from your GitHub repositories and projects in 60 seconds.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/smartnshine-portfolio</loc>
+    <loc>https://www.smartnshine.in/smartnshine-portfolio</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>SmartNShine Executive Personal Brand Portfolio Template</image:title>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/magazine-portfolio</loc>
+    <loc>https://www.smartnshine.in/magazine-portfolio</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Editorial Magazine Portfolio Template for Creatives &amp; Writers</image:title>
     </image:image>
   </url>
@@ -339,44 +339,44 @@
   <!-- 5. CORE REVENUE & AI PRODUCT TOOLS                                     -->
   <!-- ====================================================================== -->
   <url>
-    <loc>https://www.smartnshine.app/ats-analyzer</loc>
+    <loc>https://www.smartnshine.in/ats-analyzer</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>Free ATS Resume Checker &amp; Compatibility Analyzer</image:title>
       <image:caption>Scan your resume against any job description for instant keyword gaps and ATS score breakdown.</image:caption>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/interview/preview</loc>
+    <loc>https://www.smartnshine.in/interview/preview</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image>
-      <image:loc>https://www.smartnshine.app/social-preview.png</image:loc>
+      <image:loc>https://www.smartnshine.in/social-preview.png</image:loc>
       <image:title>AI Voice Mock Interview Simulator &amp; Technical Question Practice</image:title>
     </image:image>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/careers</loc>
+    <loc>https://www.smartnshine.in/careers</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/pricing</loc>
+    <loc>https://www.smartnshine.in/pricing</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/contact</loc>
+    <loc>https://www.smartnshine.in/contact</loc>
     <lastmod>2026-09-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
@@ -386,28 +386,28 @@
   <!-- 5. LEGAL, TRUST & COMPLIANCE                                           -->
   <!-- ====================================================================== -->
   <url>
-    <loc>https://www.smartnshine.app/privacy-policy</loc>
+    <loc>https://www.smartnshine.in/privacy-policy</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.40</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/terms</loc>
+    <loc>https://www.smartnshine.in/terms</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.40</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/refund-policy</loc>
+    <loc>https://www.smartnshine.in/refund-policy</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.40</priority>
   </url>
 
   <url>
-    <loc>https://www.smartnshine.app/shipping-policy</loc>
+    <loc>https://www.smartnshine.in/shipping-policy</loc>
     <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.40</priority>

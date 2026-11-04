@@ -2,49 +2,49 @@
   "catalog_version": "1.0.0",
   "name": "SmartNShine AI Catalog",
   "description": "Comprehensive API & Protocol Catalog for AI Agents and Autonomous Workflows",
-  "url": "https://www.smartnshine.app",
+  "url": "https://www.smartnshine.in",
   "provider": {
     "name": "SmartNShine",
-    "url": "https://www.smartnshine.app"
+    "url": "https://www.smartnshine.in"
   },
   "apis": [
     {
       "name": "OpenAPI Specification",
       "type": "openapi",
       "format": "application/openapi+json",
-      "url": "https://www.smartnshine.app/openapi.json",
-      "documentation": "https://www.smartnshine.app/AGENTS.md"
+      "url": "https://www.smartnshine.in/openapi.json",
+      "documentation": "https://www.smartnshine.in/AGENTS.md"
     },
     {
       "name": "Model Context Protocol (MCP)",
       "type": "mcp",
       "format": "application/json",
-      "url": "https://www.smartnshine.app/.well-known/mcp.json",
-      "documentation": "https://www.smartnshine.app/AGENTS.md"
+      "url": "https://www.smartnshine.in/.well-known/mcp.json",
+      "documentation": "https://www.smartnshine.in/AGENTS.md"
     },
     {
       "name": "WebMCP Manifest",
       "type": "webmcp",
       "format": "application/json",
-      "url": "https://www.smartnshine.app/.well-known/webmcp.json"
+      "url": "https://www.smartnshine.in/.well-known/webmcp.json"
     },
     {
       "name": "RFC 9727 API Catalog",
       "type": "api-catalog",
       "format": "application/linkset+json",
-      "url": "https://www.smartnshine.app/.well-known/api-catalog"
+      "url": "https://www.smartnshine.in/.well-known/api-catalog"
     },
     {
       "name": "Agent Skills Index",
       "type": "skills",
       "format": "application/json",
-      "url": "https://www.smartnshine.app/.well-known/skills.json"
+      "url": "https://www.smartnshine.in/.well-known/skills.json"
     },
     {
       "name": "Agents.json Specification",
       "type": "agents_json",
       "format": "application/json",
-      "url": "https://www.smartnshine.app/agents.json"
+      "url": "https://www.smartnshine.in/agents.json"
     }
   ]
 }

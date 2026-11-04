@@ -401,7 +401,7 @@ const ShippingPolicy = () => {
               <p className="text-gray-700 dark:text-gray-300">
                 <strong>Email:</strong>{" "}
                 <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                  support@smartnshine.app
+                  contact@smartnshine.in
                 </span>
               </p>
               <p className="text-gray-700 dark:text-gray-300">

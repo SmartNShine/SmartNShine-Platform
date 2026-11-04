@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "../config/passport.config.js";
 import jwt from "jsonwebtoken";
+import {getSafeClientRedirectUrl} from "../utils/oauthRedirect.js";
 import {
   register,
   login,
@@ -46,32 +47,6 @@ router.post("/reset-password", authLimiter, resetPassword);
 // ==========================================
 // GOOGLE OAUTH ROUTES
 // ==========================================
-
-// Resolve target frontend client URL from OAuth state or referer (supports subdomains & preview URLs)
-const getSafeClientRedirectUrl = (req) => {
-  const defaultClientUrl = process.env.CLIENT_URL || "https://smartnshine.app";
-  try {
-    const rawOrigin = req.query.state || req.query.origin;
-    if (rawOrigin) {
-      const decodedOrigin = decodeURIComponent(rawOrigin);
-      const parsed = new URL(decodedOrigin);
-      const hostname = parsed.hostname.toLowerCase();
-      // Allowed domains: localhost, 127.0.0.1, smartnshine.app, *.smartnshine.app, *.vercel.app
-      if (
-        hostname === "localhost" ||
-        hostname === "127.0.0.1" ||
-        hostname === "smartnshine.app" ||
-        hostname.endsWith(".smartnshine.app") ||
-        hostname.endsWith(".vercel.app")
-      ) {
-        return `${parsed.protocol}//${parsed.host}`;
-      }
-    }
-  } catch (err) {
-    console.warn("⚠️  OAuth state origin parse notice:", err.message);
-  }
-  return defaultClientUrl;
-};
 
 // Check if Google OAuth is configured
 const isGoogleConfigured =

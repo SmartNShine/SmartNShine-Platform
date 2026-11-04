@@ -293,10 +293,10 @@ const PrivacyPolicy = () => {
               <p className="mt-4 leading-relaxed">
                 To exercise these rights, please contact us at{" "}
                 <a
-                  href="mailto:support@smartnshine.app"
+                  href="mailto:contact@smartnshine.in"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  support@smartnshine.app
+                  contact@smartnshine.in
                 </a>
                 .
               </p>
@@ -383,10 +383,10 @@ const PrivacyPolicy = () => {
                 <p>
                   <strong>Email:</strong>{" "}
                   <a
-                    href="mailto:support@smartnshine.app"
+                    href="mailto:contact@smartnshine.in"
                     className="text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    support@smartnshine.app
+                    contact@smartnshine.in
                   </a>
                 </p>
                 <p>

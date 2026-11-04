@@ -13,7 +13,7 @@ const settingsSchema = new mongoose.Schema(
     },
     contactEmail: {
       type: String,
-      default: "support@atsresume.com",
+      default: "contact@smartnshine.in",
     },
     maintenanceMode: {
       type: Boolean,

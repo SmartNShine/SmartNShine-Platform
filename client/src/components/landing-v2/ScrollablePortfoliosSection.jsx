@@ -21,7 +21,7 @@ const PORTFOLIOS = [
     title: "Magazine Editorial",
     role: "Staff Product Designer & Art Director",
     candidate: "Elena Rostova",
-    subdomain: "smartnshine.app/p/elena.design",
+    subdomain: "smartnshine.in/p/elena.design",
     image: "/img/portfolios/1.png",
     category: "Editorial Monograph",
     badge: "Signature",
@@ -35,7 +35,7 @@ const PORTFOLIOS = [
     title: "CyberDev Terminal",
     role: "Senior Distributed Systems Engineer",
     candidate: "David Chen",
-    subdomain: "smartnshine.app/p/david.systems",
+    subdomain: "smartnshine.in/p/david.systems",
     image: "/img/portfolios/2.png",
     category: "Developer Matrix",
     badge: "Popular Dark",
@@ -49,7 +49,7 @@ const PORTFOLIOS = [
     title: "Swiss Architectural",
     role: "Principal Frontend Architect",
     candidate: "Marcus Vance",
-    subdomain: "smartnshine.app/p/marcus.arch",
+    subdomain: "smartnshine.in/p/marcus.arch",
     image: "/img/portfolios/3.png",
     category: "Minimalist II",
     badge: "Minimalist",
@@ -63,7 +63,7 @@ const PORTFOLIOS = [
     title: "Liquid Glass Spatial",
     role: "Full-Stack AI Engineer",
     candidate: "Sophia Lin",
-    subdomain: "smartnshine.app/p/sophia.ai",
+    subdomain: "smartnshine.in/p/sophia.ai",
     image: "/img/portfolios/4.png",
     category: "Spatial 3D",
     badge: "Spatial 3D",
@@ -106,7 +106,7 @@ export default function ScrollablePortfoliosSection() {
             <div className="space-y-2.5 sm:space-y-3 font-light text-xs sm:text-sm text-slate-700 dark:text-zinc-300">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Instant public subdomain (<span className="font-mono text-xs text-blue-500">smartnshine.app/p/you</span>)</span>
+                <span>Instant public subdomain (<span className="font-mono text-xs text-blue-500">smartnshine.in/p/you</span>)</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />

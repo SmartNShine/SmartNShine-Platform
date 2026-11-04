@@ -4,29 +4,29 @@
   "description": "Index of AI Agent Skills and autonomous capabilities provided by SmartNShine",
   "provider": {
     "name": "SmartNShine",
-    "url": "https://www.smartnshine.app"
+    "url": "https://www.smartnshine.in"
   },
   "skills": [
     {
       "id": "generate-resume",
       "name": "ATS Resume Builder",
       "description": "Generates 100% ATS-compliant resumes tailored for Taleo, Workday, and Greenhouse",
-      "endpoint": "https://www.smartnshine.app/templates",
-      "documentation": "https://www.smartnshine.app/AGENTS.md"
+      "endpoint": "https://www.smartnshine.in/templates",
+      "documentation": "https://www.smartnshine.in/AGENTS.md"
     },
     {
       "id": "score-resume",
       "name": "ATS Score Analyzer",
       "description": "Evaluates candidate resume against job descriptions for keyword matches and formatting compliance",
-      "endpoint": "https://www.smartnshine.app/ats-analyzer",
-      "documentation": "https://www.smartnshine.app/AGENTS.md"
+      "endpoint": "https://www.smartnshine.in/ats-analyzer",
+      "documentation": "https://www.smartnshine.in/AGENTS.md"
     },
     {
       "id": "mock-interview",
       "name": "AI Mock Interview Coach",
       "description": "Simulates technical and behavioral interviews with real-time feedback",
-      "endpoint": "https://www.smartnshine.app/ai-interview",
-      "documentation": "https://www.smartnshine.app/AGENTS.md"
+      "endpoint": "https://www.smartnshine.in/ai-interview",
+      "documentation": "https://www.smartnshine.in/AGENTS.md"
     }
   ]
 }

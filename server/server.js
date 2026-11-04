@@ -1,12 +1,4 @@
-import dotenv from "dotenv";
-import path from "path";
-import {fileURLToPath} from "url";
-
-// Load environment variables immediately before any other module evaluation
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({path: path.join(__dirname, ".env"), override: true});
-dotenv.config({override: true}); // fallback to root .env if present
+import "./config/environment.js";
 
 import express from "express";
 import cors from "cors";
@@ -324,7 +316,7 @@ app.get(["/u/:slug", "/portfolio/:slug"], async (req, res, next) => {
     const description = escapeHtml(rawDescription.substring(0, 300));
 
     // Determine Base URL
-    const host = req.get("host") || "www.smartnshine.app";
+    const host = req.get("host") || "www.smartnshine.in";
     const protocol =
       req.protocol === "https" ||
       req.headers["x-forwarded-proto"] === "https"
@@ -459,7 +451,7 @@ app.get(["/u/:slug", "/portfolio/:slug"], async (req, res, next) => {
 // Dynamic Real-time XML Sitemap for Search Crawlers
 app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   try {
-    const baseUrl = "https://www.smartnshine.app";
+    const baseUrl = "https://www.smartnshine.in";
     const today = new Date().toISOString().split("T")[0];
 
     // Query active templates from MongoDB

@@ -178,7 +178,7 @@ export const CareerOSControlCenter = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h5 className="text-[10px] sm:text-xs font-bold text-white font-outfit truncate">Alex Rivera</h5>
-                  <p className="text-[8px] sm:text-[9.5px] text-zinc-400 truncate font-mono">alex.smartnshine.app</p>
+                  <p className="text-[8px] sm:text-[9.5px] text-zinc-400 truncate font-mono">alex.smartnshine.in</p>
                 </div>
               </div>
 

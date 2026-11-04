@@ -1,7 +1,7 @@
 {
-  "resource": "https://www.smartnshine.app/api",
+  "resource": "https://www.smartnshine.in/api",
   "authorization_servers": [
-    "https://www.smartnshine.app"
+    "https://www.smartnshine.in"
   ],
   "scopes_supported": [
     "read:templates",
@@ -11,5 +11,5 @@
   "bearer_methods_supported": [
     "header"
   ],
-  "resource_documentation": "https://www.smartnshine.app/AGENTS.md"
+  "resource_documentation": "https://www.smartnshine.in/AGENTS.md"
 }

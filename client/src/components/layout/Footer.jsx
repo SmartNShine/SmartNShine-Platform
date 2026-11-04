@@ -132,11 +132,11 @@ const Footer = () => {
               </li>
               <li>
                 <a
-                  href="mailto:support@smartnshine.app"
+                  href="mailto:contact@smartnshine.in"
                   className="text-sm sm:text-[15px] text-gray-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-light inline-flex items-center gap-2"
                 >
                   <Mail className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span className="truncate">support@smartnshine.app</span>
+                  <span className="truncate">contact@smartnshine.in</span>
                 </a>
               </li>
             </ul>

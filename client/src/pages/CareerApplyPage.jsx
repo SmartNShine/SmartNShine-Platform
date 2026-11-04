@@ -361,7 +361,7 @@ export default function CareerApplyPage() {
         title={`Apply: ${selectedRoleData.title} | SmartNShine Founding Team`}
         description={`Apply for ${selectedRoleData.title} at SmartNShine. Join our 100% remote Day-0 founding team and build the future of AI resume & portfolio platforms.`}
         keywords="SmartNShine application, founding team apply, startup job form, remote hiring"
-        url={`https://www.smartnshine.app/careers/apply/${selectedRoleData.id}`}
+        url={`https://www.smartnshine.in/careers/apply/${selectedRoleData.id}`}
       />
 
       {/* Floating Navbar */}

@@ -42,7 +42,7 @@ export default function Profile() {
         title="My Profile - Account & Subscription | SmartNShine"
         description="Manage your SmartNShine profile, subscription plan, AI quota usage, and security credentials."
         keywords="profile, account settings, subscription management, AI quota, security settings"
-        url="https://www.smartnshine.app/profile"
+        url="https://www.smartnshine.in/profile"
         noindex={true}
       />
 

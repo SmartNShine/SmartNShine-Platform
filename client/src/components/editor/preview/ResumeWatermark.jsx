@@ -51,7 +51,7 @@ export default function ResumeWatermark({ isMobile = false }) {
             marginTop: "1px",
           }}
         >
-          Preview Mode • SmartNShine.app
+          Preview Mode • smartnshine.in
         </span>
       </div>
 

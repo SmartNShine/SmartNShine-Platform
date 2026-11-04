@@ -158,14 +158,14 @@ export default function ATSAnalyzer() {
         title="Free ATS Resume Score Checker &amp; Compatibility Analyzer"
         description="Check your resume's ATS score in real time against job descriptions. Discover missing keywords, fix formatting flaws, and pass Taleo, Workday, Greenhouse &amp; Lever filters."
         keywords="ATS resume checker, free ATS score test, Taleo resume scanner, Workday resume checker, ATS compatibility analyzer, keyword gap scanner, resume score checker, pass ATS 2026"
-        url="https://www.smartnshine.app/ats-analyzer"
+        url="https://www.smartnshine.in/ats-analyzer"
         structuredData={{
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
           "name": "SmartNShine ATS Resume Compatibility Analyzer",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "All",
-          "url": "https://www.smartnshine.app/ats-analyzer",
+          "url": "https://www.smartnshine.in/ats-analyzer",
           "offers": {
             "@type": "Offer",
             "price": "0",

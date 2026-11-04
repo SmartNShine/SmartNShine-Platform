@@ -65,7 +65,7 @@ export default function Careers() {
         title="Careers at SmartNShine - Join the Founding Team"
         description="Join our fully remote early-stage team. We are looking for passionate builders in Growth, Marketing, Community, and Business Development."
         keywords="SmartNShine careers, founding team jobs, remote startup hiring, growth marketer hiring, startup business partner jobs"
-        url="https://www.smartnshine.app/careers"
+        url="https://www.smartnshine.in/careers"
       />
 
       {/* Floating Top Navbar */}

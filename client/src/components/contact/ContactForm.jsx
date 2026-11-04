@@ -213,8 +213,8 @@ export function ContactInfoSidebar() {
   const contactDetails = [
     {
       title: "Support Email",
-      value: "support@smartnshine.app",
-      href: "mailto:support@smartnshine.app",
+      value: "contact@smartnshine.in",
+      href: "mailto:contact@smartnshine.in",
       icon: Mail,
       desc: "Direct ticket inbox with rapid responses",
     },
@@ -273,8 +273,8 @@ export function ContactInfoSidebar() {
         </h4>
         <p className="text-xs text-gray-600 dark:text-zinc-300 leading-relaxed">
           Looking for bulk student licenses, campus career portals, or custom ATS testing integrations? Write to us directly at{" "}
-          <a href="mailto:support@smartnshine.app" className="font-bold text-blue-600 dark:text-blue-400 underline">
-            support@smartnshine.app
+          <a href="mailto:contact@smartnshine.in" className="font-bold text-blue-600 dark:text-blue-400 underline">
+            contact@smartnshine.in
           </a>
         </p>
       </div>
