@@ -7,7 +7,7 @@ export default function TemplateSchema({
   activeTemplate = null,
   customFaqs = [],
 }) {
-  const baseUrl = "https://www.smartnshine.app";
+  const baseUrl = "https://www.smartnshine.in";
 
   // Standard high-intent Google FAQ Schema
   const defaultFaqs = [

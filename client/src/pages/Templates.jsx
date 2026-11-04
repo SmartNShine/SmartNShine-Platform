@@ -599,8 +599,8 @@ export default function Templates() {
     : `Explore top ${selectedCategory.toLowerCase()} ATS resume templates. High recruiter callback rate, clean single & two-column formats, and 1-click PDF download.`;
 
   const dynamicMetaImage = currentTemplate
-    ? `https://www.smartnshine.app/templates/${String(currentTemplate.id || "classic").replace("-2", "2")}.webp`
-    : "https://www.smartnshine.app/social-preview.png";
+    ? `https://www.smartnshine.in/templates/${String(currentTemplate.id || "classic").replace("-2", "2")}.webp`
+    : "https://www.smartnshine.in/social-preview.png";
 
   const dynamicImageAlt = currentTemplate
     ? `${currentTemplate.name} ATS Resume Template Preview - SmartNShine`
@@ -644,8 +644,8 @@ export default function Templates() {
         imageAlt={dynamicImageAlt}
         url={
           currentTemplate
-            ? `https://www.smartnshine.app/templates?template=${encodeURIComponent(currentTemplate.id)}`
-            : `https://www.smartnshine.app/templates${
+            ? `https://www.smartnshine.in/templates?template=${encodeURIComponent(currentTemplate.id)}`
+            : `https://www.smartnshine.in/templates${
                 selectedCategory !== "All"
                   ? `?category=${selectedCategory.toLowerCase()}`
                   : ""

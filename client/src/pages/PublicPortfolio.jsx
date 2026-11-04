@@ -138,7 +138,7 @@ const PublicPortfolio = () => {
   const origin =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://www.smartnshine.app";
+      : "https://www.smartnshine.in";
 
   const ogImage = useMemo(() => {
     if (!rawOgImage) return `${origin}/social-preview.png?v=4`;

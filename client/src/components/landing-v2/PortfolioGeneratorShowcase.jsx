@@ -29,7 +29,7 @@ export default function PortfolioGeneratorShowcase() {
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
             <span className="ml-2 text-xs font-mono text-zinc-600 dark:text-zinc-400">
-              https://smartnshine.app/u/alex-morgan
+              https://smartnshine.in/u/alex-morgan
             </span>
           </div>
           <Link

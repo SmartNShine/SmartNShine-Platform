@@ -18,49 +18,49 @@ const templateHtml = fs.readFileSync(indexHtmlPath, "utf-8");
 const routes = [
   {
     path: "templates",
-    canonical: "https://www.smartnshine.app/templates",
+    canonical: "https://www.smartnshine.in/templates",
     title: "Professional ATS Resume Templates - 98% Recruiter Pass Rate | SmartNShine",
     description: "Browse top-rated professional ATS resume templates for software engineers, executives, and freshers. Free templates & instant export."
   },
   {
     path: "tech-portfolio",
-    canonical: "https://www.smartnshine.app/tech-portfolio",
+    canonical: "https://www.smartnshine.in/tech-portfolio",
     title: "Free 3D Interactive Developer Portfolio Builder - GitHub Synced | SmartNShine",
     description: "Generate a dark-mode interactive tech portfolio from your GitHub repositories and projects in 60 seconds."
   },
   {
     path: "smartnshine-portfolio",
-    canonical: "https://www.smartnshine.app/smartnshine-portfolio",
+    canonical: "https://www.smartnshine.in/smartnshine-portfolio",
     title: "SmartNShine Executive Personal Brand Portfolio Template | SmartNShine",
     description: "Clean executive developer portfolio template showcasing technical architecture, high-impact projects, and system achievements."
   },
   {
     path: "magazine-portfolio",
-    canonical: "https://www.smartnshine.app/magazine-portfolio",
+    canonical: "https://www.smartnshine.in/magazine-portfolio",
     title: "Editorial Magazine Portfolio Template for Creatives & Writers | SmartNShine",
     description: "Editorial high-craft magazine style portfolio layout designed for designers, technical writers, and creative technologists."
   },
   {
     path: "ats-analyzer",
-    canonical: "https://www.smartnshine.app/ats-analyzer",
+    canonical: "https://www.smartnshine.in/ats-analyzer",
     title: "Free ATS Resume Checker & Compatibility Analyzer | SmartNShine",
     description: "Scan your resume against any job description for instant keyword gaps and ATS score breakdown."
   },
   {
     path: "careers",
-    canonical: "https://www.smartnshine.app/careers",
+    canonical: "https://www.smartnshine.in/careers",
     title: "Careers at SmartNShine - Join Our Team | SmartNShine",
     description: "Explore job openings and career opportunities at SmartNShine. Help build the future of AI career acceleration."
   },
   {
     path: "contact",
-    canonical: "https://www.smartnshine.app/contact",
+    canonical: "https://www.smartnshine.in/contact",
     title: "Contact Us & Support | SmartNShine",
     description: "Get in touch with the SmartNShine team for support, enterprise inquiries, partnership opportunities, or feedback."
   },
   {
     path: "pricing",
-    canonical: "https://www.smartnshine.app/pricing",
+    canonical: "https://www.smartnshine.in/pricing",
     title: "Transparent Pricing - Resume Builder & AI Interview | SmartNShine",
     description: "Simple, transparent pricing. Free ATS resume builder, free developer portfolio maker, and premium AI interview preparation."
   }

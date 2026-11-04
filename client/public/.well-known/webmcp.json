@@ -6,7 +6,7 @@
     {
       "name": "search_templates",
       "description": "Search and filter ATS resume templates by industry or role",
-      "action": "https://www.smartnshine.app/templates",
+      "action": "https://www.smartnshine.in/templates",
       "method": "GET",
       "parameters": {
         "type": "object",
@@ -24,7 +24,7 @@
     {
       "name": "analyze_ats_score",
       "description": "Analyze ATS compatibility of resume",
-      "action": "https://www.smartnshine.app/ats-analyzer",
+      "action": "https://www.smartnshine.in/ats-analyzer",
       "method": "POST",
       "parameters": {
         "type": "object",

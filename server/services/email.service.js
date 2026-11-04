@@ -32,11 +32,12 @@ export const sendPasswordResetEmail = async (email, resetToken, userName) => {
 
     // Create reset URL (for frontend)
     const resetUrl = `${
-      process.env.CLIENT_URL || "http://localhost:5173"
+      process.env.CLIENT_URL || (process.env.NODE_ENV === "production" ? "https://www.smartnshine.in" : "http://localhost:5173")
     }/reset-password?token=${resetToken}`;
 
     const mailOptions = {
       from: `"SmartNShine Support" <${process.env.EMAIL_USER}>`,
+      replyTo: "contact@smartnshine.in",
       to: email,
       subject: "Password Reset Request - SmartNShine",
       html: `
@@ -147,6 +148,7 @@ export const sendPasswordChangeConfirmation = async (email, userName) => {
 
     const mailOptions = {
       from: `"SmartNShine Support" <${process.env.EMAIL_USER}>`,
+      replyTo: "contact@smartnshine.in",
       to: email,
       subject: "Password Changed Successfully - SmartNShine",
       html: `
@@ -205,7 +207,7 @@ export const sendPasswordChangeConfirmation = async (email, userName) => {
               
               <div class="alert">
                 <strong>⚠️ Didn't make this change?</strong>
-                <p>If you didn't change your password, please contact our support team immediately at support@smartnshine.app</p>
+                <p>If you didn't change your password, please contact our support team immediately at contact@smartnshine.in</p>
               </div>
               
               <p>Best regards,<br><strong>SmartNShine Team</strong></p>
@@ -270,6 +272,7 @@ export const sendPaymentConfirmationEmail = async (
 
     const mailOptions = {
       from: `"SmartNShine" <${process.env.EMAIL_USER}>`,
+      replyTo: "contact@smartnshine.in",
       to: email,
       subject: `Payment Successful - Receipt #${receiptId}`,
       html: `
@@ -453,7 +456,7 @@ export const sendPaymentConfirmationEmail = async (
               
               <div style="text-align: center;">
                 <a href="${
-                  process.env.CLIENT_URL || "http://localhost:5173"
+                  process.env.CLIENT_URL || (process.env.NODE_ENV === "production" ? "https://www.smartnshine.in" : "http://localhost:5173")
                 }/dashboard" class="button">
                   Go to Dashboard
                 </a>
@@ -463,7 +466,7 @@ export const sendPaymentConfirmationEmail = async (
                 <strong>💡 Important:</strong> Save this email for your records. You'll need the <strong>Payment ID</strong> if you need to request a refund within 24 hours.
               </div>
               
-              <p style="margin-top: 30px;">If you have any questions or need assistance, please contact us at <strong>support@smartnshine.app</strong></p>
+              <p style="margin-top: 30px;">If you have any questions or need assistance, please contact us at <strong>contact@smartnshine.in</strong></p>
               
               <p>Best regards,<br><strong>SmartNShine Team</strong></p>
             </div>
@@ -501,6 +504,7 @@ export const sendServiceResolutionEmail = async ({
     const transporter = createTransporter();
     const mailOptions = {
       from: `"SmartNShine Support" <${process.env.EMAIL_USER}>`,
+      replyTo: "contact@smartnshine.in",
       to: email,
       subject: `Update: ${feature} is Fully Operational - SmartNShine`,
       html: `
@@ -542,7 +546,7 @@ export const sendServiceResolutionEmail = async ({
               <p>You can now log back into your account and run your resume scans and enhancements seamlessly.</p>
 
               <div class="btn-container">
-                <a href="${process.env.CLIENT_URL || "https://smartnshine.app"}/ats-analyzer" class="button">Scan Your Resume Now &rarr;</a>
+                <a href="${process.env.CLIENT_URL || "https://www.smartnshine.in"}/ats-analyzer" class="button">Scan Your Resume Now &rarr;</a>
               </div>
 
               <div class="note-box">
@@ -591,7 +595,7 @@ export const sendCustomAdminTemplateEmail = async ({
 }) => {
   try {
     const transporter = createTransporter();
-    const clientUrl = process.env.CLIENT_URL || "https://smartnshine.app";
+    const clientUrl = process.env.CLIENT_URL || "https://www.smartnshine.in";
 
     // Dynamic variable replacements
     const formatVars = (str) =>
@@ -703,6 +707,7 @@ export const sendCustomAdminTemplateEmail = async ({
 
     const mailOptions = {
       from: `"SmartNShine Support" <${process.env.EMAIL_USER}>`,
+      replyTo: "contact@smartnshine.in",
       to: toEmail,
       bcc: sendCopyAdmin && process.env.EMAIL_USER !== toEmail ? process.env.EMAIL_USER : undefined,
       subject: formatVars(subject) || "Update from SmartNShine",

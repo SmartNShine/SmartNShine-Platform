@@ -277,7 +277,7 @@ export default function Contact() {
         title="Contact Us & Feedback - Help Desk | SmartNShine"
         description="Get in touch with the SmartNShine support team. Submit technical inquiries, bug reports, and product feedback directly to our developers."
         keywords="contact support, customer service, feedback, help center, resume builder support"
-        url="https://www.smartnshine.app/contact"
+        url="https://www.smartnshine.in/contact"
       />
 
       <div className="workspace-container py-6 sm:py-8 space-y-8">

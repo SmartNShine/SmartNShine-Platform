@@ -4,12 +4,12 @@
   "name": "SmartNShine",
   "title": "SmartNShine ATS Resume & Career Agent",
   "description": "Enterprise-grade Agent-to-Agent (A2A) Card for ATS resume optimization, scoring, and career intelligence",
-  "url": "https://www.smartnshine.app",
+  "url": "https://www.smartnshine.in",
   "version": "2.0.0",
   "provider": {
     "name": "SmartNShine",
-    "url": "https://www.smartnshine.app",
-    "contact": "support@smartnshine.app"
+    "url": "https://www.smartnshine.in",
+    "contact": "contact@smartnshine.in"
   },
   "protocols": [
     "MCP",
@@ -19,12 +19,12 @@
     "OpenAPI"
   ],
   "endpoints": {
-    "openapi": "https://www.smartnshine.app/openapi.json",
-    "mcp": "https://www.smartnshine.app/.well-known/mcp.json",
-    "webmcp": "https://www.smartnshine.app/.well-known/webmcp.json",
-    "api_catalog": "https://www.smartnshine.app/.well-known/api-catalog",
-    "skills": "https://www.smartnshine.app/.well-known/skills.json",
-    "documentation": "https://www.smartnshine.app/AGENTS.md"
+    "openapi": "https://www.smartnshine.in/openapi.json",
+    "mcp": "https://www.smartnshine.in/.well-known/mcp.json",
+    "webmcp": "https://www.smartnshine.in/.well-known/webmcp.json",
+    "api_catalog": "https://www.smartnshine.in/.well-known/api-catalog",
+    "skills": "https://www.smartnshine.in/.well-known/skills.json",
+    "documentation": "https://www.smartnshine.in/AGENTS.md"
   },
   "skills": [
     {

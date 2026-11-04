@@ -1,8 +1,8 @@
 {
-  "issuer": "https://www.smartnshine.app",
-  "authorization_endpoint": "https://www.smartnshine.app/login",
-  "token_endpoint": "https://www.smartnshine.app/api/auth/token",
-  "jwks_uri": "https://www.smartnshine.app/.well-known/jwks.json",
+  "issuer": "https://www.smartnshine.in",
+  "authorization_endpoint": "https://www.smartnshine.in/login",
+  "token_endpoint": "https://www.smartnshine.in/api/auth/token",
+  "jwks_uri": "https://www.smartnshine.in/.well-known/jwks.json",
   "response_types_supported": [
     "code",
     "token"
@@ -28,7 +28,7 @@
   "code_challenge_methods_supported": [
     "S256"
   ],
-  "service_documentation": "https://www.smartnshine.app/AGENTS.md",
+  "service_documentation": "https://www.smartnshine.in/AGENTS.md",
   "ui_locales_supported": [
     "en"
   ]

@@ -1200,11 +1200,11 @@ export default function InteractiveStudioSection() {
             <div className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2 text-xs font-mono font-bold text-gray-700 dark:text-zinc-300 flex-1 overflow-hidden">
                 <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span className="truncate">https://smartnshine.app/p/atharva-joshi</span>
+                <span className="truncate">https://smartnshine.in/p/atharva-joshi</span>
               </div>
 
               <button
-                onClick={() => handleCopyUrl("https://smartnshine.app/p/atharva-joshi")}
+                onClick={() => handleCopyUrl("https://smartnshine.in/p/atharva-joshi")}
                 className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 text-xs font-bold text-gray-800 dark:text-zinc-200 border border-gray-200 dark:border-white/10 hover:bg-gray-50 flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 {copiedUrl ? (
@@ -1409,7 +1409,7 @@ export default function InteractiveStudioSection() {
                         : "opacity-80"
                     }`}
                   >
-                    <span className="font-mono text-[11px]">🔗 smartnshine.app/p/atharva</span>
+                    <span className="font-mono text-[11px]">🔗 smartnshine.in/p/atharva</span>
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         selectedPortfolioTheme === "minimalist"

@@ -2,12 +2,12 @@
   "$schema": "https://agents.json.org/schema.json",
   "name": "SmartNShine",
   "description": "AI-Powered ATS Resume Builder & Career Acceleration Platform",
-  "url": "https://www.smartnshine.app",
+  "url": "https://www.smartnshine.in",
   "version": "2.0.0",
   "provider": {
     "name": "SmartNShine",
-    "url": "https://www.smartnshine.app",
-    "contact": "support@smartnshine.app"
+    "url": "https://www.smartnshine.in",
+    "contact": "contact@smartnshine.in"
   },
   "capabilities": [
     "resume_generation",
@@ -17,13 +17,13 @@
     "mock_interview"
   ],
   "endpoints": {
-    "sitemap": "https://www.smartnshine.app/sitemap.xml",
-    "llms": "https://www.smartnshine.app/llms.txt",
-    "llms_full": "https://www.smartnshine.app/llms-full.txt",
-    "agent_guide": "https://www.smartnshine.app/AGENTS.md",
-    "openapi": "https://www.smartnshine.app/openapi.json",
-    "templates": "https://www.smartnshine.app/templates",
-    "ats_analyzer": "https://www.smartnshine.app/ats-analyzer"
+    "sitemap": "https://www.smartnshine.in/sitemap.xml",
+    "llms": "https://www.smartnshine.in/llms.txt",
+    "llms_full": "https://www.smartnshine.in/llms-full.txt",
+    "agent_guide": "https://www.smartnshine.in/AGENTS.md",
+    "openapi": "https://www.smartnshine.in/openapi.json",
+    "templates": "https://www.smartnshine.in/templates",
+    "ats_analyzer": "https://www.smartnshine.in/ats-analyzer"
   },
   "templates_catalog": [
     {

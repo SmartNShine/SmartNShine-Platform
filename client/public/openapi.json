@@ -6,8 +6,8 @@
     "version": "2.0.0",
     "contact": {
       "name": "SmartNShine Agent Support",
-      "url": "https://www.smartnshine.app/contact",
-      "email": "support@smartnshine.app"
+      "url": "https://www.smartnshine.in/contact",
+      "email": "contact@smartnshine.in"
     },
     "license": {
       "name": "MIT",
@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "https://www.smartnshine.app/api",
+      "url": "https://www.smartnshine.in/api",
       "description": "Production Server"
     }
   ],
@@ -153,7 +153,7 @@
         "description": "Standard OAuth 2.0 Authorization",
         "flows": {
           "clientCredentials": {
-            "tokenUrl": "https://www.smartnshine.app/api/auth/token",
+            "tokenUrl": "https://www.smartnshine.in/api/auth/token",
             "scopes": {
               "read:templates": "Access active resume templates catalog",
               "read:score": "Run automated ATS scoring and analysis",

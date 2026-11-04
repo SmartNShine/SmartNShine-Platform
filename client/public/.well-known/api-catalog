@@ -1,30 +1,30 @@
 {
   "linkset": [
     {
-      "anchor": "https://www.smartnshine.app/api",
+      "anchor": "https://www.smartnshine.in/api",
       "service-desc": [
         {
-          "href": "https://www.smartnshine.app/openapi.json",
+          "href": "https://www.smartnshine.in/openapi.json",
           "type": "application/openapi+json"
         },
         {
-          "href": "https://www.smartnshine.app/.well-known/mcp.json",
+          "href": "https://www.smartnshine.in/.well-known/mcp.json",
           "type": "application/json"
         }
       ],
       "service-doc": [
         {
-          "href": "https://www.smartnshine.app/AGENTS.md",
+          "href": "https://www.smartnshine.in/AGENTS.md",
           "type": "text/markdown"
         }
       ],
       "service-meta": [
         {
-          "href": "https://www.smartnshine.app/agents.json",
+          "href": "https://www.smartnshine.in/agents.json",
           "type": "application/json"
         },
         {
-          "href": "https://www.smartnshine.app/.well-known/agent-card.json",
+          "href": "https://www.smartnshine.in/.well-known/agent-card.json",
           "type": "application/json"
         }
       ]

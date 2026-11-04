@@ -146,7 +146,7 @@ export default function Pricing() {
         title="Pricing & Plans - Upgrade Your Resume | SmartNShine"
         description="Choose from Starter Free, One-Time Pass, or Pro Unlimited plans. Build ATS-optimized resumes with AI-powered rewriting starting at ₹49."
         keywords="resume builder pricing, ATS resume cost, subscription plans, resume builder plans, professional resume pricing"
-        url="https://www.smartnshine.app/pricing"
+        url="https://www.smartnshine.in/pricing"
       />
 
       <div className="workspace-container py-6 sm:py-8 space-y-8">

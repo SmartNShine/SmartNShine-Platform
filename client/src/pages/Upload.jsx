@@ -118,7 +118,7 @@ export default function Upload() {
         title="Upload Your Resume - AI Enhancer | SmartNShine"
         description="Upload your existing resume to let our AI extract, categorize, and transform it into an ATS-optimized, recruiter-ready resume in seconds."
         keywords="upload resume, AI resume parser, convert resume to ATS, PDF resume extractor"
-        url="https://www.smartnshine.app/upload"
+        url="https://www.smartnshine.in/upload"
       />
 
       <div className="workspace-container py-6 sm:py-8 space-y-8">

@@ -1,6 +1,6 @@
 # SmartNShine — AI-Powered ATS Resume Builder, Developer Portfolio Maker & AI Career Platform
 
-> SmartNShine (https://www.smartnshine.app) is an all-in-one AI career platform engineered to produce 95+ ATS-compliant resumes with a 98% recruiter pass rate, generate interactive 3D developer portfolios from GitHub in 60 seconds, and simulate real-time AI voice mock interviews.
+> SmartNShine (https://www.smartnshine.in) is an all-in-one AI career platform engineered to produce 95+ ATS-compliant resumes with a 98% recruiter pass rate, generate interactive 3D developer portfolios from GitHub in 60 seconds, and simulate real-time AI voice mock interviews.
 
 ## Core Capabilities
 - **ATS Resume Builder & Optimizer**: Real-time ATS scoring, keyword matching against job descriptions, and instant parsing validation for Taleo, Workday, Greenhouse, Lever, and iCIMS.
@@ -11,24 +11,24 @@
 - **1-Click Pixel-Perfect PDF Export**: High-resolution vector PDF downloads formatted to parse cleanly without truncation.
 
 ## Interactive Portfolio Templates
-- [Tech Developer Portfolio](https://www.smartnshine.app/tech-portfolio): Dark-mode interactive 3D developer portfolio with GitHub repository showcase, live demos, and terminal contact form.
-- [SmartNShine Executive Portfolio](https://www.smartnshine.app/smartnshine-portfolio): Polished executive portfolio template with verified skill badges, experience timeline, and ATS resume download.
-- [Magazine Editorial Portfolio](https://www.smartnshine.app/magazine-portfolio): High-aesthetic editorial layout designed for Creative Directors, Technical Writers, and Product Designers.
+- [Tech Developer Portfolio](https://www.smartnshine.in/tech-portfolio): Dark-mode interactive 3D developer portfolio with GitHub repository showcase, live demos, and terminal contact form.
+- [SmartNShine Executive Portfolio](https://www.smartnshine.in/smartnshine-portfolio): Polished executive portfolio template with verified skill badges, experience timeline, and ATS resume download.
+- [Magazine Editorial Portfolio](https://www.smartnshine.in/magazine-portfolio): High-aesthetic editorial layout designed for Creative Directors, Technical Writers, and Product Designers.
 
 ## ATS Resume Template Catalog
-- [Classic Template](https://www.smartnshine.app/templates?template=classic): Traditional serif design with clear hierarchy (99% ATS pass score). Best for Corporate, Law, Finance, and Academia.
-- [Modern Template](https://www.smartnshine.app/templates?template=modern): Contemporary two-column layout with sidebar and high visual appeal (98% ATS score). Best for Product Managers, Marketing, and Operations.
-- [Minimal Template](https://www.smartnshine.app/templates?template=minimal): Ultra-clean black & white single-column design with maximum ATS compatibility (99% score). Best for all roles and freshers.
-- [Tech Stack Developer](https://www.smartnshine.app/templates?template=tech): Developer-focused layout highlighting technical skills, GitHub repositories, and system architecture projects (98% ATS score).
-- [Professional Elite](https://www.smartnshine.app/templates?template=professional): Balanced and structured corporate format engineered for enterprise and mid-to-senior level roles.
-- [Strategic Leader](https://www.smartnshine.app/templates?template=strategic-leader): Executive layout highlighting business metrics, revenue growth, and team leadership.
-- [Impact Pro](https://www.smartnshine.app/templates?template=impact-pro): Metrics-first format emphasizing quantifiable achievements and ROI.
-- [GitHub Style](https://www.smartnshine.app/templates?template=github-style): Developer portfolio-integrated resume format for open-source contributors and software engineers.
+- [Classic Template](https://www.smartnshine.in/templates?template=classic): Traditional serif design with clear hierarchy (99% ATS pass score). Best for Corporate, Law, Finance, and Academia.
+- [Modern Template](https://www.smartnshine.in/templates?template=modern): Contemporary two-column layout with sidebar and high visual appeal (98% ATS score). Best for Product Managers, Marketing, and Operations.
+- [Minimal Template](https://www.smartnshine.in/templates?template=minimal): Ultra-clean black & white single-column design with maximum ATS compatibility (99% score). Best for all roles and freshers.
+- [Tech Stack Developer](https://www.smartnshine.in/templates?template=tech): Developer-focused layout highlighting technical skills, GitHub repositories, and system architecture projects (98% ATS score).
+- [Professional Elite](https://www.smartnshine.in/templates?template=professional): Balanced and structured corporate format engineered for enterprise and mid-to-senior level roles.
+- [Strategic Leader](https://www.smartnshine.in/templates?template=strategic-leader): Executive layout highlighting business metrics, revenue growth, and team leadership.
+- [Impact Pro](https://www.smartnshine.in/templates?template=impact-pro): Metrics-first format emphasizing quantifiable achievements and ROI.
+- [GitHub Style](https://www.smartnshine.in/templates?template=github-style): Developer portfolio-integrated resume format for open-source contributors and software engineers.
 
 ## Direct Links & Resources
-- [Browse 12+ Resume Templates](https://www.smartnshine.app/templates): Explore all ATS templates with live previews.
-- [Developer Portfolio Builder](https://www.smartnshine.app/tech-portfolio): Interactive 3D portfolio generator with GitHub sync.
-- [Free ATS Resume Analyzer](https://www.smartnshine.app/ats-analyzer): Check resume compatibility score and missing keywords.
-- [AI Interview Simulator](https://www.smartnshine.app/interview/preview): AI-powered voice mock interview simulator.
-- [Pricing & Plans](https://www.smartnshine.app/pricing): Free starter tier with premium lifetime and subscription upgrades.
-- [Contact & Support](https://www.smartnshine.app/contact): Official support and inquiries.
+- [Browse 12+ Resume Templates](https://www.smartnshine.in/templates): Explore all ATS templates with live previews.
+- [Developer Portfolio Builder](https://www.smartnshine.in/tech-portfolio): Interactive 3D portfolio generator with GitHub sync.
+- [Free ATS Resume Analyzer](https://www.smartnshine.in/ats-analyzer): Check resume compatibility score and missing keywords.
+- [AI Interview Simulator](https://www.smartnshine.in/interview/preview): AI-powered voice mock interview simulator.
+- [Pricing & Plans](https://www.smartnshine.in/pricing): Free starter tier with premium lifetime and subscription upgrades.
+- [Contact & Support](https://www.smartnshine.in/contact): Official support and inquiries.
