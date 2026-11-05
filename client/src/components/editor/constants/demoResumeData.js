@@ -1,3 +1,5 @@
+import { DEFAULT_QR_CODE } from "../utils/qrCode";
+
 /**
  * Rich, professional demo resume data used for:
  * 1. Template selection previews (TemplateSelectorModal thumbnails)
@@ -5,6 +7,7 @@
  */
 export const DEMO_RESUME_DATA = {
   name: "Alex Morgan",
+  qrCode: { ...DEFAULT_QR_CODE },
   targetJobRole: "Senior Full Stack Software Engineer",
   contact: {
     email: "alex.morgan@email.com",

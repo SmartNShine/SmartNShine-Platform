@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { normalizeQrCode } from "../editor/utils/qrCode";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
@@ -327,6 +328,8 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
 
   // ── Contact data ──────────────────────────────────────────────────────────
   const contact = resumeData.contact || {};
+  const qrCode = normalizeQrCode(resumeData.qrCode);
+  const showQrCode = qrCode.enabled && Boolean(qrCode.imageDataUrl);
   const contactItems = [
     contact.email && { icon: Mail, label: contact.email, href: `mailto:${contact.email}` },
     contact.phone && { icon: Phone, label: contact.phone, href: null },
@@ -455,8 +458,13 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
           marginBottom: styles.headerMarginBottom,
           paddingLeft: "14px",
           borderLeft: `3px solid ${selectedTheme.accentBar}`,
+          display: showQrCode ? "flex" : undefined,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "12px",
         }}
       >
+        <div style={{ flex: "1 1 220px", minWidth: 0, overflowWrap: "anywhere" }}>
         {/* Name with >_ terminal prefix */}
         <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "3px" }}>
           <span
@@ -467,6 +475,7 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
               color: selectedTheme.primary,
               letterSpacing: "-0.03em",
               lineHeight: 1.1,
+              flexShrink: 0,
               userSelect: "none",
               opacity: 0.7,
             }}
@@ -482,6 +491,8 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
               color: selectedTheme.text,
               margin: 0,
               lineHeight: 1.1,
+              minWidth: 0,
+              overflowWrap: "anywhere",
             }}
           >
             {resumeData.name || "Software Architect"}
@@ -519,7 +530,7 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
             {contactItems.map((item, index) => {
               const Icon = item.icon;
               return (
-                <span key={index} style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <span key={index} style={{ display: "inline-flex", alignItems: "center", gap: "4px", minWidth: 0, maxWidth: "100%" }}>
                   <Icon size={11} style={{ color: selectedTheme.primary, flexShrink: 0 }} />
                   {item.href ? (
                     <a
@@ -541,6 +552,16 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
               );
             })}
           </div>
+        )}
+        </div>
+        {showQrCode && (
+          <img
+            src={qrCode.imageDataUrl}
+            alt="Resume QR code"
+            width={96}
+            height={96}
+            style={{ width: "1in", height: "1in", flexShrink: 0, marginLeft: "auto" }}
+          />
         )}
       </header>
 
