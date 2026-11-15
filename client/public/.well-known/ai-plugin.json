@@ -9,9 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://www.smartnshine.in/openapi.json"
+    "url": "https://smartnshine.in/openapi.json"
   },
-  "logo_url": "https://www.smartnshine.in/favicon-orb.png",
+  "logo_url": "https://smartnshine.in/favicon-orb.png",
   "contact_email": "contact@smartnshine.in",
-  "legal_info_url": "https://www.smartnshine.in/terms"
+  "legal_info_url": "https://smartnshine.in/terms"
 }

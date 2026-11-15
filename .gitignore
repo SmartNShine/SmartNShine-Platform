@@ -50,8 +50,12 @@ coverage/
 .tmp
 
 # Performance test artifacts (screenshots, videos, reports)
-perf-baseline/*.png
-perf-baseline/*.webm
-perf-baseline/**/*.png
-perf-baseline/**/*.webm
-perf-baseline/**/*.html
+perf-baseline/
+
+# Local outreach records and generated document exports
+/outreach/
+/output/
+/outputs/
+
+# Archived unused branding assets
+/client/public/_trash_logos/

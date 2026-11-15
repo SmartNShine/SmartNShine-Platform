@@ -29,7 +29,7 @@ export default function SmartNShinePortfolioTemplate() {
         <meta property="og:title" content={seoConfig.title} />
         <meta property="og:description" content={seoConfig.description} />
         <meta property="og:image" content={seoConfig.ogImage} />
-        <meta property="og:url" content={window.location.href} />
+        <meta property="og:url" content="https://smartnshine.in/smartnshine-portfolio" />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />

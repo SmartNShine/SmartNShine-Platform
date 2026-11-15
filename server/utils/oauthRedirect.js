@@ -1,8 +1,8 @@
-const productionClientUrl = "https://www.smartnshine.in";
+const productionClientUrl = "https://smartnshine.in";
 
 const migrateLegacyOrigin = (url) => {
   const hostname = url.hostname.toLowerCase();
-  if (hostname === "smartnshine.app" || hostname === "www.smartnshine.app") {
+  if (["smartnshine.app", "www.smartnshine.app", "smartnshine.in", "www.smartnshine.in"].includes(hostname)) {
     return productionClientUrl;
   }
   if (hostname.endsWith(".smartnshine.app")) {
