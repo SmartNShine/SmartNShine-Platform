@@ -4,9 +4,9 @@
 Use OAuth 2.0 authorization code with PKCE for user-delegated access, or Bearer token for machine-to-machine agents. Request the minimum scopes needed for the task.
 
 ## Supported Discovery Endpoints
-- **OAuth 2.0 Authorization Server**: `https://www.smartnshine.in/.well-known/oauth-authorization-server`
-- **OpenID Connect**: `https://www.smartnshine.in/.well-known/openid-configuration`
-- **OAuth Protected Resource**: `https://www.smartnshine.in/.well-known/oauth-protected-resource`
+- **OAuth 2.0 Authorization Server**: `https://smartnshine.in/.well-known/oauth-authorization-server`
+- **OpenID Connect**: `https://smartnshine.in/.well-known/openid-configuration`
+- **OAuth Protected Resource**: `https://smartnshine.in/.well-known/oauth-protected-resource`
 
 ## Scopes
 - `openid`: Standard identity verification

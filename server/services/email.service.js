@@ -32,7 +32,7 @@ export const sendPasswordResetEmail = async (email, resetToken, userName) => {
 
     // Create reset URL (for frontend)
     const resetUrl = `${
-      process.env.CLIENT_URL || (process.env.NODE_ENV === "production" ? "https://www.smartnshine.in" : "http://localhost:5173")
+      process.env.CLIENT_URL || (process.env.NODE_ENV === "production" ? "https://smartnshine.in" : "http://localhost:5173")
     }/reset-password?token=${resetToken}`;
 
     const mailOptions = {
@@ -456,7 +456,7 @@ export const sendPaymentConfirmationEmail = async (
               
               <div style="text-align: center;">
                 <a href="${
-                  process.env.CLIENT_URL || (process.env.NODE_ENV === "production" ? "https://www.smartnshine.in" : "http://localhost:5173")
+                  process.env.CLIENT_URL || (process.env.NODE_ENV === "production" ? "https://smartnshine.in" : "http://localhost:5173")
                 }/dashboard" class="button">
                   Go to Dashboard
                 </a>
@@ -546,7 +546,7 @@ export const sendServiceResolutionEmail = async ({
               <p>You can now log back into your account and run your resume scans and enhancements seamlessly.</p>
 
               <div class="btn-container">
-                <a href="${process.env.CLIENT_URL || "https://www.smartnshine.in"}/ats-analyzer" class="button">Scan Your Resume Now &rarr;</a>
+                <a href="${process.env.CLIENT_URL || "https://smartnshine.in"}/ats-analyzer" class="button">Scan Your Resume Now &rarr;</a>
               </div>
 
               <div class="note-box">
@@ -595,7 +595,7 @@ export const sendCustomAdminTemplateEmail = async ({
 }) => {
   try {
     const transporter = createTransporter();
-    const clientUrl = process.env.CLIENT_URL || "https://www.smartnshine.in";
+    const clientUrl = process.env.CLIENT_URL || "https://smartnshine.in";
 
     // Dynamic variable replacements
     const formatVars = (str) =>

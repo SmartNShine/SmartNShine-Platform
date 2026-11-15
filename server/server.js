@@ -325,14 +325,8 @@ app.get(["/u/:slug", "/portfolio/:slug"], async (req, res, next) => {
       `Explore ${name}'s verified projects, technical skills, and professional experience on SmartNShine.`;
     const description = escapeHtml(rawDescription.substring(0, 300));
 
-    // Determine Base URL
-    const host = req.get("host") || "www.smartnshine.in";
-    const protocol =
-      req.protocol === "https" ||
-      req.headers["x-forwarded-proto"] === "https"
-        ? "https"
-        : "http";
-    const baseUrl = `${protocol}://${host}`;
+    // Public portfolio metadata always points to the preferred website domain.
+    const baseUrl = "https://smartnshine.in";
     const canonicalUrl = `${baseUrl}/u/${encodeURIComponent(portfolio.slug)}`;
 
     // Resolve OG Image
@@ -461,7 +455,7 @@ app.get(["/u/:slug", "/portfolio/:slug"], async (req, res, next) => {
 // Dynamic Real-time XML Sitemap for Search Crawlers
 app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   try {
-    const baseUrl = "https://www.smartnshine.in";
+    const baseUrl = "https://smartnshine.in";
     const today = new Date().toISOString().split("T")[0];
 
     // Query active templates from MongoDB

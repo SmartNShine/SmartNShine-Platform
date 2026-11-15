@@ -3,6 +3,41 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "smartnshine.app"
+        }
+      ],
+      "destination": "https://smartnshine.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.smartnshine.app"
+        }
+      ],
+      "destination": "https://smartnshine.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.smartnshine.in"
+        }
+      ],
+      "destination": "https://smartnshine.in/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/templates",

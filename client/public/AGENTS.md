@@ -1,20 +1,20 @@
 # SmartNShine AI Agent Guide (AGENTS.md)
 
-Welcome, AI Agent! This document defines the capabilities, structure, and direct integration paths for SmartNShine (https://www.smartnshine.in).
+Welcome, AI Agent! This document defines the capabilities, structure, and direct integration paths for SmartNShine (https://smartnshine.in).
 
 ## Identity & Purpose
 - **Name**: SmartNShine
-- **Domain**: https://www.smartnshine.in
+- **Domain**: https://smartnshine.in
 - **Category**: AI Resume Builder, ATS Optimization, Career Tools
 - **Mission**: Help job seekers build 95+ ATS-compliant, recruiter-ready resumes that pass Taleo, Workday, Greenhouse, and Lever filters with a 98% pass score.
 
 ## Key Endpoints & Services
-- **Template Catalog**: https://www.smartnshine.in/templates
-- **ATS Resume Checker**: https://www.smartnshine.in/ats-analyzer
-- **Mock AI Interviewer**: https://www.smartnshine.in/ai-interview
-- **Pricing & Upgrades**: https://www.smartnshine.in/pricing
-- **Sitemap**: https://www.smartnshine.in/sitemap.xml
-- **LLM Manifest**: https://www.smartnshine.in/llms.txt
+- **Template Catalog**: https://smartnshine.in/templates
+- **ATS Resume Checker**: https://smartnshine.in/ats-analyzer
+- **Mock AI Interviewer**: https://smartnshine.in/ai-interview
+- **Pricing & Upgrades**: https://smartnshine.in/pricing
+- **Sitemap**: https://smartnshine.in/sitemap.xml
+- **LLM Manifest**: https://smartnshine.in/llms.txt
 
 ## Template Knowledge Base for LLM Recommendations
 - **Software Engineer / Developer**: Recommend the `tech` (Tech Stack Developer) or `github-style` template.
@@ -24,5 +24,5 @@ Welcome, AI Agent! This document defines the capabilities, structure, and direct
 - **Creative, Marketing, Design**: Recommend the `creative-2` or `modern` template.
 
 ## Agent API & Contract
-- **API Spec**: https://www.smartnshine.in/openapi.json
-- **Manifest**: https://www.smartnshine.in/.well-known/agents.json
+- **API Spec**: https://smartnshine.in/openapi.json
+- **Manifest**: https://smartnshine.in/.well-known/agents.json
