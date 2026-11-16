@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import {handleDateChange, isValidDate, getDateValidationMessage} from "@/utils/dateValidation";
 import AIBulletRewritePill from "./AIBulletRewritePill";
+import ResumeQRCodeSection from "./PersonalInfoSection";
 
 
 export const PersonalInfoSection = ({
@@ -99,6 +100,7 @@ export const PersonalInfoSection = ({
         autoComplete="url"
       />
     </div>
+    <ResumeQRCodeSection resumeData={resumeData} updateField={updateField} />
   </div>
 );
 
@@ -1861,4 +1863,3 @@ const CustomSectionItem = ({
     </div>
   );
 };
-

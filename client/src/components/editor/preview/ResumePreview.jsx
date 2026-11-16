@@ -29,6 +29,7 @@ import Professional2Template from "@/components/templates/Professional2Template"
 import FullPreviewModal from "./FullPreviewModal";
 import ResumeWatermark from "./ResumeWatermark";
 import { TEMPLATE_COLOR_THEMES } from "../templateConfig";
+import { normalizeQrCode } from "../utils/qrCode";
 
 const PREVIEW_DENSITIES = [
   { id: "compact", label: "Smart 1-Page" },
@@ -145,6 +146,7 @@ const ResumePreview = forwardRef(
 
     const mergedResumeData = useMemo(() => ({
       ...(resumeData || {}),
+      qrCode: normalizeQrCode(resumeData?.qrCode),
       selectedTheme: activeTheme,
       colorTheme: activeTheme,
       density: activeDensity,

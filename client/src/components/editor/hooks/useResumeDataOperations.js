@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { normalizeQrCode } from "../utils/qrCode";
 
 /**
  * useResumeDataOperations - Custom hook encapsulating CRUD and reordering operations
@@ -8,7 +9,25 @@ export function useResumeDataOperations({ setResumeData, isReadOnlyResume }) {
   const updateField = useCallback(
     (field, value) => {
       if (isReadOnlyResume) return;
-      setResumeData((prev) => ({ ...prev, [field]: value }));
+      setResumeData((prev) => {
+        if (field.startsWith("qrCode.")) {
+          const key = field.slice("qrCode.".length);
+          if (!["url", "enabled", "imageDataUrl"].includes(key)) return prev;
+          const qrCode = normalizeQrCode(prev?.qrCode);
+          return {
+            ...prev,
+            qrCode: normalizeQrCode({
+              ...qrCode,
+              [key]: value,
+              ...(key === "url" ? { imageDataUrl: "" } : {}),
+            }),
+          };
+        }
+        return {
+          ...prev,
+          [field]: field === "qrCode" ? normalizeQrCode(value) : value,
+        };
+      });
     },
     [isReadOnlyResume, setResumeData]
   );

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import CollapsibleSection from "./CollapsibleSection";
 import ResumeLayoutControls from "../layout/ResumeLayoutControls";
+import ResumeQRCodeSection from "./PersonalInfoSection";
 import { ScoreCard } from "@/components/common/cards";
 import JobSpecificScoreCard from "@/components/common/cards/JobSpecificScoreCard";
 import EditableSection from "./EditableSection";
@@ -189,6 +190,7 @@ export default function EditorSectionRenderer({
               placeholder="Portfolio / Website URL (e.g. https://yourportfolio.com)"
               className="input-field"
             />
+            <ResumeQRCodeSection resumeData={resumeData} updateField={updateField} />
           </div>
         </CollapsibleSection>
       );
