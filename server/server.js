@@ -33,6 +33,7 @@ import voiceRoutes from "./routes/voice.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import {handleWebhook as handleSubscriptionWebhook} from "./controllers/subscription.controller.js";
 import interviewRoutes from "./routes/interview.routes.js";
+import exportCacheRoutes from "./routes/exportCache.routes.js";
 import portfolioRoutes from "./routes/portfolio.routes.js";
 import careerRoutes from "./routes/career.routes.js";
 import careerApplicationRoutes from "./routes/careerApplication.routes.js";
@@ -259,6 +260,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/voice", voiceRoutes); // Voice transcription routes
 app.use("/api/subscription", subscriptionRoutes); // Subscription & payment routes
 app.use("/api/interview", interviewRoutes); // AI Interview routes
+app.use("/api/export-cache", exportCacheRoutes); // Resume export cache + webhook retries
 app.use("/api/portfolio", portfolioRoutes); // Portfolio builder routes
 app.use("/api/career", careerRoutes); // Career profile & personalized Q&A routes
 app.use("/api/career-applications", careerApplicationRoutes); // Founding team career application submissions & admin routes
