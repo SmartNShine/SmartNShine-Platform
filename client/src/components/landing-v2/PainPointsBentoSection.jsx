@@ -576,7 +576,7 @@ export default function PainPointsBentoSection() {
                     <div className="flex items-center justify-between pb-2 border-b border-sky-100 dark:border-sky-900/40">
                       <div className="flex items-center gap-1.5 font-mono text-[11px] text-sky-600 dark:text-sky-300 font-medium">
                         <Globe2 className="w-3 h-3 text-sky-500" />
-                        <span>smartnshine.app/p/alex-dev</span>
+                        <span>smartnshine.in/p/alex-dev</span>
                       </div>
                       <span className="text-[9px] px-2 py-0.5 rounded font-mono font-medium bg-sky-500 text-white">
                         {portfolioTheme.toUpperCase()} THEME

@@ -308,8 +308,8 @@ ${result.overallFeedback}
   const isPartialSession = session.status !== "completed";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0d14] py-10 px-4 sm:px-6 lg:px-8 transition-colors">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0d14] py-8 transition-colors">
+      <div className="workspace-container space-y-8">
         {/* Top Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <Link

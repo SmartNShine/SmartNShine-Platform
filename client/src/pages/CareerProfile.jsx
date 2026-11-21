@@ -330,7 +330,7 @@ export default function CareerProfile() {
       />
 
       {/* Main Workspace Body */}
-      <main className="flex-1 px-4 sm:px-8 lg:px-12 py-8 max-w-[1600px] w-full mx-auto space-y-8">
+      <main className="flex-1 workspace-container py-8 space-y-8">
         {/* Banner Section */}
         <ProfileBanner
           completeness={completeness}

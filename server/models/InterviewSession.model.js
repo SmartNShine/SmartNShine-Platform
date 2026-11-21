@@ -45,7 +45,13 @@ const interviewQuestionSchema = new mongoose.Schema({
     type: String, // Temporary audio file URL if voice mode
   },
   transcribedText: {
-    type: String, // Whisper transcription for voice answers
+    type: String, // Whisper/Sarvam transcription for voice answers
+  },
+  transcriptionLanguage: {
+    type: String, // Auto-detected language code (e.g. en-IN, hi-IN)
+  },
+  languageProbability: {
+    type: Number,
   },
   startedAt: {
     type: Date,
@@ -120,6 +126,35 @@ const interviewQuestionSchema = new mongoose.Schema({
     feedback: {
       type: String,
     },
+    starBreakdown: {
+      situation: String,
+      task: String,
+      action: String,
+      result: String,
+    },
+    depthAndTradeoffs: Number,
+    evidenceAndGrounding: Number,
+  },
+  cognitiveLevel: {
+    type: Number,
+    min: 1,
+    max: 5,
+    default: 2,
+  },
+  cognitiveMeta: {
+    type: mongoose.Schema.Types.Mixed,
+  },
+  syllabusPhase: {
+    type: String,
+  },
+  turnDecision: {
+    type: String,
+  },
+  acknowledgmentBridge: {
+    type: String,
+  },
+  signals: {
+    type: mongoose.Schema.Types.Mixed,
   },
   isFollowUp: {
     type: Boolean,
@@ -230,6 +265,21 @@ const interviewSessionSchema = new mongoose.Schema(
       max: 20,
     },
     questions: [interviewQuestionSchema],
+    syllabus: [
+      {
+        phase: String,
+        phaseIndex: Number,
+        targetQuestionNumber: Number,
+        category: String,
+        questionType: String,
+        cognitiveLevel: Number,
+        objective: String,
+      },
+    ],
+    currentCognitiveLevel: {
+      type: Number,
+      default: 2,
+    },
     // Timing
     startedAt: {
       type: Date,
@@ -290,6 +340,72 @@ const interviewSessionSchema = new mongoose.Schema(
       totalCostInr: { type: Number, default: 0 },
       totalCostUsd: { type: Number, default: 0 },
     },
+    // Video & Proctoring
+    hasVideoRecording: {
+      type: Boolean,
+      default: false,
+    },
+    videoRecordingUrl: {
+      type: String,
+      default: null,
+    },
+    proctoringEvents: [
+      {
+        timestampSeconds: { type: Number, default: 0 },
+        eventType: {
+          type: String,
+          enum: [
+            "PHONE_DETECTED",
+            "MULTIPLE_FACES",
+            "FACE_ABSENT",
+            "GAZE_DEVIATION",
+            "TAB_SWITCH",
+            "WINDOW_BLUR",
+            "PASTE_ATTEMPT",
+            "IDENTITY_SWITCH",
+            "PROCTORING_OFFLINE",
+          ],
+        },
+        severity: {
+          type: String,
+          enum: ["low", "medium", "high"],
+          default: "medium",
+        },
+        confidence: { type: Number, default: 1 },
+        durationMs: { type: Number, default: 0 },
+        evidenceCount: { type: Number, default: 0 },
+        faceCount: { type: Number, default: null },
+        detectorVersion: { type: String, default: "unknown" },
+        meta: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+        snapshotUrl: { type: String, default: null },
+        details: { type: String, default: "" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    proctoringSummary: {
+      integrityScore: { type: Number, min: 0, max: 100, default: 100 },
+      flagCounts: {
+        phone: { type: Number, default: 0 },
+        gaze: { type: Number, default: 0 },
+        multipleFaces: { type: Number, default: 0 },
+        absent: { type: Number, default: 0 },
+        tabSwitch: { type: Number, default: 0 },
+        identitySwitch: { type: Number, default: 0 },
+        offline: { type: Number, default: 0 },
+      },
+      verdict: {
+        type: String,
+        enum: ["VERIFIED_CLEAN", "REVIEW_RECOMMENDED", "FLAGGED_SUSPICIOUS"],
+        default: "VERIFIED_CLEAN",
+      },
+    },
+    proctoringHeartbeat: {
+      enabled: { type: Boolean, default: false },
+      lastSeenAt: Date,
+      lastReceivedAt: Date,
+      offline: { type: Boolean, default: false },
+      detectorVersion: { type: String, default: "unknown" },
+    },
     metadata: {
       browserInfo: String,
       ipAddress: String,
@@ -305,6 +421,7 @@ const interviewSessionSchema = new mongoose.Schema(
 interviewSessionSchema.index({userId: 1, status: 1});
 interviewSessionSchema.index({userId: 1, createdAt: -1});
 interviewSessionSchema.index({interviewType: 1, status: 1});
+interviewSessionSchema.index({status: 1, "proctoringHeartbeat.enabled": 1, "proctoringHeartbeat.lastSeenAt": 1});
 
 // Virtual for calculating overall progress
 interviewSessionSchema.virtual("progress").get(function () {

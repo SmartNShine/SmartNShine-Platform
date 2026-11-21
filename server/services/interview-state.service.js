@@ -4,6 +4,8 @@
  * race conditions and ensuring valid state lifecycles.
  */
 
+import { checkOfflineProctoring } from "./proctoring.service.js";
+
 // Valid states
 export const STATES = {
   CREATED: "created",
@@ -38,9 +40,14 @@ export const transitionTo = async (session, nextState, reason = "") => {
   }
 
   // Pre-transition logic
+  if (currentState === STATES.IN_PROGRESS) await checkOfflineProctoring(session);
   const now = new Date();
   
   if (nextState === STATES.IN_PROGRESS) {
+    session.proctoringHeartbeat = {
+      enabled: true, lastSeenAt: now, lastReceivedAt: now, offline: false,
+      detectorVersion: session.proctoringHeartbeat?.detectorVersion || "unknown",
+    };
     if (currentState === STATES.CREATED) {
       session.startedAt = now;
     } else if (currentState === STATES.PAUSED) {

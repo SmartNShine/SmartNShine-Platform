@@ -305,7 +305,7 @@ export default function CareerJourneyTimeline() {
                         <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
                       </div>
                       <div className="text-[11px] font-mono text-blue-600 dark:text-blue-400 truncate">
-                        smartnshine.app/u/alex-dev
+                        smartnshine.in/u/alex-dev
                       </div>
                       <div className="text-[10px] text-zinc-500">Live responsive portfolio with interactive project showcases.</div>
                     </div>

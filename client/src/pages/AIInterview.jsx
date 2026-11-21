@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useOutletContext } from "react-router-dom";
 import { History, Mic } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -12,11 +12,16 @@ import {
   useInterviewSpeech,
   useInterviewRecording,
   useInterviewSession,
+  useCameraStream,
+  useVideoRecorder,
+  useProctoringEngine,
 } from "@/components/interview";
 
 const AIInterview = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const outletContext = useOutletContext();
+  const setIsFocusMode = outletContext?.setIsFocusMode;
   const isProduction = import.meta.env.PROD || false;
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
@@ -81,6 +86,8 @@ const AIInterview = () => {
   const isMutedRef = useRef(false);
   const isInterviewActiveRef = useRef(false);
   const interviewPhaseRef = useRef("idle");
+  const hasStartedCameraRef = useRef(false);
+  const hasStartedVideoRecRef = useRef(false);
 
   // 1. Hook for Speech & TTS
   const speech = useInterviewSpeech({
@@ -100,6 +107,7 @@ const AIInterview = () => {
   // 2. Hook for Recording & VAD
   const recording = useInterviewRecording({
     selectedMode: "live",
+    getSelectedLanguage: () => session.selectedLanguage,
     isInterviewActiveRef,
     interviewPhase: "idle",
     getInterviewPhase: () => interviewPhaseRef.current,
@@ -134,12 +142,84 @@ const AIInterview = () => {
     isMutedRef,
   });
 
+  // 4. Hook for Camera Video Stream
+  const camera = useCameraStream({ autoStart: false });
+
+  // 5. Hook for Session Video Recording
+  const videoRecorder = useVideoRecorder();
+
+  const activeSessionId =
+    session.session?.id ||
+    session.session?._id ||
+    session.session?.sessionId;
+
+  // 6. Hook for Real-time AI Proctoring & Edge Anti-Cheat
+  const proctoring = useProctoringEngine({
+    videoRef: camera.videoRef,
+    sessionId: activeSessionId,
+    isInterviewActive: session.step === "interview",
+    interviewStartTime: session.session?.startedAt
+      ? new Date(session.session.startedAt).getTime()
+      : null,
+  });
+
+  // Auto-start camera once when entering live interview
+  useEffect(() => {
+    if (session.step === "interview") {
+      if (!hasStartedCameraRef.current) {
+        hasStartedCameraRef.current = true;
+        camera.startCamera();
+      }
+    } else {
+      hasStartedCameraRef.current = false;
+    }
+  }, [session.step]);
+
+  // Start background video recording once camera stream is ready in interview step
+  useEffect(() => {
+    if (
+      session.step === "interview" &&
+      camera.stream &&
+      !hasStartedVideoRecRef.current
+    ) {
+      hasStartedVideoRecRef.current = true;
+      videoRecorder.startVideoRecording({
+        cameraStream: camera.stream,
+      });
+    } else if (session.step !== "interview") {
+      hasStartedVideoRecRef.current = false;
+    }
+  }, [session.step, !!camera.stream]);
+
+  // Stop video recording and upload upon interview completion
+  useEffect(() => {
+    if (session.step === "result" && videoRecorder.isRecordingVideo) {
+      videoRecorder.stopVideoRecording().then((blob) => {
+        if (blob && activeSessionId) {
+          videoRecorder.uploadSessionVideo(activeSessionId, blob);
+        }
+      });
+    }
+  }, [session.step, activeSessionId, videoRecorder.isRecordingVideo]);
+
   // Keep phase ref synchronized with session.interviewPhase
   useEffect(() => {
     if (session.interviewPhase) {
       interviewPhaseRef.current = session.interviewPhase;
     }
   }, [session.interviewPhase]);
+
+  // Synchronize focus mode with active live interview (hides sidebar & navbar for 100% focus)
+  useEffect(() => {
+    if (typeof setIsFocusMode === "function") {
+      setIsFocusMode(session.step === "interview");
+    }
+    return () => {
+      if (typeof setIsFocusMode === "function") {
+        setIsFocusMode(false);
+      }
+    };
+  }, [session.step, setIsFocusMode]);
 
   // Connect bridges
   onVoiceSubmitBridgeRef.current = session.handleVoiceSubmit;
@@ -153,6 +233,7 @@ const AIInterview = () => {
     return () => {
       speech.stopLocalAudio();
       recording.cleanupAudioStreams();
+      camera.stopCamera();
     };
   }, []);
 
@@ -215,130 +296,177 @@ const AIInterview = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0A0A0B] text-gray-900 dark:text-white transition-colors duration-300">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Navigation Switcher: New Interview vs Past Reports */}
-        {session.step === "setup" && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 p-4 rounded-2xl bg-white/80 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 shadow-sm">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Mic className="w-5 h-5 text-blue-500" />
-                AI Mock Interview Studio
-              </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Practice role-specific mock interviews with live speech processing and comprehensive reports.
-              </p>
+      {session.step === "interview" ? (
+        <InterviewStep
+          session={session.session}
+          currentQuestion={session.currentQuestion}
+          selectedMode={session.selectedMode}
+          selectedRole={session.selectedRole}
+          interviewPhase={session.interviewPhase}
+          elapsedTime={session.elapsedTime}
+          interviewDuration={session.interviewDuration}
+          progress={session.progress}
+          isMuted={session.isMuted}
+          isRecording={recording.isRecording}
+          isPlayingAudio={speech.isPlayingAudio}
+          aiMessage={speech.aiMessage}
+          answer={session.answer}
+          setAnswer={session.setAnswer}
+          evaluation={session.evaluation}
+          conversationHistory={session.conversationHistory}
+          isSubmitting={session.isSubmitting}
+          voiceEngine={voiceEngine}
+          setVoiceEngine={setVoiceEngine}
+          selectedVoice={selectedVoice}
+          setSelectedVoice={handlePersonaChange}
+          micFrequencyBins={recording.micFrequencyBins}
+          liveCandidateTranscript={recording.liveCandidateTranscript}
+          bargeInNotice={recording.bargeInNotice}
+          isProduction={isProduction}
+          theme={theme}
+          user={user}
+          onToggleTheme={toggleTheme}
+          onToggleMute={session.handleToggleMute}
+          onSkip={session.handleSkipQuestion}
+          onSkipQuestion={session.handleSkipQuestion}
+          onRequestRepeat={session.handleRepeatQuestion}
+          onAbandon={handleRequestExit}
+          onAbandonInterview={handleRequestExit}
+          onSubmitAnswer={recording.isRecording ? recording.stopRecording : session.handleSubmitAnswer}
+          onStartRecording={() => recording.startRecording(false)}
+          onStopRecording={recording.stopRecording}
+          formatTime={formatTime}
+          cameraVideoRef={camera.attachVideoRef}
+          isCameraActive={camera.isCameraActive}
+          cameraError={camera.cameraError}
+          proctoringState={proctoring.proctoringState}
+          activeAlert={proctoring.activeAlert}
+          isPhoneInView={proctoring.isPhoneInView}
+          onRetryCamera={camera.startCamera}
+          audioDevices={recording.audioDevices}
+          selectedAudioDeviceId={recording.selectedAudioDeviceId}
+          onSwitchAudioDevice={recording.switchAudioDevice}
+        />
+      ) : (
+        <div className="workspace-container py-6 sm:py-8 space-y-8">
+          {/* Executive Studio Hero Banner */}
+          {session.step === "setup" && (
+            <div className="relative overflow-hidden mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/30 dark:from-[#111218] dark:via-[#0E1017] dark:to-[#141522] border border-blue-200/80 dark:border-white/10 shadow-sm">
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold tracking-wide uppercase">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span>Executive AI Mock Interview Studio</span>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                    Master Technical & Behavioral Interviews
+                  </h1>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
+                    Practice realistic interviews with natural voice speech synthesis, live AI proctoring, and comprehensive diagnostic reports tailored to your target engineering roles.
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                      ⚡ Voice-to-Voice AI
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                      🛡️ Vision Proctoring Guard
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                      📊 STAR Diagnostic Report
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center">
+                  <Link
+                    to="/interview/history"
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 border border-gray-200 dark:border-white/15 text-gray-900 dark:text-white text-xs font-bold flex items-center justify-center gap-2.5 transition-all shadow-xs hover:shadow-md active:scale-95 group"
+                    id="btn-view-interview-history"
+                  >
+                    <History className="w-4 h-4 text-blue-500 group-hover:rotate-[-20deg] transition-transform" />
+                    <span>Past Interviews & Reports</span>
+                    <span className="text-gray-400 group-hover:translate-x-0.5 transition-transform">→</span>
+                  </Link>
+                </div>
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-2">
-              <Link
-                to="/interview/history"
-                className="px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                id="btn-view-interview-history"
-              >
-                <History className="w-4 h-4" />
-                <span>Past Interviews & Reports</span>
-              </Link>
-            </div>
-          </div>
-        )}
+          {/* Step 1: Setup */}
+          {session.step === "setup" && (
+            <SetupStep
+              config={session.config}
+              resumes={session.resumes}
+              selectedType={session.selectedType}
+              setSelectedType={session.setSelectedType}
+              selectedRole={session.selectedRole}
+              setSelectedRole={session.setSelectedRole}
+              selectedLevel={session.selectedLevel}
+              setSelectedLevel={session.setSelectedLevel}
+              selectedMode={session.selectedMode}
+              setSelectedMode={session.setSelectedMode}
+              selectedLanguage={session.selectedLanguage}
+              setSelectedLanguage={session.setSelectedLanguage}
+              selectedResume={session.selectedResume}
+              setSelectedResume={session.setSelectedResume}
+              jobDescription={session.jobDescription}
+              setJobDescription={session.setJobDescription}
+              interviewDuration={session.interviewDuration}
+              setInterviewDuration={session.setInterviewDuration}
+              voiceAvailable={session.voiceAvailable}
+              ttsAvailable={session.ttsAvailable}
+              voiceEngine={voiceEngine}
+              setVoiceEngine={setVoiceEngine}
+              voiceProviders={session.voiceProviders}
+              selectedVoice={selectedVoice}
+              setSelectedVoice={handlePersonaChange}
+              isProduction={isProduction}
+              isSubmitting={session.isSubmitting}
+              isTestingVoice={speech.isTestingVoice}
+              isPlayingAudio={speech.isPlayingAudio}
+              onTestVoice={speech.handleTestVoice}
+              onStart={session.handleStartInterview}
+              cameraVideoRef={camera.attachVideoRef}
+              isCameraActive={camera.isCameraActive}
+              cameraError={camera.cameraError}
+              isCameraInitializing={camera.isInitializing}
+              onStartCamera={camera.startCamera}
+              onStopCamera={camera.stopCamera}
+              videoDevices={camera.videoDevices}
+              selectedDeviceId={camera.selectedDeviceId}
+              onSwitchCamera={camera.switchCamera}
+              audioDevices={recording.audioDevices}
+              selectedAudioDeviceId={recording.selectedAudioDeviceId}
+              onSwitchAudioDevice={recording.switchAudioDevice}
+              audioInputLevel={recording.audioInputLevel}
+              onStartMicPreview={recording.startMicPreview}
+            />
+          )}
 
-        {/* Step 1: Setup */}
-        {session.step === "setup" && (
-          <SetupStep
-            config={session.config}
-            resumes={session.resumes}
-            selectedType={session.selectedType}
-            setSelectedType={session.setSelectedType}
-            selectedRole={session.selectedRole}
-            setSelectedRole={session.setSelectedRole}
-            selectedLevel={session.selectedLevel}
-            setSelectedLevel={session.setSelectedLevel}
-            selectedMode={session.selectedMode}
-            setSelectedMode={session.setSelectedMode}
-            selectedLanguage={session.selectedLanguage}
-            setSelectedLanguage={session.setSelectedLanguage}
-            selectedResume={session.selectedResume}
-            setSelectedResume={session.setSelectedResume}
-            jobDescription={session.jobDescription}
-            setJobDescription={session.setJobDescription}
-            interviewDuration={session.interviewDuration}
-            setInterviewDuration={session.setInterviewDuration}
-            voiceAvailable={session.voiceAvailable}
-            ttsAvailable={session.ttsAvailable}
-            voiceEngine={voiceEngine}
-            setVoiceEngine={setVoiceEngine}
-            voiceProviders={session.voiceProviders}
-            selectedVoice={selectedVoice}
-            setSelectedVoice={handlePersonaChange}
-            isProduction={isProduction}
-            isSubmitting={session.isSubmitting}
-            isTestingVoice={speech.isTestingVoice}
-            isPlayingAudio={speech.isPlayingAudio}
-            onTestVoice={speech.handleTestVoice}
-            onStart={session.handleStartInterview}
-          />
-        )}
-
-        {/* Step 2: Live Interview */}
-        {session.step === "interview" && (
-          <InterviewStep
-            session={session.session}
-            currentQuestion={session.currentQuestion}
-            selectedMode={session.selectedMode}
-            selectedRole={session.selectedRole}
-            interviewPhase={session.interviewPhase}
-            elapsedTime={session.elapsedTime}
-            interviewDuration={session.interviewDuration}
-            progress={session.progress}
-            isMuted={session.isMuted}
-            isRecording={recording.isRecording}
-            isPlayingAudio={speech.isPlayingAudio}
-            aiMessage={speech.aiMessage}
-            answer={session.answer}
-            setAnswer={session.setAnswer}
-            evaluation={session.evaluation}
-            conversationHistory={session.conversationHistory}
-            isSubmitting={session.isSubmitting}
-            voiceEngine={voiceEngine}
-            setVoiceEngine={setVoiceEngine}
-            selectedVoice={selectedVoice}
-            setSelectedVoice={handlePersonaChange}
-            micFrequencyBins={recording.micFrequencyBins}
-            bargeInNotice={recording.bargeInNotice}
-            isProduction={isProduction}
-            theme={theme}
-            user={user}
-            onToggleTheme={toggleTheme}
-            onToggleMute={session.handleToggleMute}
-            onSkip={session.handleSkipQuestion}
-            onSkipQuestion={session.handleSkipQuestion}
-            onAbandon={handleRequestExit}
-            onAbandonInterview={handleRequestExit}
-            onSubmitAnswer={session.handleSubmitAnswer}
-            onStartRecording={() => recording.startRecording(false)}
-            onStopRecording={recording.stopRecording}
-            formatTime={formatTime}
-          />
-        )}
-
-        {/* Step 3: Performance Scorecard */}
-        {session.step === "result" && (
-          <ResultStep
-            result={session.result}
-            elapsedTime={session.elapsedTime}
-            formatTime={formatTime}
-            onNewInterview={() => {
-              session.resetState();
-              session.setStep("setup");
-            }}
-            onRetry={() => {
-              session.resetState();
-              session.setStep("setup");
-            }}
-            onViewHistory={() => navigate("/interview/history")}
-          />
-        )}
-      </div>
+          {/* Step 3: Performance Scorecard */}
+          {session.step === "result" && (
+            <ResultStep
+              result={session.result}
+              elapsedTime={session.elapsedTime}
+              formatTime={formatTime}
+              onNewInterview={() => {
+                session.resetState();
+                session.setStep("setup");
+              }}
+              onRetry={() => {
+                session.resetState();
+                session.setStep("setup");
+              }}
+              onViewHistory={() => navigate("/interview/history")}
+            />
+          )}
+        </div>
+      )}
 
       {/* End Interview Confirmation Modal Popup */}
       <ConfirmationModal

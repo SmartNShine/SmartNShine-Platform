@@ -6,7 +6,11 @@ import {
   XCircle,
   BookOpen,
   RefreshCw,
+  Calendar,
+  FileText,
+  Sparkles,
 } from "lucide-react";
+import { IntegrityTimeline } from "./proctoring/IntegrityTimeline";
 
 const defaultFormatTime = (seconds) => {
   if (!seconds || isNaN(seconds)) return "0:00";
@@ -128,6 +132,76 @@ export const ResultStep = ({
         </p>
       </div>
 
+      {/* 5D Executive Radar Competencies */}
+      {result.radarCompetencies && Object.keys(result.radarCompetencies).length > 0 && (
+        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-indigo-200 dark:border-indigo-500/20 shadow-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              Staff-Level Competency Radar
+            </h3>
+            <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-500/30">
+              Bloom Cognitive Evaluation
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(result.radarCompetencies).map(([key, item]) => {
+              const labelMap = {
+                technicalDepth: "Technical Depth & Correctness",
+                architecturalTradeoffs: "Architectural Trade-offs & Scale",
+                evidenceAndGrounding: "Evidence & Concrete Grounding",
+                starProblemSolving: "STAR & Practical Ownership",
+                communicationSignal: "Communication Signal-to-Noise",
+              };
+              const score = item?.score || 0;
+              return (
+                <div
+                  key={key}
+                  className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold text-slate-800 dark:text-gray-200">
+                        {labelMap[key] || key}
+                      </span>
+                      <span
+                        className={`text-xs font-mono font-bold ${
+                          score >= 80
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : score >= 60
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-amber-600 dark:text-amber-400"
+                        }`}
+                      >
+                        {score}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-1.5 mb-2 overflow-hidden">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          score >= 80
+                            ? "bg-emerald-500"
+                            : score >= 60
+                            ? "bg-blue-500"
+                            : "bg-amber-500"
+                        }`}
+                        style={{ width: `${score}%` }}
+                      />
+                    </div>
+                  </div>
+                  {item?.summary && (
+                    <p className="text-[11px] text-slate-600 dark:text-gray-400 leading-relaxed mt-1">
+                      {item.summary}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Skill Breakdown */}
       {result.skillBreakdown && Object.keys(result.skillBreakdown).length > 0 && (
         <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-xl p-6">
@@ -166,18 +240,26 @@ export const ResultStep = ({
         </div>
       )}
 
+      {/* AI Proctoring & Integrity Audit Timeline */}
+      {result.proctoringAudit && (
+        <IntegrityTimeline
+          proctoringAudit={result.proctoringAudit}
+          videoRecordingUrl={result.videoRecordingUrl}
+        />
+      )}
+
       {/* Strengths & Weaknesses */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-green-200 dark:border-green-500/20 shadow-xl p-6">
           <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-4 flex items-center gap-2">
             <CheckCircle className="w-5 h-5" />
-            Strengths
+            Demonstrated Strengths
           </h3>
           <ul className="space-y-3">
             {result.strengths?.map((s, i) => (
               <li
                 key={i}
-                className="text-gray-600 dark:text-gray-400 flex items-start gap-3"
+                className="text-gray-600 dark:text-gray-400 flex items-start gap-3 text-sm leading-relaxed"
               >
                 <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
                 {s}
@@ -189,13 +271,13 @@ export const ResultStep = ({
         <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-red-200 dark:border-red-500/20 shadow-xl p-6">
           <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
             <XCircle className="w-5 h-5" />
-            Areas for Improvement
+            Areas for Technical Growth
           </h3>
           <ul className="space-y-3">
             {result.weaknesses?.map((w, i) => (
               <li
                 key={i}
-                className="text-gray-600 dark:text-gray-400 flex items-start gap-3"
+                className="text-gray-600 dark:text-gray-400 flex items-start gap-3 text-sm leading-relaxed"
               >
                 <span className="w-2 h-2 rounded-full bg-red-500 mt-2 flex-shrink-0"></span>
                 {w}
@@ -204,6 +286,56 @@ export const ResultStep = ({
           </ul>
         </div>
       </div>
+
+      {/* 14-Day Growth Roadmap */}
+      {result.studyRoadmap?.length > 0 && (
+        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-blue-200 dark:border-blue-500/20 shadow-xl p-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            Personalized 14-Day Growth Roadmap
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {result.studyRoadmap.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10"
+              >
+                <span className="text-[11px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">
+                  {item.day}
+                </span>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-gray-200 mt-1 mb-2">
+                  {item.focus}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  <span className="font-semibold text-slate-700 dark:text-gray-300">Resource:</span>{" "}
+                  {item.recommendedResource}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resume Optimization Recommendations */}
+      {result.resumeImprovements?.length > 0 && (
+        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-indigo-200 dark:border-indigo-500/20 shadow-xl p-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            Resume Bullet Optimization Suggestions
+          </h3>
+          <ul className="space-y-2.5">
+            {result.resumeImprovements.map((tip, idx) => (
+              <li
+                key={idx}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs text-slate-700 dark:text-gray-300 flex items-start gap-2.5"
+              >
+                <span className="text-indigo-600 dark:text-indigo-400 font-bold shrink-0">💡</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Practice Areas */}
       {result.practiceAreas?.length > 0 && (

@@ -308,11 +308,10 @@ export default function Pricing() {
         title="Pricing & Plans - Upgrade Your Resume | SmartNShine"
         description="Choose from Starter Free, One-Time Pass (₹49), Pro Unlimited (₹199), or SmartNShine Campus Plan. Build ATS-optimized resumes with AI rewriting or empower your university placement cell."
         keywords="resume builder pricing, ATS resume cost, subscription plans, resume builder plans, professional resume pricing, campus placement software, college TPO dashboard"
-        url="https://www.smartnshine.app/pricing"
+        url="https://smartnshine.in/pricing"
       />
 
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 sm:space-y-12">
-        {/* Liveblocks-Style Clean Headline */}
         <PricingBanner />
 
         {/* 1. THREE PLANS — Pro (₹199) centered & elevated on desktop */}

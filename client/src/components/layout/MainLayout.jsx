@@ -1,44 +1,61 @@
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback} from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import {useToggle} from "@/hooks";
 
 const MainLayout = ({children}) => {
-  const [
-    isSidebarOpen,
-    toggleSidebar,
-    setIsSidebarOpenTrue,
-    setIsSidebarOpenFalse,
-  ] = useToggle(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("smartnshine_sidebar_open");
+      if (saved !== null) {
+        return saved === "true";
+      }
+      return window.innerWidth >= 1024;
+    }
+    return false;
+  });
 
-  // Auto-open sidebar on desktop
+  const handleSetSidebarOpen = useCallback((value) => {
+    setIsSidebarOpen((prev) => {
+      const next = typeof value === "boolean" ? value : !prev;
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        localStorage.setItem("smartnshine_sidebar_open", String(next));
+      }
+      return next;
+    });
+  }, []);
+
+  // Auto-open sidebar on desktop with persistence
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpenTrue();
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
       } else {
-        setIsSidebarOpenFalse();
+        const saved = localStorage.getItem("smartnshine_sidebar_open");
+        if (saved !== null) {
+          setIsSidebarOpen(saved === "true");
+        } else {
+          setIsSidebarOpen(true);
+        }
       }
     };
 
-    handleResize(); // Set initial state
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [setIsSidebarOpenTrue, setIsSidebarOpenFalse]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={toggleSidebar} />
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={handleSetSidebarOpen} />
 
       {/* Main Content Area */}
       <div
         className={`transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-72" : "lg:ml-28"
+          isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
         }`}
       >
         {/* Top Navbar */}
-        <Navbar toggleSidebar={toggleSidebar} />
+        <Navbar toggleSidebar={() => handleSetSidebarOpen()} isSidebarOpen={isSidebarOpen} />
 
         {/* Page Content */}
         <main className="pt-16">{children}</main>

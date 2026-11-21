@@ -47,6 +47,27 @@
     @apply text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-2;
   }
 
+  .workspace-container {
+    @apply w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10;
+  }
+
+  /* Executive Studio Surface & Interaction Tokens */
+  .studio-surface {
+    @apply rounded-2xl sm:rounded-3xl bg-white dark:bg-[#111218] border border-zinc-200/90 dark:border-white/10 shadow-xs transition-all duration-200;
+  }
+
+  .studio-interactive-card {
+    @apply p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer;
+  }
+
+  .studio-card-selected {
+    @apply border-blue-600 bg-blue-50/70 dark:bg-blue-950/30 dark:border-blue-500 ring-1 ring-blue-500/25 shadow-xs;
+  }
+
+  .studio-card-unselected {
+    @apply border-zinc-200/80 dark:border-white/10 bg-white dark:bg-[#141620] hover:border-zinc-300 dark:hover:border-white/20;
+  }
+
   /* Infinite Gliding Animation Classes */
   @keyframes streamGlideTop {
     0% {

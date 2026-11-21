@@ -235,7 +235,7 @@ const RefundPolicy = () => {
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li>Through your account dashboard settings</li>
                   <li>By contacting customer support</li>
-                  <li>Via email to support@smartnshine.app</li>
+                  <li>Via email to contact@smartnshine.in</li>
                 </ul>
               </div>
 
@@ -335,7 +335,7 @@ const RefundPolicy = () => {
                 <p>
                   Submit refund request via email to{" "}
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                    support@smartnshine.app
+                    contact@smartnshine.in
                   </span>
                 </p>
               </div>
@@ -500,7 +500,7 @@ const RefundPolicy = () => {
               <p className="text-gray-700 dark:text-gray-300">
                 <strong>Email:</strong>{" "}
                 <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                  support@smartnshine.app
+                  contact@smartnshine.in
                 </span>
               </p>
               <p className="text-gray-700 dark:text-gray-300">

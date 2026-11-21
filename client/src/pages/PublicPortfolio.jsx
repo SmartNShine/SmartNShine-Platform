@@ -124,7 +124,7 @@ const PublicPortfolio = () => {
     ? portfolio.seo.keywords.join(", ")
     : portfolio?.seo?.keywords || "";
   const canonicalUrl =
-    typeof window !== "undefined" ? window.location.href.split("?")[0] : "";
+    portfolio?.slug ? `https://smartnshine.in/u/${encodeURIComponent(portfolio.slug)}` : "";
 
   const rawOgImage = resolveImageUrl(
     portfolio?.seo?.ogImage ||
@@ -135,10 +135,7 @@ const PublicPortfolio = () => {
       ""
   );
 
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://www.smartnshine.app";
+  const origin = "https://smartnshine.in";
 
   const ogImage = useMemo(() => {
     if (!rawOgImage) return `${origin}/social-preview.png?v=4`;

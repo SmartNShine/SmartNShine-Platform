@@ -70,7 +70,7 @@ const INSPECTOR_FEATURES = [
     drawerData: {
       type: "portfolio",
       headline: "Live Deployed Web Profile",
-      subline: "URL: https://smartnshine.app/p/alex-mercer",
+      subline: "URL: https://smartnshine.in/p/alex-mercer",
       score: "100/100",
       scoreLabel: "Google Lighthouse Speed",
       features: [

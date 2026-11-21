@@ -69,6 +69,9 @@ const TemplateManagement = lazy(
 const PortfolioManagement = lazy(
   () => import("./pages/admin/PortfolioManagement")
 );
+const AdminPortfolioPreview = lazy(
+  () => import("./pages/admin/PortfolioPreview")
+);
 const AdminQuestionManagement = lazy(
   () => import("./pages/admin/AdminQuestionManagement")
 );
@@ -372,6 +375,14 @@ function App() {
             </Route>
 
             {/* Admin Routes - Separate Layout */}
+            <Route
+              path="/admin/portfolio-preview"
+              element={
+                <AdminProtectedRoute>
+                  <AdminPortfolioPreview />
+                </AdminProtectedRoute>
+              }
+            />
             <Route
               path="/admin"
               element={

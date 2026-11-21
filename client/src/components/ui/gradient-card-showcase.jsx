@@ -25,7 +25,7 @@ const defaultCards = [
   },
   {
     title: "Live Hosted Portfolios & Mock QA",
-    desc: "Turn your career profile into a live website (smartnshine.app/p/you) and practice AI mock interviews with real-time feedback.",
+    desc: "Turn your career profile into a live website (smartnshine.in/p/you) and practice AI mock interviews with real-time feedback.",
     gradientFrom: "#4dff03",
     gradientTo: "#00d0ff",
     icon: Globe2,

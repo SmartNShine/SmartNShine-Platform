@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {useNavigate, Link} from "react-router-dom";
+import {useNavigate, useLocation, Link} from "react-router-dom";
 import {useAuth} from "@/context/AuthContext";
 import {parseValidationErrors} from "@/utils/errorHandler";
 import {useToggle} from "@/hooks";
@@ -15,6 +15,7 @@ import {
   EyeOff,
   Check,
   Github,
+  Sparkles,
 } from "lucide-react";
 import {FcGoogle} from "react-icons/fc";
 
@@ -29,12 +30,30 @@ const Register = () => {
     useToggle(false);
   const {register, user, loading: authLoading} = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fromPath = location.state?.from?.pathname || "/dashboard";
+  const fromState = location.state?.from?.state;
+  const stateMessage = location.state?.message;
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/dashboard", {replace: true});
+      navigate(fromPath, {replace: true, state: fromState});
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, fromPath, fromState]);
+
+  const handleOAuthClick = () => {
+    if (location.state?.from?.pathname) {
+      try {
+        sessionStorage.setItem(
+          "auth_redirect_after_login",
+          location.state.from.pathname
+        );
+      } catch {
+        // Fallback silently if storage unavailable
+      }
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,7 +76,7 @@ const Register = () => {
 
     try {
       await register(name, email, password);
-      navigate("/dashboard");
+      navigate(fromPath, {replace: true, state: fromState});
     } catch (err) {
       if (
         err.response?.status === 429 ||
@@ -86,56 +105,99 @@ const Register = () => {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
             Create your account
           </h1>
-          <p className="text-gray-400">
-            Start building professional resumes with AI
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Start building ATS-optimized resumes & portfolios free
           </p>
         </div>
 
         {/* Register Card */}
-        <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-zinc-800 p-8 shadow-sm">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-950/30 border border-red-900/50 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-red-300">{error}</p>
+        <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-zinc-800 p-6 sm:p-8 shadow-sm">
+          {/* Switcher Tabs */}
+          <div className="flex rounded-xl bg-gray-100 dark:bg-zinc-900 p-1 mb-6">
+            <Link
+              to="/login"
+              state={location.state}
+              className="flex-1 py-2 text-xs sm:text-sm font-medium rounded-lg text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white text-center transition-colors"
+            >
+              Sign In
+            </Link>
+            <button
+              type="button"
+              className="flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs cursor-default"
+            >
+              Create Account
+            </button>
+          </div>
+
+          {/* Context Intent Message (if redirected from a feature) */}
+          {stateMessage && (
+            <div className="mb-6 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <p className="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                {stateMessage}
+              </p>
             </div>
           )}
 
-          {/* Features */}
-          <div className="mb-6 p-4 bg-primary-950/30 border border-primary-900/50 rounded-lg">
-            <div className="space-y-2">
-              {[
-                "AI-powered resume enhancement",
-                "8 professional templates",
-                "ATS optimization",
-                "Free forever plan",
-              ].map((feature, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-300">{feature}</span>
-                </div>
-              ))}
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-red-900 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
+          {/* 1-CLICK OAUTH BUTTONS (High priority at top for 80%+ mobile conversions) */}
+          <div className="space-y-2.5 mb-6">
+            <a
+              href={`${config.serverUrl}/api/auth/google?origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+              onClick={handleOAuthClick}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-xl transition-all duration-200 font-semibold text-gray-800 dark:text-gray-200 text-sm shadow-xs active:scale-98"
+            >
+              <FcGoogle className="w-5 h-5 shrink-0" />
+              <span>Continue with Google (Fast & Free)</span>
+            </a>
+
+            <a
+              href={`${config.serverUrl}/api/auth/github?origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+              onClick={handleOAuthClick}
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-xl transition-all duration-200 font-medium text-gray-700 dark:text-gray-300 text-sm active:scale-98"
+            >
+              <Github className="w-4 h-4 shrink-0" />
+              <span>Continue with GitHub</span>
+            </a>
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-zinc-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase tracking-wider">
+              <span className="px-3 bg-white dark:bg-zinc-950 text-gray-400 font-medium">
+                Or register with email
+              </span>
             </div>
           </div>
 
           {/* Register Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                 Full name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full pl-11 pr-4 py-2.5 bg-black border border-gray-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-600 transition-all duration-200 text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-black border border-gray-300 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-all text-sm"
                   required
                   autoComplete="name"
                 />
@@ -144,17 +206,17 @@ const Register = () => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full pl-11 pr-4 py-2.5 bg-black border border-gray-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-600 transition-all duration-200 text-sm"
+                  placeholder="name@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-black border border-gray-300 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-all text-sm"
                   required
                   autoComplete="email"
                 />
@@ -163,17 +225,17 @@ const Register = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
-                  className="w-full pl-11 pr-11 py-2.5 bg-black border border-gray-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-600 transition-all duration-200 text-sm"
+                  placeholder="At least 8 characters (letters & numbers)"
+                  className="w-full pl-10 pr-11 py-2.5 bg-white dark:bg-black border border-gray-300 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-all text-sm"
                   required
                   minLength={8}
                   autoComplete="new-password"
@@ -181,33 +243,33 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={toggleShowPassword}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
                 >
                   {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
+                    <EyeOff className="w-4.5 h-4.5" />
                   ) : (
-                    <Eye className="w-5 h-5" />
+                    <Eye className="w-4.5 h-4.5" />
                   )}
                 </button>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
-                Must be at least 8 characters
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-zinc-500">
+                Must be at least 8 characters with uppercase, lowercase & numbers
               </p>
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                 Confirm password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter your password"
-                  className="w-full pl-11 pr-4 py-2.5 bg-black border border-gray-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-600 transition-all duration-200 text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-black border border-gray-300 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-all text-sm"
                   required
                   autoComplete="new-password"
                 />
@@ -218,84 +280,59 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-gray-900 dark:text-white font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm"
+              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-extrabold rounded-xl transition-all shadow-md active:scale-98 text-sm mt-2 cursor-pointer"
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                   <span>Creating account...</span>
                 </>
               ) : (
                 <>
-                  <span>Create account</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Create Free Account</span>
+                  <ArrowRight className="w-4 h-4 text-black stroke-[2.5]" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-zinc-800"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-zinc-950 text-gray-500">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          {/* OAuth Buttons */}
-          <div className="space-y-3">
-            {/* Google OAuth Button */}
-            <a
-              href={`${config.serverUrl}/api/auth/google?origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-black border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg transition-all duration-200 font-medium text-gray-700 dark:text-gray-300 text-sm"
-            >
-              <FcGoogle className="w-5 h-5" />
-              <span>Continue with Google</span>
-            </a>
-
-            {/* GitHub OAuth Button */}
-            <a
-              href={`${config.serverUrl}/api/auth/github?origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-black border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg transition-all duration-200 font-medium text-gray-700 dark:text-gray-300 text-sm"
-            >
-              <Github className="w-5 h-5" />
-              <span>Continue with GitHub</span>
-            </a>
-          </div>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-zinc-800"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-zinc-950 text-gray-500">
-                Already have an account?
-              </span>
+          {/* Feature Badges */}
+          <div className="mt-6 pt-5 border-t border-gray-200 dark:border-zinc-800/80">
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-zinc-400">
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Free forever access</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>98%+ ATS pass score</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Instant PDF export</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>AI Interview practice</span>
+              </div>
             </div>
           </div>
-
-          {/* Login Link */}
-          <Link
-            to="/login"
-            className="block w-full text-center px-4 py-2.5 bg-primary-50 dark:bg-primary-900/40 hover:bg-primary-100 dark:hover:bg-primary-900/60 text-primary-700 dark:text-primary-200 border border-primary-200/70 dark:border-primary-700/60 font-medium rounded-lg transition-all duration-200 text-sm"
-          >
-            Log in instead
-          </Link>
         </div>
 
         {/* Footer Text */}
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-xs text-gray-500 dark:text-zinc-500">
           By creating an account, you agree to our{" "}
-          <Link to="/terms-and-conditions" className="text-primary-400 hover:underline">
+          <Link
+            to="/terms-and-conditions"
+            className="text-amber-600 dark:text-amber-400 hover:underline"
+          >
             Terms
           </Link>{" "}
           and{" "}
-          <Link to="/privacy-policy" className="text-primary-400 hover:underline">
+          <Link
+            to="/privacy-policy"
+            className="text-amber-600 dark:text-amber-400 hover:underline"
+          >
             Privacy Policy
           </Link>
         </p>

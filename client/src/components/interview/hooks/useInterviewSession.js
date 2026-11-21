@@ -255,7 +255,7 @@ export function useInterviewSession({
         speakAndListen(introductionText, () => {
           setConversationPhase(CONVERSATION_PHASES.WARM_UP);
           setInterviewPhase("waiting");
-          setTimeout(() => startRecording(true), 500);
+          // Do not auto-start recording; candidate will click "Record Answer" when ready
         });
       } else {
         setInterviewPhase("greeting");
@@ -271,6 +271,13 @@ export function useInterviewSession({
   };
 
   const handleSubmitAnswer = async () => {
+    if (selectedMode === "live") {
+      // In live voice mode, response is captured via microphone
+      if (!answer.trim()) {
+        toast("Click 'Record Answer' to speak your response.", { icon: "🎙️" });
+        return;
+      }
+    }
     if (!answer.trim() || answer.length < 10) {
       return toast.error("Please provide an answer of at least 10 characters");
     }
@@ -310,7 +317,7 @@ export function useInterviewSession({
               if (response.data.nextQuestion?.text) {
                 speakAndListen(response.data.nextQuestion.text, () => {
                   setInterviewPhase("waiting");
-                  setTimeout(() => startRecording(true), 500);
+                  // Candidate will manually click "Record Answer" when ready
                 });
               }
             });
@@ -331,7 +338,7 @@ export function useInterviewSession({
     }
   };
 
-  const handleVoiceSubmit = async (audioBlob) => {
+  const handleVoiceSubmit = async (audioBlob, clientTranscript = "") => {
     if (!isInterviewActiveRef.current) return;
     const currentSession = sessionRef.current;
     const currentQ = currentQuestionRef.current;
@@ -339,7 +346,6 @@ export function useInterviewSession({
     if (!audioBlob || audioBlob.size === 0) {
       if (selectedMode === "live" && isInterviewActiveRef.current) {
         setInterviewPhase("waiting");
-        setTimeout(() => startRecording(true), 500);
       }
       return;
     }
@@ -360,6 +366,7 @@ export function useInterviewSession({
         try {
           const transcribeResponse = await interviewAPI.transcribeAudioOnly(audioFile, {
             languageCode: selectedLanguage,
+            clientTranscript,
           });
           if (transcribeResponse?.success && transcribeResponse.data?.text) {
             selfIntroText = transcribeResponse.data.text.trim();
@@ -368,13 +375,17 @@ export function useInterviewSession({
           console.warn("Warm-up audio transcription warning:", transcribeErr.message);
         }
 
+        // Fallback to client real-time speech transcript if available
+        if (!selfIntroText && clientTranscript && clientTranscript.trim().length >= 4) {
+          selfIntroText = clientTranscript.trim();
+        }
+
         if (!selfIntroText) {
           console.log("Warm-up intro had no clear speech. Re-prompting candidate gently...");
           const reprompt = "I didn't quite catch that. Could you please tell me a little bit about yourself and your background?";
           setInterviewPhase("asking");
           await speakAndListen(reprompt, () => {
             setInterviewPhase("waiting");
-            setTimeout(() => startRecording(true), 500);
           });
           setIsSubmitting(false);
           return;
@@ -404,7 +415,6 @@ export function useInterviewSession({
 
         await speakAndListen(fullIntroSpeech, () => {
           setInterviewPhase("waiting");
-          setTimeout(() => startRecording(true), 500);
         });
 
         setIsSubmitting(false);
@@ -434,7 +444,7 @@ export function useInterviewSession({
         currentSession.id,
         audioFile,
         currentQ.number,
-        { voiceEngine, languageCode: selectedLanguage }
+        { voiceEngine, languageCode: selectedLanguage, clientTranscript }
       );
 
       if (!response.success) throw new Error(response.error || "Failed to process voice answer");
@@ -474,7 +484,6 @@ export function useInterviewSession({
           setInterviewPhase("asking");
           await speakAndListen(repeatSpeech, () => {
             setInterviewPhase("waiting");
-            setTimeout(() => startRecording(true), 500);
           });
           setIsSubmitting(false);
           return;
@@ -485,7 +494,6 @@ export function useInterviewSession({
           setInterviewPhase("asking");
           await speakAndListen(clarifySpeech, () => {
             setInterviewPhase("waiting");
-            setTimeout(() => startRecording(true), 500);
           });
           setIsSubmitting(false);
           return;
@@ -505,7 +513,7 @@ export function useInterviewSession({
         });
       } else if (response.data.nextQuestion) {
         if (selectedMode === "live") {
-          const ack = generateAcknowledgment();
+          const ack = response.data.nextQuestion.acknowledgmentBridge || generateAcknowledgment();
           const nextQText = response.data.nextQuestion.text;
           const fullSpeech = `${ack} ${nextQText}`;
 
@@ -520,7 +528,6 @@ export function useInterviewSession({
 
           await speakAndListen(fullSpeech, () => {
             setInterviewPhase("waiting");
-            setTimeout(() => startRecording(true), 500);
           });
         } else {
           setEvaluation(response.data.evaluation);
@@ -539,9 +546,6 @@ export function useInterviewSession({
       console.error("Failed to submit voice answer:", error);
       toast.error(error.message || "Failed to process voice answer");
       setInterviewPhase("waiting");
-      if (selectedMode === "live") {
-        setTimeout(() => startRecording(true), 1000);
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -572,7 +576,6 @@ export function useInterviewSession({
           setTimeout(() => {
             speakAndListen(response.data.nextQuestion.text, () => {
               setInterviewPhase("waiting");
-              setTimeout(() => startRecording(true), 500);
             });
           }, 500);
         } else {
@@ -587,6 +590,18 @@ export function useInterviewSession({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleRepeatQuestion = async () => {
+    const currentQ = currentQuestionRef.current;
+    if (!currentQ?.text || !isInterviewActiveRef.current) return;
+
+    if (cleanupAudioStreams) cleanupAudioStreams();
+    setInterviewPhase("asking");
+    const repeatSpeech = `Sure! Here is the question again: ${currentQ.text}`;
+    await speakAndListen(repeatSpeech, () => {
+      setInterviewPhase("waiting");
+    });
   };
 
   const handleCompleteInterview = async () => {
@@ -708,6 +723,7 @@ export function useInterviewSession({
     handleSubmitAnswer,
     handleVoiceSubmit,
     handleSkipQuestion,
+    handleRepeatQuestion,
     handleCompleteInterview,
     handleAbandonInterview,
     resetState,

@@ -204,11 +204,11 @@ export default function FinalCTABanner() {
             </Link>
           </motion.div>
 
-          {/* Brand Footer Line with smartnshine.app */}
+          {/* Brand Footer Line with smartnshine.in */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/[0.08] dark:border-white/[0.08]">
             <div className="flex items-center gap-2 text-xs font-mono text-amber-300/80">
               <Globe className="w-3.5 h-3.5 text-amber-400" />
-              <span className="tracking-wider">smartnshine.app</span>
+              <span className="tracking-wider">smartnshine.in</span>
             </div>
             <span
               className={`text-xs ${

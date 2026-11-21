@@ -342,7 +342,7 @@ export default function FeatureBentoSuite() {
                 <div className={`p-2.5 rounded-xl border text-xs truncate ${
                   isDarkMode ? "bg-zinc-950 border-zinc-800 text-zinc-300" : "bg-white border-zinc-200 text-slate-800 font-bold"
                 }`}>
-                  https://smartnshine.app/p/alexmorgan
+                  https://smartnshine.in/p/alexmorgan
                 </div>
               </div>
 

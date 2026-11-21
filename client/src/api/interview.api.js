@@ -42,6 +42,16 @@ export const startSession = async (sessionId) => {
   return response.data;
 };
 
+export const recordProctoringEvent = async (sessionId, payload) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/event`, payload);
+  return response.data;
+};
+
+export const sendProctoringHeartbeat = async (sessionId, payload) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/heartbeat`, payload, { timeout: 8000 });
+  return response.data;
+};
+
 /**
  * Submit text answer
  * @param {string} sessionId - Session ID
@@ -82,6 +92,9 @@ export const submitVoiceAnswer = async (
   }
   if (typeof options === "object" && options?.languageCode) {
     formData.append("languageCode", options.languageCode);
+  }
+  if (typeof options === "object" && options?.clientTranscript) {
+    formData.append("clientTranscript", options.clientTranscript);
   }
 
   console.log("📤 Submitting voice answer:", {
@@ -213,6 +226,9 @@ export const transcribeAudioOnly = async (audioFile, options = {}) => {
   if (options.languageCode) {
     formData.append("languageCode", options.languageCode);
   }
+  if (options.clientTranscript) {
+    formData.append("clientTranscript", options.clientTranscript);
+  }
 
   console.log("📤 Transcribing audio (no evaluation):", audioFile.name, audioFile.size, "bytes");
 
@@ -301,6 +317,8 @@ export default {
   getInterviewConfig,
   createSession,
   startSession,
+  recordProctoringEvent,
+  sendProctoringHeartbeat,
   submitAnswer,
   submitVoiceAnswer,
   skipQuestion,

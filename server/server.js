@@ -1,12 +1,9 @@
-import dotenv from "dotenv";
-import path from "path";
-import {fileURLToPath} from "url";
+import "./config/environment.js";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
 
-// Load environment variables immediately before any other module evaluation
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({path: path.join(__dirname, ".env"), override: true});
-dotenv.config({override: true}); // fallback to root .env if present
 
 import express from "express";
 import cors from "cors";
@@ -53,6 +50,7 @@ import careerRoutes from "./routes/career.routes.js";
 import careerApplicationRoutes from "./routes/careerApplication.routes.js";
 import superAdminRoutes from "./routes/superAdmin.routes.js";
 import tpoRoutes from "./routes/tpo.routes.js";
+import logRoutes from "./routes/log.routes.js";
 import Template from "./models/Template.model.js";
 import Portfolio from "./models/Portfolio.model.js";
 import Settings from "./models/Settings.model.js";
@@ -65,6 +63,7 @@ import {
 } from "./middleware/security.middleware.js";
 import {notifySystemError} from "./services/adminNotification.service.js";
 import {startCleanupJob} from "./services/interview-cleanup.service.js";
+import {startProctoringWatchdog} from "./services/proctoring.service.js";
 
 // =========================================
 // ENVIRONMENT VALIDATION
@@ -244,6 +243,7 @@ mongoConnectPromise
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
       startCleanupJob();
+      startProctoringWatchdog();
       checkVoiceServices();
     });
   })
@@ -277,6 +277,9 @@ mongoose.connection.on("disconnected", () => {
   console.warn("⚠️  MongoDB disconnected");
 });
 
+// Serve uploaded interview recordings & snapshots statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/resume", resumeRoutes);
@@ -295,6 +298,7 @@ app.use("/api/career", careerRoutes); // Career profile & personalized Q&A route
 app.use("/api/career-applications", careerApplicationRoutes); // Founding team career application submissions & admin routes
 app.use("/api/super-admin", superAdminRoutes); // Super Admin panel & environment management routes
 app.use("/api/tpo", tpoRoutes); // Institutional TPO Dashboard routes
+app.use("/api/logs", logRoutes); // Centralized Observability & Agent Logs routes
 
 // Helper to escape HTML attributes safely
 function escapeHtml(str) {
@@ -356,14 +360,8 @@ app.get(["/u/:slug", "/portfolio/:slug"], async (req, res, next) => {
       `Explore ${name}'s verified projects, technical skills, and professional experience on SmartNShine.`;
     const description = escapeHtml(rawDescription.substring(0, 300));
 
-    // Determine Base URL
-    const host = req.get("host") || "www.smartnshine.app";
-    const protocol =
-      req.protocol === "https" ||
-      req.headers["x-forwarded-proto"] === "https"
-        ? "https"
-        : "http";
-    const baseUrl = `${protocol}://${host}`;
+    // Public portfolio metadata always points to the preferred website domain.
+    const baseUrl = "https://smartnshine.in";
     const canonicalUrl = `${baseUrl}/u/${encodeURIComponent(portfolio.slug)}`;
 
     // Resolve OG Image
@@ -492,7 +490,7 @@ app.get(["/u/:slug", "/portfolio/:slug"], async (req, res, next) => {
 // Dynamic Real-time XML Sitemap for Search Crawlers
 app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   try {
-    const baseUrl = "https://www.smartnshine.app";
+    const baseUrl = "https://smartnshine.in";
     const today = new Date().toISOString().split("T")[0];
 
     // Query active templates from MongoDB

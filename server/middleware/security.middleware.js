@@ -192,9 +192,13 @@ export const corsOptions = {
   origin: (origin, callback) => {
     // Get allowed origins from environment variable or fallback to defaults
     const defaultOrigins = [
+      // Keep existing domains available during the migration.
       "https://smartnshine.app",
       "https://www.smartnshine.app",
       "https://*.smartnshine.app",
+      "https://smartnshine.in",
+      "https://www.smartnshine.in",
+      "https://*.smartnshine.in",
       "https://*.vercel.app",
       "http://localhost:3000",
       "http://localhost:5173",
@@ -225,7 +229,7 @@ export const corsOptions = {
         // Exact match
         if (allowed === origin) return true;
 
-        // Wildcard support (e.g., https://*.example.com or https://*.smartnshine.app)
+        // Wildcard support (e.g., https://*.example.com or https://*.smartnshine.in)
         if (allowed.includes("*")) {
           const regex = new RegExp("^" + allowed.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
           return regex.test(origin);

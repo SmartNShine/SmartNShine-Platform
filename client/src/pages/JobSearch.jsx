@@ -491,7 +491,7 @@ const JobSearch = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-      <div className="container mx-auto px-4 py-8">
+      <div className="workspace-container py-8 space-y-8">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-4">
@@ -509,7 +509,7 @@ const JobSearch = () => {
         </div>
 
         {/* Unified Filter Tabs */}
-        <div className="max-w-6xl mx-auto mb-8">
+        <div className="w-full mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6">
             {/* Main Category Tabs */}
             <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
@@ -569,7 +569,7 @@ const JobSearch = () => {
         </div>
 
         {/* Search Form */}
-        <div className="max-w-5xl mx-auto mb-8">
+        <div className="w-full mb-8">
           <form
             onSubmit={handleSearch}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6"
@@ -738,7 +738,7 @@ const JobSearch = () => {
             <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
           </div>
         ) : (
-          <div className="max-w-5xl mx-auto">
+          <div className="w-full">
             <div className="space-y-4">
               {jobs
                 .slice((currentPage - 1) * 10, currentPage * 10) // Show 10 jobs per page

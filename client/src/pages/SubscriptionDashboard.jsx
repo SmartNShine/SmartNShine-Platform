@@ -295,7 +295,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
   // Content component (without outer wrapper)
   const DashboardContent = () => (
     <div
-      className={`max-w-7xl mx-auto ${embedded ? "" : "px-4 sm:px-6 lg:px-8"}`}
+      className={embedded ? "" : "workspace-container"}
     >
       {/* Header - only show if not embedded */}
       {!embedded && (
@@ -1115,8 +1115,8 @@ const SubscriptionDashboard = ({embedded = false}) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 py-8">
+      <div className="workspace-container">
         <DashboardContent />
       </div>
     </div>

@@ -302,6 +302,13 @@ router.post(
         }
       }
 
+      // 4. Try client live speech transcript fallback if audio exceeded limits or STT engines failed
+      if (!transcribedText && req.body.clientTranscript && req.body.clientTranscript.trim().length >= 4) {
+        transcribedText = req.body.clientTranscript.trim();
+        provider = "client-web-speech";
+        console.log(`ℹ️ Falling back to verified client speech transcript in /api/voice/transcribe (${transcribedText.length} chars)`);
+      }
+
       const cleanedText = (transcribedText || "").trim();
 
       return res.json({

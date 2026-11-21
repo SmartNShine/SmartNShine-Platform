@@ -28,7 +28,7 @@ export default function MagazinePortfolioTemplate() {
         <meta property="og:title" content={magazineData.seoConfig.title} />
         <meta property="og:description" content={magazineData.seoConfig.description} />
         <meta property="og:image" content={magazineData.seoConfig.ogImage} />
-        <meta property="og:url" content={window.location.href} />
+        <meta property="og:url" content="https://smartnshine.in/magazine-portfolio" />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />

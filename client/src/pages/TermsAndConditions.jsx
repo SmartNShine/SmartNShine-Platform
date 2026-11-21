@@ -277,7 +277,7 @@ const TermsAndConditions = () => {
               contact us at:
             </p>
             <p className="text-blue-600 dark:text-blue-400 font-semibold mt-2">
-              support@smartnshine.app
+              contact@smartnshine.in
             </p>
           </section>
         </div>

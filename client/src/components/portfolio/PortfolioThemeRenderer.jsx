@@ -9,14 +9,19 @@ const PortfolioThemeRenderer = ({
   resume,
   projects,
   mode = "public",
+  customThemeMode,
+  onThemeModeChange,
   onContactClick,
   onProjectClick,
   onResumeClick,
   resumeDownloadUrl,
 }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [localDarkMode, setIsDarkMode] = useState(false);
+  const isControlled = customThemeMode === "light" || customThemeMode === "dark";
+  const isDarkMode = isControlled ? customThemeMode === "dark" : localDarkMode;
 
   useEffect(() => {
+    if (isControlled) return;
     // Check initial preference or localStorage
     const savedTheme = localStorage.getItem("portfolio-theme");
     const systemPrefersDark =
@@ -30,9 +35,13 @@ const PortfolioThemeRenderer = ({
       setIsDarkMode(false);
       document.documentElement.classList.remove("dark");
     }
-  }, []);
+  }, [isControlled]);
 
   const toggleDarkMode = () => {
+    if (isControlled) {
+      onThemeModeChange?.(isDarkMode ? "light" : "dark");
+      return;
+    }
     setIsDarkMode((current) => {
       const next = !current;
 
@@ -146,7 +155,7 @@ const PortfolioThemeRenderer = ({
             <footer className="border-t border-gray-200/80 bg-white px-5 py-6 text-center text-xs sm:text-sm text-gray-500 dark:border-zinc-800/80 dark:bg-zinc-950 dark:text-zinc-400">
               Generated with{" "}
               <a
-                href="https://www.smartnshine.app"
+                href="https://smartnshine.in"
                 target="_blank"
                 rel="noreferrer"
                 className="font-bold text-gray-900 dark:text-white underline-offset-4 hover:underline"

@@ -285,7 +285,7 @@ const VARIABLE_METADATA = {
   ALLOWED_ORIGINS: {
     category: "Server & Network",
     label: "Allowed CORS Origins",
-    description: "Comma-separated list of allowed origins (e.g. http://localhost:5173,https://smartnshine.app)",
+    description: "Comma-separated list of allowed origins (e.g. http://localhost:5173,https://smartnshine.in)",
     isSensitive: false,
     icon: "globe",
   },

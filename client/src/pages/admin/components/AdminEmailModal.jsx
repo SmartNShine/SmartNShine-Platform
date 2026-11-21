@@ -144,7 +144,7 @@ const EMAIL_TEMPLATES = [
     cardMessage:
       "• Increased ATS parsing speed and scoring accuracy\n• Streamlined multi-format PDF and Word export fidelity\n• Improved infrastructure response times for all workspace tools",
     buttonText: "Open Your Workspace",
-    buttonUrl: "https://smartnshine.app/dashboard",
+    buttonUrl: "https://smartnshine.in/dashboard",
     noteBox:
       "📩 If you have any questions or require assistance, please reply directly to this email or visit our Support Center.",
   },
@@ -163,7 +163,7 @@ const EMAIL_TEMPLATES = [
     cardMessage:
       "• Priority support review for resume formatting and scoring\n• Guidance on recruiter-tested keywords and industry metrics\n• Direct assistance with account settings and document exports",
     buttonText: "Visit Support Center",
-    buttonUrl: "https://smartnshine.app/contact",
+    buttonUrl: "https://smartnshine.in/contact",
     noteBox:
       "💡 You can simply reply directly to this email to get in touch with our customer care team anytime.",
   },
@@ -182,7 +182,7 @@ const EMAIL_TEMPLATES = [
     cardMessage:
       "• Unlimited in-depth ATS scans and keyword density analysis\n• Full access to all 11 modern, recruiter-approved resume layouts\n• Interactive interview preparation simulations with instant scoring\n• 1-Click live public portfolio website with custom sharing link",
     buttonText: "Explore Pro Benefits",
-    buttonUrl: "https://smartnshine.app/pricing",
+    buttonUrl: "https://smartnshine.in/pricing",
     noteBox:
       "✨ Preferred pricing is available for a limited time. Cancel or adjust your subscription preferences anytime.",
   },
@@ -201,7 +201,7 @@ const EMAIL_TEMPLATES = [
     cardMessage:
       "• Verify your registered email address and contact preferences\n• Ensure your account is secured with a strong, unique password\n• Review your active workspace sessions and authorized integrations",
     buttonText: "Review Account Security",
-    buttonUrl: "https://smartnshine.app/dashboard/profile",
+    buttonUrl: "https://smartnshine.in/dashboard/profile",
     noteBox:
       "🔒 If you did not make changes to your account or notice unfamiliar activity, please contact our security team immediately.",
   },
@@ -220,7 +220,7 @@ const EMAIL_TEMPLATES = [
     cardMessage:
       "• Fresh modern resume designs tailored for engineering, business, and creative fields\n• High-fidelity PDF rendering with zero layout discrepancies\n• Real-time score breakdown with actionable keyword improvement suggestions",
     buttonText: "Explore New Features",
-    buttonUrl: "https://smartnshine.app/dashboard",
+    buttonUrl: "https://smartnshine.in/dashboard",
     noteBox:
       "🚀 All new features are available immediately in your dashboard with no extra configuration needed.",
   },
@@ -238,7 +238,7 @@ const EMAIL_TEMPLATES = [
     cardTitle: "",
     cardMessage: "",
     buttonText: "Visit SmartNShine",
-    buttonUrl: "https://smartnshine.app",
+    buttonUrl: "https://smartnshine.in",
     noteBox: "If you have any questions, feel free to reply directly to this email.",
   },
 ];
@@ -339,7 +339,7 @@ export default function AdminEmailModal({
     (text || "")
       .replace(/{name}/g, userName || "Valued Member")
       .replace(/{email}/g, toEmail || "user@example.com")
-      .replace(/{app_url}/g, "https://smartnshine.app");
+      .replace(/{app_url}/g, "https://smartnshine.in");
 
   // Insert variable into message textarea
   const insertVariable = (variableStr) => {
@@ -733,7 +733,7 @@ export default function AdminEmailModal({
                         type="url"
                         value={buttonUrl}
                         onChange={(e) => setButtonUrl(e.target.value)}
-                        placeholder="https://smartnshine.app/..."
+                        placeholder="https://smartnshine.in/..."
                         className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-white text-xs focus:outline-none focus:border-indigo-500"
                       />
                     </div>
@@ -745,28 +745,28 @@ export default function AdminEmailModal({
                     <div className="flex flex-wrap gap-1.5">
                       <button
                         type="button"
-                        onClick={() => applyUrlPreset("https://smartnshine.app/dashboard", "Open Dashboard")}
+                        onClick={() => applyUrlPreset("https://smartnshine.in/dashboard", "Open Dashboard")}
                         className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded border border-slate-700/60 transition-colors"
                       >
                         /dashboard
                       </button>
                       <button
                         type="button"
-                        onClick={() => applyUrlPreset("https://smartnshine.app/pricing", "View Pro Pricing")}
+                        onClick={() => applyUrlPreset("https://smartnshine.in/pricing", "View Pro Pricing")}
                         className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded border border-slate-700/60 transition-colors"
                       >
                         /pricing
                       </button>
                       <button
                         type="button"
-                        onClick={() => applyUrlPreset("https://smartnshine.app/contact", "Contact Support")}
+                        onClick={() => applyUrlPreset("https://smartnshine.in/contact", "Contact Support")}
                         className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded border border-slate-700/60 transition-colors"
                       >
                         /contact
                       </button>
                       <button
                         type="button"
-                        onClick={() => applyUrlPreset("https://smartnshine.app/dashboard/profile", "Review Account")}
+                        onClick={() => applyUrlPreset("https://smartnshine.in/dashboard/profile", "Review Account")}
                         className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded border border-slate-700/60 transition-colors"
                       >
                         /profile
@@ -925,7 +925,7 @@ export default function AdminEmailModal({
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">From:</span>
                     <span className="font-semibold text-slate-200">
-                      SmartNShine Support &lt;support@smartnshine.app&gt;
+                      SmartNShine Support &lt;contact@smartnshine.in&gt;
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

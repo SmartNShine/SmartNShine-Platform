@@ -42,11 +42,11 @@ export default function Profile() {
         title="My Profile - Account & Subscription | SmartNShine"
         description="Manage your SmartNShine profile, subscription plan, AI quota usage, and security credentials."
         keywords="profile, account settings, subscription management, AI quota, security settings"
-        url="https://www.smartnshine.app/profile"
+        url="https://smartnshine.in/profile"
         noindex={true}
       />
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <div className="workspace-container py-6 sm:py-8 space-y-6">
         {/* Back to Dashboard Breadcrumb */}
         <div>
           <Link
