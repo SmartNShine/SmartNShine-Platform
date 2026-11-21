@@ -1,5 +1,6 @@
 import User from "../models/User.model.js";
 import Subscription from "../models/Subscription.model.js";
+import TPO from "../models/TPO.model.js";
 
 const ACTIVE_TIERS = ["free", "one-time", "pro"];
 const ACTION_FIELD_MAP = {
@@ -26,6 +27,35 @@ export async function checkSubscription(req, res, next) {
     console.log("🔍 checkSubscription middleware:");
     console.log("  - userId:", userId);
     console.log("  - req.user:", JSON.stringify(req.user, null, 2));
+
+    // Support TPO accounts (stored in TPO collection)
+    if (req.user?.role === "tpo" || req.user?.userType === "tpo") {
+      const tpo = await TPO.findById(userId).populate("institutionId");
+      if (tpo) {
+        req.user = tpo;
+        req.user.subscription = {
+          tier: "campus",
+          plan: "campus",
+          status: "active",
+          autoRenew: false,
+          features: {
+            canEdit: true,
+            canDownload: true,
+            canUseAI: true,
+            canView: true,
+          },
+          hasActiveSubscription: true,
+        };
+        req.user.role = "tpo";
+        req.user.isTpo = true;
+        if (!req.user.getUsageLimit) req.user.getUsageLimit = () => Infinity;
+        if (!req.user.hasReachedLimit) req.user.hasReachedLimit = () => false;
+        if (!req.user.isPremiumUser) req.user.isPremiumUser = () => true;
+        if (!req.user.canAccessFeature) req.user.canAccessFeature = () => true;
+        console.log("✅ TPO user recognized in checkSubscription:", tpo.email);
+        return next();
+      }
+    }
 
     // Fetch user with subscription details
     const user = await User.findById(userId);
@@ -110,9 +140,9 @@ export function checkUsageLimit(limitType) {
         });
       }
 
-      // Admin users have unlimited access to all features
-      if (user.role === "admin") {
-        console.log(`✅ Admin user ${user._id} - usage limit check bypassed for ${limitType}`);
+      // Admin and TPO users have unlimited access to all features
+      if (user.role === "admin" || user.role === "tpo" || user.isTpo) {
+        console.log(`✅ Staff/TPO user ${user._id} - usage limit check bypassed for ${limitType}`);
         return next();
       }
 
@@ -305,6 +335,10 @@ export async function requirePremium(req, res, next) {
       return res.status(401).json({message: "User not authenticated"});
     }
 
+    if (user.role === "admin" || user.role === "tpo" || user.isTpo) {
+      return next();
+    }
+
     if (!user.isPremiumUser()) {
       return res.status(403).json({
         message: "This feature requires a paid subscription",
@@ -332,6 +366,10 @@ export function requireTier(allowedTiers) {
 
       if (!user) {
         return res.status(401).json({message: "User not authenticated"});
+      }
+
+      if (user.role === "admin" || user.role === "tpo" || user.isTpo) {
+        return next();
       }
 
       const userTier = user.subscription?.tier || "free";
@@ -369,6 +407,10 @@ export function requireFeature(feature) {
         return res.status(401).json({message: "User not authenticated"});
       }
 
+      if (user.role === "admin" || user.role === "tpo" || user.isTpo) {
+        return next();
+      }
+
       if (!user.canAccessFeature(feature)) {
         return res.status(403).json({
           message: `This feature is not available in your current plan`,
@@ -403,8 +445,10 @@ export function trackUsage(usageType) {
           const user = req.user;
 
           if (user) {
-            await user.incrementUsage(usageType);
-            console.log(`✅ Tracked ${usageType} usage for user ${user._id}`);
+            if (typeof user.incrementUsage === "function") {
+              await user.incrementUsage(usageType);
+              console.log(`✅ Tracked ${usageType} usage for user ${user._id}`);
+            }
           }
         }
       } catch (error) {
@@ -433,6 +477,10 @@ export function tierBasedRateLimit(req, res, next) {
     const user = req.user;
     if (!user) {
       return res.status(401).json({message: "User not authenticated"});
+    }
+
+    if (user.role === "admin" || user.role === "tpo" || user.isTpo) {
+      return next();
     }
 
     const tier = user.subscription?.tier || "free";
@@ -523,6 +571,24 @@ export async function getUserUsageStats(req, res) {
       return res.status(401).json({message: "User not authenticated"});
     }
 
+    if (user.role === "tpo" || user.isTpo) {
+      return res.json({
+        tier: "campus",
+        status: "active",
+        usage: {
+          resumes: { used: 0, limit: Infinity, unlimited: true },
+          atsScans: { used: 0, limit: Infinity, unlimited: true },
+          jobMatches: { used: 0, limit: Infinity, unlimited: true },
+          coverLetters: { used: 0, limit: Infinity, unlimited: true },
+        },
+        subscription: {
+          startDate: user.createdAt,
+          endDate: null,
+          autoRenew: false,
+        },
+      });
+    }
+
     const stats = {
       tier: user.subscription?.tier || "free",
       status: user.subscription?.status || "active",
@@ -583,13 +649,13 @@ export async function getResumeAccess(user, resume) {
     };
   }
 
-  if (user.role === "admin") {
+  if (user.role === "admin" || user.role === "tpo" || user.isTpo) {
     return {
       ...baseAccess,
       canEdit: true,
       canDownload: true,
       canUseAI: true,
-      accessTier: "admin",
+      accessTier: user.role === "tpo" ? "campus" : "admin",
     };
   }
 

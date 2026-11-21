@@ -1069,7 +1069,6 @@ const MinimalTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
       }}
       className="w-full bg-white text-black"
       style={{
-        minHeight: "11in",
         padding: styles.padding,
         color: selectedTheme.text,
         boxSizing: "border-box",

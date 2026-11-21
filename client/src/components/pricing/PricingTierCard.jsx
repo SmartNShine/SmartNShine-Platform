@@ -1,9 +1,11 @@
-import { Check, Star, Rocket, Crown, ArrowRight, Sparkles, Zap } from "lucide-react";
+import React from "react";
+import { Check, ArrowRight, Sparkles } from "lucide-react";
 
 export default function PricingTierCard({
   tierKey,
   tierData,
   isPopular,
+  elevated = false,
   isActivePlan,
   onSelectPlan,
 }) {
@@ -15,185 +17,160 @@ export default function PricingTierCard({
     }).format(amount);
   };
 
-  const getTierIcon = () => {
-    if (tierKey === "free") return Star;
-    if (tierKey === "one-time") return Rocket;
-    return Crown;
-  };
-
-  const Icon = getTierIcon();
+  const isFree = tierKey === "free";
+  const isOneTime = tierKey === "one-time";
+  const isPro = tierKey === "pro";
 
   const getTitle = () => {
-    if (tierKey === "free") return "Starter Free";
-    if (tierKey === "one-time") return "One-Time Pass";
+    if (isFree) return "Starter Free";
+    if (isOneTime) return "One-Time Pass";
     return "Pro Unlimited";
   };
 
   const getSubtitle = () => {
-    if (tierKey === "free") return "Essential toolkit for casual updates";
-    if (tierKey === "one-time") return "Complete 21-day single resume boost";
-    return "Unlimited AI generation & ATS diagnostic engine";
+    if (isFree) return "For casual updates and baseline ATS resume generation.";
+    if (isOneTime) return "Complete 21-day single tailored boost for active job apps.";
+    return "For job seekers seeking maximum interview callbacks and full AI power.";
   };
 
+  const getFeatureLeadIn = () => {
+    if (isFree) return "What's included:";
+    if (isOneTime) return "Everything in Free, plus:";
+    return "Everything in One-Time, plus:";
+  };
+
+  const defaultFeaturesByTier = {
+    free: [
+      "1 Active resume per month",
+      "OpenAI GPT-4o AI model",
+      "3 Core ATS templates",
+      "Master Career Profile Hub",
+      "5 Career Q&A interview questions",
+      "Basic ATS keyword check",
+      "Standard PDF export",
+    ],
+    "one-time": [
+      "1 Dedicated resume (21-day pass)",
+      "OpenAI GPT-4o AI rewriting",
+      "All 11 ATS-Certified templates",
+      "1 Deep ATS diagnostic scan",
+      "1 Live Portfolio website",
+      "Full Career Q&A Studio access",
+      "AI PDF/DOCX resume parser",
+      "21-day full access",
+    ],
+    pro: [
+      "Unlimited resumes & exports",
+      "OpenAI GPT-4o Premium AI model",
+      "All 11 ATS-Certified templates",
+      "Unlimited ATS diagnostic scans",
+      "Unlimited Public Portfolio websites",
+      "Unlimited Career Q&A mock interviews",
+      "Unlimited AI resume file parsers",
+      "Master Career Profile Hub 2-way sync",
+      "Priority PDF rendering & 24/7 support",
+    ],
+  };
+
+  const features =
+    tierData?.features && tierData.features.length > 0
+      ? tierData.features
+      : defaultFeaturesByTier[tierKey] || [];
+
   const proAmount = tierData?.monthly?.amount || 199;
-  const proOriginalAmount = tierData?.monthly?.originalAmount || 199;
-  const isProDiscounted =
-    tierData?.monthly?.isPromo || proAmount < proOriginalAmount;
+  const proOriginalAmount = tierData?.monthly?.originalAmount || 299;
+  const isProDiscounted = isPro && proAmount < proOriginalAmount;
 
   return (
     <div
-      className={`relative flex flex-col justify-between rounded-3xl transition-all duration-300 p-6 sm:p-8 overflow-hidden backdrop-blur-xl ${
-        tierKey === "pro"
-          ? "bg-gradient-to-b from-blue-500/[0.07] via-cyan-500/[0.03] to-indigo-500/[0.05] dark:from-blue-950/40 dark:via-zinc-900/90 dark:to-cyan-950/40 border-2 border-blue-500/70 shadow-2xl shadow-blue-500/20 ring-1 ring-blue-400/40 scale-[1.02]"
-          : tierKey === "one-time"
-          ? "bg-gradient-to-b from-orange-500/[0.06] via-transparent to-amber-500/[0.04] dark:from-orange-950/30 dark:via-zinc-900/90 dark:to-zinc-950 border-2 border-orange-500/50 shadow-xl shadow-orange-500/10"
-          : "bg-white dark:bg-zinc-900/90 border border-gray-200/90 dark:border-white/[0.08] shadow-sm hover:shadow-md"
+      className={`flex flex-col justify-between p-6 sm:p-8 h-full transition-all duration-300 ${
+        elevated
+          ? "relative z-20 bg-white dark:bg-[#0c0c0c] md:-translate-y-6 md:scale-[1.04] md:rounded-2xl md:border-2 md:border-neutral-900 dark:md:border-white md:shadow-2xl dark:md:shadow-[0_24px_60px_rgba(0,0,0,0.55)] md:ring-1 md:ring-neutral-900/10 dark:md:ring-white/15 md:mx-[-2px]"
+          : "bg-white dark:bg-[#0c0c0c] md:translate-y-1 md:opacity-[0.98]"
       }`}
     >
-      {/* Decorative ambient glowing orb in background for Pro */}
-      {tierKey === "pro" && (
-        <div className="pointer-events-none absolute -top-10 -right-10 w-44 h-44 bg-gradient-to-br from-blue-500/30 via-cyan-500/20 to-indigo-500/30 rounded-full blur-3xl" />
-      )}
-
-      {/* Popular Pill */}
-      {isPopular && (
-        <div className="absolute top-0 right-0 z-10">
-          <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 text-white text-[11px] font-black uppercase tracking-wider px-4 py-1.5 rounded-bl-2xl shadow-lg shadow-blue-500/30">
-            <Sparkles className="w-3.5 h-3.5 fill-current" /> Most Popular
-          </span>
-        </div>
-      )}
-
-      {/* Active Plan Pill */}
-      {isActivePlan && (
-        <div className="absolute top-0 left-0 z-10">
-          <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider px-4 py-1.5 rounded-br-2xl shadow-md">
-            <Check className="w-3.5 h-3.5 stroke-[3]" /> Active Plan
-          </span>
-        </div>
-      )}
-
-      <div className="space-y-6 relative z-10">
-        {/* Tier Header */}
-        <div className="space-y-3 pt-2">
-          <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-              tierKey === "pro"
-                ? "bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-blue-400/40"
-                : tierKey === "one-time"
-                ? "bg-gradient-to-tr from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 border border-orange-400/30"
-                : "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
-            }`}
-          >
-            <Icon className="w-6 h-6" />
-          </div>
-
-          <div>
-            <h3
-              className={`text-xl sm:text-2xl font-black tracking-tight ${
-                tierKey === "pro"
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 dark:from-blue-300 dark:via-cyan-200 dark:to-indigo-300"
-                  : tierKey === "one-time"
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500 dark:from-orange-300 dark:to-amber-200"
-                  : "text-gray-900 dark:text-white"
-              }`}
-            >
+      <div className="space-y-6">
+        {/* Header: Title and discount / active pill */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
               {getTitle()}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1 leading-relaxed font-medium">
-              {getSubtitle()}
-            </p>
+
+            {isActivePlan ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                <Check className="w-3 h-3 stroke-[2.5]" /> Active
+              </span>
+            ) : isPro && isProDiscounted ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                Save 33%
+              </span>
+            ) : null}
           </div>
+
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed min-h-[38px]">
+            {getSubtitle()}
+          </p>
         </div>
 
-        {/* Pricing Display */}
-        <div className="py-2 border-y border-gray-100 dark:border-white/5">
-          {tierKey === "free" ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">
+        {/* Pricing Block */}
+        <div className="pb-4 border-b border-neutral-100 dark:border-[#1F1F1F]">
+          {isFree && (
+            <div className="space-y-1">
+              <div className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
                 ₹0
-              </span>
-              <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500">
-                / forever
-              </span>
-            </div>
-          ) : tierKey === "one-time" ? (
-            <div className="space-y-1.5">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 dark:from-orange-400 dark:via-amber-300 dark:to-orange-400">
-                  {formatPrice(tierData.amount ?? 9)}
-                </span>
-                {(tierData.isPromo || (tierData.amount && tierData.amount < 49)) && (
-                  <span className="text-sm font-bold text-gray-400 dark:text-zinc-500 line-through">
-                    {formatPrice(tierData.originalAmount || 49)}
-                  </span>
-                )}
-                <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500">
-                  / 21 days pass
-                </span>
               </div>
-              {(tierData.isPromo || (tierData.amount && tierData.amount < 49)) && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-wider border border-orange-500/30 shadow-xs">
-                  <Sparkles className="w-3 h-3 text-orange-500" />
-                  <span>
-                    {tierData.promoBadge || "RAKHI DEAL"} • Flat{" "}
-                    {Math.round(
-                      (1 - (tierData.amount || 9) / (tierData.originalAmount || 49)) *
-                        100
-                    )}
-                    % OFF
-                  </span>
-                </div>
-              )}
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                No credit card required
+              </p>
             </div>
-          ) : (
-            <div className="space-y-1.5">
+          )}
+
+          {isOneTime && (
+            <div className="space-y-1">
+              <div className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                ₹49
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                / 21-day single pass
+              </p>
+            </div>
+          )}
+
+          {isPro && (
+            <div className="space-y-1">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 dark:from-blue-400 dark:via-cyan-300 dark:to-indigo-400">
+                <span className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
                   {formatPrice(proAmount)}
                 </span>
                 {isProDiscounted && (
-                  <span className="text-sm font-bold text-gray-400 dark:text-zinc-500 line-through">
+                  <span className="text-sm text-neutral-400 line-through">
                     {formatPrice(proOriginalAmount)}
                   </span>
                 )}
-                <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500">
-                  / month
-                </span>
               </div>
-              {isProDiscounted && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-blue-500/15 via-cyan-500/15 to-indigo-500/15 text-blue-700 dark:text-cyan-300 text-[10px] font-black uppercase tracking-wider border border-blue-500/30 shadow-xs">
-                  <Zap className="w-3 h-3 text-cyan-400 fill-current" />
-                  <span>
-                    PRO SPECIAL • Flat{" "}
-                    {Math.round((1 - proAmount / proOriginalAmount) * 100)}% OFF
-                  </span>
-                </div>
-              )}
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                per month billed monthly
+              </p>
             </div>
           )}
         </div>
 
-        {/* Features Checklist */}
-        <div className="space-y-2.5">
-          <p className="text-xs font-bold text-gray-800 dark:text-zinc-200 uppercase tracking-wider">
-            Included Capabilities:
+        {/* Features List */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+            {getFeatureLeadIn()}
           </p>
-          <ul className="space-y-2.5">
-            {tierData.features?.map((feat, idx) => (
+          <ul className="space-y-3">
+            {features.map((feat, idx) => (
               <li
                 key={idx}
-                className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-700 dark:text-zinc-300 font-medium"
+                className="flex items-start gap-2.5 text-xs sm:text-[13px] text-neutral-600 dark:text-neutral-300 leading-snug"
               >
-                <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                    tierKey === "pro"
-                      ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30"
-                      : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                  }`}
-                >
-                  <Check className="w-3 h-3 stroke-[3]" />
-                </div>
+                <Check
+                  className="w-4 h-4 text-neutral-400 dark:text-neutral-500 shrink-0 mt-0.5"
+                  strokeWidth={2}
+                />
                 <span>{feat}</span>
               </li>
             ))}
@@ -201,45 +178,54 @@ export default function PricingTierCard({
         </div>
       </div>
 
-      {/* CTA Buttons Footer */}
-      <div className="pt-6 mt-6 border-t border-gray-100 dark:border-white/5 relative z-10">
-        {tierKey === "pro" ? (
+      {/* Action Button at bottom */}
+      <div className="pt-8">
+        {isPro ? (
           <button
             onClick={() => onSelectPlan("pro", "monthly")}
             disabled={isActivePlan}
-            className={`w-full py-4 px-5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
               isActivePlan
-                ? "bg-gray-200 dark:bg-zinc-800 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:via-indigo-500 hover:to-cyan-500 text-white shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02]"
+                ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black shadow-sm"
             }`}
           >
             <span>
-              {isActivePlan
-                ? "Current Active Plan ✓"
-                : `Upgrade to Pro (${formatPrice(proAmount)}/mo)`}
+              {isActivePlan ? "Current Active Plan ✓" : "Upgrade to Pro"}
             </span>
-            {!isActivePlan && <ArrowRight className="w-4 h-4 stroke-[3]" />}
+            {!isActivePlan && <ArrowRight className="w-4 h-4" />}
+          </button>
+        ) : isOneTime ? (
+          <button
+            onClick={() =>
+              onSelectPlan("one-time", tierData?.plan || "one-time")
+            }
+            disabled={isActivePlan}
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+              isActivePlan
+                ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
+            }`}
+          >
+            <span>
+              {isActivePlan ? "Current Active Plan ✓" : "Get 21-Day Pass (₹49)"}
+            </span>
+            {!isActivePlan && <ArrowRight className="w-4 h-4" />}
           </button>
         ) : (
           <button
-            onClick={() => onSelectPlan(tierKey, tierData.plan || "one-time")}
+            onClick={() => onSelectPlan("free")}
             disabled={isActivePlan}
-            className={`w-full py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
               isActivePlan
-                ? "bg-gray-200 dark:bg-zinc-800 text-gray-500 cursor-not-allowed"
-                : tierKey === "one-time"
-                ? "bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-lg shadow-orange-500/25 transform hover:scale-[1.02]"
-                : "bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 shadow-sm"
+                ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
             }`}
           >
             <span>
-              {isActivePlan
-                ? "Current Active Plan ✓"
-                : tierKey === "free"
-                ? "Get Started Free"
-                : `Claim ${formatPrice(tierData.amount ?? 9)} Pass`}
+              {isActivePlan ? "Current Active Plan ✓" : "Get started for free"}
             </span>
-            <ArrowRight className="w-4 h-4" />
+            {!isActivePlan && <ArrowRight className="w-4 h-4" />}
           </button>
         )}
       </div>

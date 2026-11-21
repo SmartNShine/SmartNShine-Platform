@@ -1417,7 +1417,6 @@ const ImpactProTemplate = forwardRef((props, ref) => {
       ref={ref}
       style={{
         width: "210mm",
-        minHeight: "11in",
         backgroundColor: "#ffffff",
         fontFamily:
           '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import SEO from "@/components/common/SEO";
 import {
   MessageSquare,
@@ -33,6 +34,7 @@ import {
 } from "@/components/contact";
 
 export default function Contact() {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("contact"); // 'contact' or 'feedback'
 
   // Contact form state
@@ -41,9 +43,11 @@ export default function Contact() {
     email: "",
     phone: "",
     company: "",
-    subject: "",
-    category: "general",
-    message: "",
+    subject: searchParams.get("subject") || "",
+    category: searchParams.get("category") || "general",
+    message: searchParams.get("subject")
+      ? "Hello SmartNShine Team,\n\nWe are interested in the SmartNShine Campus Plan for our institution. We would like to learn more about the platform and discuss custom pricing based on our campus requirements.\n\n• Institution Name: \n• Total Student Strength / Batch Count: \n• City / State: \n• Contact Person & Designation: \n• Phone Number: "
+      : "",
   });
 
   const [status, setStatus] = useState({

@@ -32,6 +32,7 @@ import {
   Globe,
   ChevronRight,
   ExternalLink,
+  Building2,
 } from "lucide-react";
 import Logo from "@/components/common/Logo";
 import {useAuth} from "@/context/AuthContext";
@@ -133,6 +134,12 @@ const AdminLayout = () => {
     {
       group: "Core Management",
       items: [
+        {
+          path: "/admin/institutions",
+          icon: Building2,
+          label: "Campus & TPO Management",
+          accentColor: "text-indigo-500",
+        },
         {
           path: "/admin/users",
           icon: Users,

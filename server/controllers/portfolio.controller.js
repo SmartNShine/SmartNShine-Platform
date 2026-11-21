@@ -11,6 +11,7 @@ import {
 } from "../services/pdfExportSession.service.js";
 import {renderResumePdf} from "../services/pdfExport.service.js";
 import {cloudinaryService} from "../services/cloudinary.service.js";
+import {normalizePortfolioCustomSections} from "../utils/portfolioCustomSections.js";
 
 const DEFAULT_SECTION_ORDER = [
   "about",
@@ -593,7 +594,7 @@ export const createPortfolioFromResume = async (req, res) => {
       education: resume.education || [],
       certifications: resume.certifications || [],
       achievements: resume.achievements || [],
-      customSections: resume.customSections || [],
+      customSections: normalizePortfolioCustomSections(resume.customSections || []),
       seo: {
         title: `${resume.name} | ${professionalTitle || "Portfolio"}`,
         description: resume.summary || "",
@@ -788,9 +789,13 @@ export const updatePortfolio = async (req, res) => {
     };
 
     Object.entries(portfolioSectionUpdates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        portfolio[key] = value;
+      if (value === undefined) return;
+      if (key === "customSections") {
+        portfolio.customSections = normalizePortfolioCustomSections(value);
+        portfolio.markModified("customSections");
+        return;
       }
+      portfolio[key] = value;
     });
 
     if (sections !== undefined) {
@@ -1637,7 +1642,9 @@ export const syncPortfolioWithResume = async (req, res) => {
     portfolio.education = resume.education || [];
     portfolio.certifications = resume.certifications || [];
     portfolio.achievements = resume.achievements || [];
-    portfolio.customSections = resume.customSections || [];
+    portfolio.customSections = normalizePortfolioCustomSections(
+      resume.customSections || []
+    );
 
     await portfolio.save();
 

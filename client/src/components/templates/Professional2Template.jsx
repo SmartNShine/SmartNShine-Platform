@@ -1385,8 +1385,7 @@ const Professional2Template = forwardRef((props, ref) => {
       <div
         ref={ref}
         style={{
-          width: "794px", // A4 width at 96 DPI (8.27 inches)
-          minHeight: "11in", // A4 height at 96 DPI (11.69 inches)
+          width: "794px", // A4 width at 96 DPI (8.27 inches) // A4 height at 96 DPI (11.69 inches)
           backgroundColor: "#ffffff",
           color: selectedTheme.text,
           fontFamily:

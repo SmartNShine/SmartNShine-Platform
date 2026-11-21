@@ -644,7 +644,6 @@ const StructuredPhotoTemplate = forwardRef(({resumeData, onPageUsageChange}, ref
       }}
       className="resume-preview"
       style={{
-        minHeight: "11in",
         padding: dense ? "0.36in" : "0.45in",
         backgroundColor: theme.background,
         color: theme.text,

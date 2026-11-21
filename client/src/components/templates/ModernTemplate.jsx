@@ -493,7 +493,6 @@ const ModernTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref) 
       className="bg-white text-zinc-900"
       style={{
         width: "210mm",
-        minHeight: "11in",
         boxSizing: "border-box",
         padding: styles.padding,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

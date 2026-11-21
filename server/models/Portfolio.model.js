@@ -202,7 +202,15 @@ const portfolioSchema = new mongoose.Schema(
         {
           id: String,
           title: String,
-          items: [String],
+          content: {
+            type: String,
+            default: "",
+          },
+          // Resume editor stores rich entries (title, date, bullets); legacy rows may be plain strings
+          items: {
+            type: [mongoose.Schema.Types.Mixed],
+            default: [],
+          },
         },
       ],
       default: [],

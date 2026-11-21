@@ -67,6 +67,9 @@ const Layout = () => {
     "/payment",
   ].some((route) => location.pathname.startsWith(route));
 
+  // Main dashboard still gets the global footer (e.g. company LinkedIn); other workspace routes stay chrome-only.
+  const showGlobalFooter = !isWorkspace || location.pathname === "/dashboard";
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#09090b]">
       {/* Sidebar */}
@@ -95,8 +98,8 @@ const Layout = () => {
           </PageTransition>
         </main>
 
-        {/* Footer (Hidden on dashboard and workspace pages) */}
-        {!isWorkspace && <Footer />}
+        {/* Footer (Hidden on workspace pages except the main /dashboard hub) */}
+        {showGlobalFooter && <Footer />}
       </div>
     </div>
   );

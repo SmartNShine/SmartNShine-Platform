@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useDarkMode } from "../../context/DarkModeContext";
+import Dashboard3DButton from "@/components/dashboard/Dashboard3DButton";
 
 const RESUMES = [
   {
@@ -130,14 +130,16 @@ function MobileCardsView({ isDarkMode }) {
 
       {/* Action CTA */}
       <div className="text-center relative z-10">
-        <Link
+        <Dashboard3DButton
           to="/templates"
-          className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-xs font-medium tracking-normal shadow-lg transition-all active:scale-95 cursor-pointer"
+          variant="landing"
+          size="md"
+          className="!rounded-full px-6 text-xs font-medium tracking-normal"
         >
           <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
           <span>Explore All 15+ ATS Resume Templates</span>
           <ArrowRight className="w-4 h-4 shrink-0" />
-        </Link>
+        </Dashboard3DButton>
       </div>
     </section>
   );
@@ -356,14 +358,16 @@ function DesktopCardsView({ isDarkMode }) {
 
         {/* ─── Bottom Action Bar ─── */}
         <div className="max-w-xl mx-auto text-center pointer-events-auto space-y-2 pb-1 relative z-40 shrink-0">
-          <Link
+          <Dashboard3DButton
             to="/templates"
-            className="inline-flex items-center gap-2.5 px-7 py-2.5 md:py-3 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-xs md:text-sm font-medium tracking-normal shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            variant="landing"
+            size="lg"
+            className="!rounded-full px-7 text-xs md:text-sm font-medium tracking-normal"
           >
             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
             <span>Explore All 15+ ATS Resume Templates</span>
             <ArrowRight className="w-4 h-4 shrink-0" />
-          </Link>
+          </Dashboard3DButton>
         </div>
       </div>
     </section>

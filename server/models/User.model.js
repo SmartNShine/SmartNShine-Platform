@@ -25,8 +25,20 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "tpo"],
       default: "user",
+    },
+    // Institution link for TPO users
+    institutionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      default: null,
+    },
+    // TPO-specific profile fields
+    tpoProfile: {
+      designation: { type: String, trim: true },
+      phone: { type: String, trim: true },
+      isPrimary: { type: Boolean, default: false },
     },
     status: {
       type: String,

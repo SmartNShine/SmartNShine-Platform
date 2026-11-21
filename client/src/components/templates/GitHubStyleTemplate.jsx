@@ -865,7 +865,6 @@ const GitHubStyleTemplate = forwardRef(
         }}
         className="resume-preview"
         style={{
-          minHeight: "11in",
           padding: compact.pagePadding,
           color: selectedTheme.text,
           backgroundColor: selectedTheme.bg,

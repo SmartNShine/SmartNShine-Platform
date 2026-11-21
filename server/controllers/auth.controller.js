@@ -103,9 +103,31 @@ export const login = async (req, res) => {
  */
 export const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select("-password");
+    let user = await User.findById(req.user.userId).select("-password");
 
     if (!user) {
+      if (req.user?.role === "tpo" || req.user?.userType === "tpo") {
+        const TPO = (await import("../models/TPO.model.js")).default;
+        const tpo = await TPO.findById(req.user.userId)
+          .select("-password")
+          .populate("institutionId");
+        if (tpo) {
+          return res.json({
+            user: {
+              _id: tpo._id,
+              id: tpo._id,
+              name: tpo.name,
+              email: tpo.email,
+              role: "tpo",
+              userType: "tpo",
+              designation: tpo.designation,
+              institution: tpo.institutionId,
+              institutionId: tpo.institutionId?._id || tpo.institutionId,
+              status: tpo.status,
+            },
+          });
+        }
+      }
       return res.status(404).json({error: "User not found"});
     }
 

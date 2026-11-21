@@ -13,12 +13,24 @@ import cors from "cors";
 import mongoose from "mongoose";
 import dns from "node:dns";
 
-// Fix for Windows querySrv ECONNREFUSED with MongoDB Atlas SRV records
+// Fix for Windows querySrv ECONNREFUSED / ETIMEOUT with MongoDB Atlas SRV records
 try {
-  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+  dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
+  if (typeof dns.setDefaultResultOrder === "function") {
+    dns.setDefaultResultOrder("ipv4first");
+  }
 } catch {
   // fallback if custom DNS setting is restricted
 }
+
+const resolveMongoUri = () =>
+  process.env.MONGODB_URI_STANDARD?.trim() || process.env.MONGODB_URI;
+
+const MONGO_CONNECT_OPTIONS = {
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
+  family: 4,
+};
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import mongoSanitize from "express-mongo-sanitize";
@@ -40,6 +52,7 @@ import portfolioRoutes from "./routes/portfolio.routes.js";
 import careerRoutes from "./routes/career.routes.js";
 import careerApplicationRoutes from "./routes/careerApplication.routes.js";
 import superAdminRoutes from "./routes/superAdmin.routes.js";
+import tpoRoutes from "./routes/tpo.routes.js";
 import Template from "./models/Template.model.js";
 import Portfolio from "./models/Portfolio.model.js";
 import Settings from "./models/Settings.model.js";
@@ -51,6 +64,7 @@ import {
   securityLogger,
 } from "./middleware/security.middleware.js";
 import {notifySystemError} from "./services/adminNotification.service.js";
+import {startCleanupJob} from "./services/interview-cleanup.service.js";
 
 // =========================================
 // ENVIRONMENT VALIDATION
@@ -131,6 +145,11 @@ if (process.env.NODE_ENV === "development") {
 // SESSION & PASSPORT (For OAuth)
 // ==========================================
 
+const mongoConnectPromise = mongoose.connect(
+  resolveMongoUri(),
+  MONGO_CONNECT_OPTIONS,
+);
+
 // Express session with MongoDB store (required by Passport for OAuth)
 app.use(
   session({
@@ -139,7 +158,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
+      clientPromise: mongoConnectPromise.then((m) =>
+        m.connection.getClient(),
+      ),
       touchAfter: 24 * 3600, // lazy session update (in seconds)
       crypto: {
         secret: process.env.SESSION_SECRET || "session-encryption-secret",
@@ -186,18 +207,12 @@ app.use(mongoSanitize());
 // Data sanitization against XSS
 app.use(xss());
 
-// MongoDB Connection with better error handling
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    family: 4, // Use IPv4, skip trying IPv6
-  })
+mongoConnectPromise
   .then(async () => {
     console.log("✅ MongoDB connected successfully");
     console.log("📊 Connected to database:", mongoose.connection.name);
 
-    // Synchronize API keys with MongoDB Settings so all dev/prod devices share the verified working key
+  // Synchronize API keys with MongoDB Settings so all dev/prod devices share the verified working key
     try {
       const settings = await Settings.getSettings();
       const envKey = process.env.OPENAI_API_KEY?.trim();
@@ -205,7 +220,6 @@ mongoose
       const dbAdminKey = settings?.aiApiKeys?.openaiAdminKey?.trim();
 
       if (envKey && envKey.startsWith("sk-") && !envKey.includes("YOUR_") && envKey !== dbKey) {
-        // Fresh .env key provided -> update MongoDB Atlas with the active key
         if (!settings.aiApiKeys) settings.aiApiKeys = {};
         settings.aiApiKeys.openaiApiKey = envKey;
         if (process.env.OPENAI_ADMIN_KEY?.trim()) {
@@ -214,7 +228,6 @@ mongoose
         await settings.save();
         console.log(`🔑 [CONFIG] Synced and updated MongoDB Atlas with active OpenAI API Key (...${envKey.slice(-6)})`);
       } else if (dbKey && dbKey.startsWith("sk-")) {
-        // Shared database has the verified working key -> enforce it across all devices
         process.env.OPENAI_API_KEY = dbKey;
         if (dbAdminKey) {
           process.env.OPENAI_ADMIN_KEY = dbAdminKey;
@@ -226,13 +239,32 @@ mongoose
     } catch (syncErr) {
       console.warn("⚠️  Settings key synchronization notice:", syncErr.message);
     }
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+      startCleanupJob();
+      checkVoiceServices();
+    });
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
     console.error("💡 Possible fixes:");
     console.error("   1. Check if your IP is whitelisted in MongoDB Atlas");
-    console.error("   2. Verify your MongoDB connection string");
-    console.error("   3. Check your network/firewall settings");
+    console.error("   2. Verify your MongoDB connection string in server/.env");
+    console.error("   3. Check network / VPN / firewall (SRV DNS must resolve)");
+    if (
+      err.message?.includes("querySrv") ||
+      err.code === "ETIMEOUT" ||
+      err.code === "ECONNREFUSED"
+    ) {
+      console.error(
+        "   4. Atlas SRV DNS failed — in Atlas use Connect → Drivers → copy the",
+      );
+      console.error(
+        '      non-SRV "mongodb://" connection string as MONGODB_URI_STANDARD in .env',
+      );
+    }
     process.exit(1);
   });
 
@@ -262,6 +294,7 @@ app.use("/api/portfolio", portfolioRoutes); // Portfolio builder routes
 app.use("/api/career", careerRoutes); // Career profile & personalized Q&A routes
 app.use("/api/career-applications", careerApplicationRoutes); // Founding team career application submissions & admin routes
 app.use("/api/super-admin", superAdminRoutes); // Super Admin panel & environment management routes
+app.use("/api/tpo", tpoRoutes); // Institutional TPO Dashboard routes
 
 // Helper to escape HTML attributes safely
 function escapeHtml(str) {
@@ -535,9 +568,13 @@ app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "ATS Resume API is running",
+  const dbReady = mongoose.connection.readyState === 1;
+  res.status(dbReady ? 200 : 503).json({
+    status: dbReady ? "ok" : "degraded",
+    database: dbReady ? "connected" : "disconnected",
+    message: dbReady
+      ? "ATS Resume API is running"
+      : "API up but database not connected",
     timestamp: new Date().toISOString(),
   });
 });
@@ -615,19 +652,5 @@ async function checkVoiceServices() {
     );
   }
 }
-
-import { startCleanupJob } from "./services/interview-cleanup.service.js";
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
-
-  // Start background jobs
-  startCleanupJob();
-
-  // Check voice services after startup (non-blocking)
-  checkVoiceServices();
-});
 
 export default app;

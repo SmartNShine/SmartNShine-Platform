@@ -81,6 +81,34 @@ export const PRICING = {
       "Priority PDF rendering & 24/7 support",
     ],
   },
+  campus: {
+    plan: "campus",
+    badge: "COLLEGE & TPO",
+    features: [
+      "Dedicated Institutional TPO Dashboard",
+      "Unlimited student bulk import (CSV & Excel)",
+      "Automated Placement Readiness Engine",
+      "AI Mock Interview Simulator (Tech & Voice)",
+      "ATS Resume diagnostics & branch scoring",
+      "Batch & Branch analytics & leaderboards",
+      "Campus-wide assignments & tracking",
+      "NAAC / NBA Accreditation & Placement reports",
+    ],
+    contacts: [
+      {
+        name: "Rameshwar Sonwane",
+        role: "Institutional Partnerships Lead",
+        email: "rameshwar@smartnshine.app",
+        phone: "+91 98765 43210",
+      },
+      {
+        name: "Campus Onboarding Desk",
+        role: "TPO Support & Operations",
+        email: "campus@smartnshine.app",
+        phone: "+91 91234 56789",
+      },
+    ],
+  },
 };
 
 export const ACTIVE_TIERS = ["free", "one-time", "pro"];
@@ -106,11 +134,14 @@ export async function getDynamicPricing() {
     // Deep clone base pricing
     const pricing = JSON.parse(JSON.stringify(PRICING));
 
+    pricing["one-time"].amount = 49;
+    pricing["one-time"].originalAmount = 49;
+
     if (promo && promo.enabled) {
-      if (typeof promo.oneTimePrice === "number" && promo.oneTimePrice >= 0) {
+      if (typeof promo.oneTimePrice === "number" && promo.oneTimePrice >= 49) {
         pricing["one-time"].amount = promo.oneTimePrice;
         pricing["one-time"].originalAmount = promo.originalOneTimePrice || 49;
-        pricing["one-time"].isPromo = true;
+        pricing["one-time"].isPromo = promo.oneTimePrice < (promo.originalOneTimePrice || 49);
         pricing["one-time"].promoBadge = promo.badgeText || "SALE";
       }
       if (typeof promo.proMonthlyPrice === "number" && promo.proMonthlyPrice > 0) {

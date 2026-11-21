@@ -23,6 +23,8 @@ const Footer = () => {
     { name: "Portfolios Builder (14+)", path: "/portfolio", pulse: true },
     { name: "Careers (We're Hiring!)", path: "/careers", pulse: true },
     { name: "Pricing & Plans", path: "/pricing" },
+    { name: "Institutional TPO Portal", path: "/tpo/login", pulse: true },
+    { name: "Campus TPO Portal", path: "/tpo/login" },
   ];
 
   const policyLinks = [
@@ -33,7 +35,11 @@ const Footer = () => {
   ];
 
   const socialLinks = [
-    { icon: <Linkedin className="w-4 h-4" />, label: "LinkedIn", href: "https://linkedin.com" },
+    {
+      icon: <Linkedin className="w-4 h-4" />,
+      label: "SmartNShine on LinkedIn",
+      href: "https://www.linkedin.com/company/smartnshine",
+    },
     { icon: <Twitter className="w-4 h-4" />, label: "Twitter", href: "https://twitter.com" },
     { icon: <Github className="w-4 h-4" />, label: "GitHub", href: "https://github.com" },
     { icon: <Globe className="w-4 h-4" />, label: "Status", href: "#" },

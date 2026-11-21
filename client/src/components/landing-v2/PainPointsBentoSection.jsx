@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import Dashboard3DButton from "@/components/dashboard/Dashboard3DButton";
 import {
   FileWarning,
   CreditCard,
@@ -751,28 +751,34 @@ export default function PainPointsBentoSection() {
 
         {/* Bottom Fast-Track Banner */}
         <div
-          className={`p-6 sm:p-8 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-6 ${
+          className={`p-6 sm:p-8 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative ${
             isDarkMode
-              ? "bg-[#141520] border-zinc-800 shadow-xl"
+              ? "bg-[#141520] border-zinc-800/90 shadow-xl"
               : "bg-white border-slate-200 shadow-lg"
           }`}
         >
-          <div className="space-y-1 text-center sm:text-left">
-            <h4 className="text-base sm:text-lg font-medium text-slate-900 dark:text-white">
+          <div
+            className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-zinc-300 to-zinc-400 dark:from-zinc-600 dark:to-zinc-700 rounded-l-3xl"
+            aria-hidden
+          />
+          <div className="space-y-1 text-center sm:text-left pl-2 sm:pl-3">
+            <h4 className="text-base sm:text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
               Avoid the traps. Build your ATS resume with confidence.
             </h4>
-            <p className="text-xs sm:text-sm font-light text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs sm:text-sm font-normal text-zinc-500 dark:text-zinc-400 leading-relaxed">
               No credit card required to start. Free tier includes live ATS diagnostic score and clean PDF export.
             </p>
           </div>
 
-          <Link
+          <Dashboard3DButton
             to="/register"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-500/20 shrink-0 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            variant="landing"
+            size="lg"
+            className="shrink-0"
           >
             <span>Start Building for Free</span>
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </Dashboard3DButton>
         </div>
       </div>
     </section>

@@ -4,6 +4,7 @@ import {BrowserRouter} from "react-router-dom";
 import {HelmetProvider} from "react-helmet-async";
 import App from "./App";
 import {AuthProvider} from "./context/AuthContext";
+import {TPOProvider} from "./context/TPOContext";
 import {ErrorBoundary} from "./components/common";
 import "./index.css";
 
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <BrowserRouter>
         <ErrorBoundary>
           <AuthProvider>
-            <App />
+            <TPOProvider>
+              <App />
+            </TPOProvider>
           </AuthProvider>
         </ErrorBoundary>
       </BrowserRouter>

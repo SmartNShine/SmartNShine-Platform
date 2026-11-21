@@ -111,7 +111,7 @@ export default function FestiveSaleBanner({ promotion, onDismiss }) {
 
   const currentTheme = getThemeStyles(promo.theme || "rakhi-festive");
   const discountPercent = Math.round(
-    (1 - (promo.oneTimePrice ?? 9) / (promo.originalOneTimePrice ?? 49)) * 100
+    (1 - (promo.oneTimePrice ?? 49) / (promo.originalOneTimePrice ?? 49)) * 100
   );
 
   return (
@@ -134,7 +134,7 @@ export default function FestiveSaleBanner({ promotion, onDismiss }) {
               <p className={`text-xs font-black truncate ${currentTheme.titleText}`}>
                 {promo.badgeText || "Rakhi Deal"}:{" "}
                 <span className={`px-1.5 py-0.2 rounded font-black ${currentTheme.priceTag}`}>
-                  ₹{promo.oneTimePrice ?? 9}
+                  ₹{promo.oneTimePrice ?? 49}
                 </span>{" "}
                 <span className="opacity-75 font-semibold text-[10px]">({discountPercent}% OFF)</span>
               </p>
@@ -183,7 +183,7 @@ export default function FestiveSaleBanner({ promotion, onDismiss }) {
                   <span
                     className={`px-2 py-0.5 rounded-lg text-sm sm:text-base ${currentTheme.priceTag}`}
                   >
-                    ₹{promo.oneTimePrice ?? 9}
+                    ₹{promo.oneTimePrice ?? 49}
                   </span>{" "}
                   <span className={`line-through text-xs sm:text-sm ${currentTheme.oldPrice}`}>
                     ₹{promo.originalOneTimePrice ?? 49}

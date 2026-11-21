@@ -51,7 +51,7 @@ export default function EditorHeader({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   return (
-    <header className="sticky top-0 z-40 w-full max-w-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-white/[0.08] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 transition-all no-print">
+    <header className="sticky top-0 z-40 w-full max-w-full shrink-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-white/[0.08] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 transition-all no-print">
       {/* Left branding & back */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-3 shrink-0">
         <button

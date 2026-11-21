@@ -1,6 +1,7 @@
 import {defineConfig} from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import process from "node:process";
 import {fileURLToPath} from "url";
 
 // Get __dirname equivalent in ES modules
@@ -38,6 +39,9 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ["xlsx"],
+  },
   build: {
     target: "es2022",
     cssTarget: "chrome89",
@@ -61,6 +65,9 @@ export default defineConfig({
             }
             if (id.includes("recharts") || id.includes("d3-")) {
               return "vendor-recharts";
+            }
+            if (id.includes("xlsx")) {
+              return "vendor-xlsx";
             }
           }
         },
