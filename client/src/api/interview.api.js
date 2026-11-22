@@ -282,21 +282,6 @@ export const synthesizeSpeech = async (text, optionsOrVoiceId = {}, preset) => {
 };
 
 /**
- * Synthesize text to speech - returns base64 JSON (legacy fallback)
- * @param {string} text - Text to convert to speech
- * @param {string} [voiceId] - Optional voice ID
- * @returns {Promise<Object>} { audioBase64, contentType, estimatedDuration }
- */
-export const synthesizeSpeechBase64 = async (text, voiceId, preset) => {
-  const response = await api.post("/voice/tts/synthesize-json", {
-    text,
-    voiceId,
-    preset,
-  });
-  return response.data;
-};
-
-/**
  * Get available TTS voices
  * @returns {Promise<Array>} List of available voices
  */
@@ -339,7 +324,6 @@ export default {
   transcribeAudioOnly,
   checkTTSAvailability,
   synthesizeSpeech,
-  synthesizeSpeechBase64,
   getTTSVoices,
   testVoice,
 };

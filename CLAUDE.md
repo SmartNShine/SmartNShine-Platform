@@ -151,13 +151,11 @@ cd chatterbox-service && bash start.sh
 | `AIUsage` | AI API usage tracking |
 | `Feedback`, `Contact`, `AdminLog` | Supporting models |
 
-## Current Branch: `ai-interview`
+## Current Branch: `main` (fresh upgrade baseline)
 
-Active development branch for AI interview features. Key areas of work:
-- Voice recording with silence detection
-- Chatterbox TTS integration (replaced ElevenLabs)
-- Interview conversation phases (intro → warm-up → core → wrap-up)
-- Real-time answer evaluation and scoring
+Repo cleared of legacy plans/docs. Product upgrade work starts from latest `main`
+(includes TPO dashboard, interview, resume, portfolio). New plans live under `docs/`
+only when actively needed.
 
 ## Code Conventions
 - ES modules throughout (`import`/`export`, not `require`)
@@ -169,7 +167,6 @@ Active development branch for AI interview features. Key areas of work:
 - Rate limiting on all API routes
 
 ## Known Issues
-- See `docs/audits/VOICE_SERVICE_AUDIT.md` for comprehensive voice service bugs
-- ElevenLabs TTS disabled - using Chatterbox + browser TTS fallback
-- Duplicate `GET /tts/health` route in voice.routes.js (line 55 vs 141)
+- TTS: Sarvam (prod) → Chatterbox (local) → browser Web Speech fallback
+- STT: Whisper local service (port 5001) via server proxy
 - Interview timer auto-complete lacks grace period
