@@ -219,7 +219,32 @@ export async function verifyPayment(req, res) {
  */
 export async function getSubscriptionStatus(req, res) {
   try {
-    const userId = req.user._id;
+    const userId = req.user._id || req.user.userId;
+
+    if (req.user?.role === "tpo" || req.user?.isTpo) {
+      return res.json({
+        success: true,
+        subscription: {
+          tier: "campus",
+          plan: "campus",
+          status: "active",
+          isTpo: true,
+          institutionId: req.user.institutionId,
+          startDate: req.user.createdAt,
+          endDate: null,
+          daysRemaining: null,
+          autoRenew: false,
+          features: [
+            "Institutional TPO Dashboard",
+            "Unlimited Student Bulk Import",
+            "Placement Readiness Scoring",
+            "AI Mock Interview Simulator",
+            "ATS Resume Diagnostics & Branch Scoring",
+            "Campus-wide Assignments & Tracking",
+          ],
+        },
+      });
+    }
 
     console.log("📊 Getting subscription status for user:", userId);
 

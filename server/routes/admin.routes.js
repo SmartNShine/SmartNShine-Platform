@@ -1,7 +1,7 @@
 import express from "express";
-import {authenticateToken} from "../middleware/auth.middleware.js";
-import {isAdmin, logAdminAction} from "../middleware/admin.middleware.js";
-import {adminLimiter} from "../middleware/rateLimiter.middleware.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
+import { isAdmin, logAdminAction } from "../middleware/admin.middleware.js";
+import { adminLimiter } from "../middleware/rateLimiter.middleware.js";
 import {
   validateMongoId,
   validateUserId,
@@ -91,13 +91,16 @@ router.get("/search", adminGlobalSearch);
 // Dashboard
 router.get("/dashboard/stats", getDashboardStats);
 
-
 // Notifications
 router.get("/notifications", getAdminNotifications);
 router.get("/notifications/stats", getAdminNotificationStats);
 router.patch("/notifications/read-all", markAllNotificationsRead);
 router.patch("/notifications/:id/read", validateMongoId, markNotificationRead);
-router.patch("/notifications/:id/archive", validateMongoId, archiveNotification);
+router.patch(
+  "/notifications/:id/archive",
+  validateMongoId,
+  archiveNotification,
+);
 router.delete("/notifications/:id", validateMongoId, deleteNotification);
 
 // User Management
@@ -106,22 +109,22 @@ router.get("/users/:userId", validateUserId, getUserDetails);
 router.post(
   "/users/:userId/subscription/activate",
   validateUserId,
-  activateUserSubscription
+  activateUserSubscription,
 );
 router.post(
   "/users/:userId/subscription/extend",
   validateUserId,
-  extendUserSubscription
+  extendUserSubscription,
 );
 router.post(
   "/users/:userId/subscription/cancel",
   validateUserId,
-  cancelUserSubscription
+  cancelUserSubscription,
 );
 router.post(
   "/users/:userId/subscription/downgrade",
   validateUserId,
-  downgradeUserSubscription
+  downgradeUserSubscription,
 );
 router.patch("/users/:userId/status", validateUserId, updateUserStatus);
 router.patch("/users/:userId/role", validateUserRoleUpdate, updateUserRole);
@@ -138,14 +141,13 @@ router.post("/openai-credits/check", checkOpenAIQuotaHealth);
 // Custom Email Dispatcher
 router.post("/send-email", sendCustomAdminEmail);
 
-
 // Contact Messages
 router.get("/contacts", getContactMessages);
 router.get("/contacts/statistics", getContactStatistics);
 router.patch(
   "/contacts/:id/status",
   validateContactStatusUpdate,
-  updateContactStatus
+  updateContactStatus,
 );
 router.delete("/contacts/:id", validateMongoId, deleteContactMessage);
 
@@ -162,7 +164,7 @@ router.put("/templates/:templateId", validateTemplateId, updateTemplate);
 router.patch(
   "/templates/:templateId/status",
   validateTemplateId,
-  updateTemplateStatus
+  updateTemplateStatus,
 );
 router.delete("/templates/:templateId", validateTemplateId, deleteTemplate);
 
@@ -170,10 +172,7 @@ router.delete("/templates/:templateId", validateTemplateId, deleteTemplate);
 router.get("/portfolios/stats", getPortfolioAdminStats);
 router.post("/portfolios/generate-seo", generatePortfolioSeoWithAI);
 router.get("/portfolios", getAllAdminPortfolios);
-router.patch(
-  "/portfolios/:portfolioId/status",
-  updateAdminPortfolioStatus
-);
+router.patch("/portfolios/:portfolioId/status", updateAdminPortfolioStatus);
 router.delete("/portfolios/:portfolioId", deleteAdminPortfolio);
 
 // Feedback Management
@@ -182,7 +181,7 @@ router.get("/feedback/statistics", getFeedbackStatistics);
 router.patch(
   "/feedback/:id/status",
   validateFeedbackStatusUpdate,
-  updateFeedbackStatus
+  updateFeedbackStatus,
 );
 router.delete("/feedback/:id", validateMongoId, deleteFeedbackAdmin);
 
@@ -193,7 +192,7 @@ router.patch("/ai-quota/users/:userId/tier", validateUserId, updateUserTier);
 router.post(
   "/ai-quota/users/:userId/reset-daily",
   validateUserId,
-  resetUserDailyQuota
+  resetUserDailyQuota,
 );
 
 // AI Resume Extraction Usage Management
@@ -201,7 +200,7 @@ router.get("/ai-extraction-usage", getAIExtractionUsage);
 router.post(
   "/users/:userId/reset-extraction-counter",
   validateUserId,
-  resetUserExtractionCounter
+  resetUserExtractionCounter,
 );
 
 import {
@@ -225,13 +224,21 @@ router.get("/interviews/stats", getInterviewAdminStats);
 router.get("/interviews", getAllInterviewSessions);
 router.get("/interviews/pricing-config", getInterviewPricingConfig);
 router.patch("/interviews/pricing-config", updateInterviewPricingConfig);
-router.get("/interviews/:sessionId", validateSessionId, getInterviewSessionDetail);
+router.get(
+  "/interviews/:sessionId",
+  validateSessionId,
+  getInterviewSessionDetail,
+);
 
 // Question Bank Management
 router.get("/questions", getAllAdminQuestions);
 router.post("/questions", createAdminQuestion);
 router.put("/questions/:id", validateMongoId, updateAdminQuestion);
-router.patch("/questions/:id/toggle-status", validateMongoId, toggleAdminQuestionStatus);
+router.patch(
+  "/questions/:id/toggle-status",
+  validateMongoId,
+  toggleAdminQuestionStatus,
+);
 router.delete("/questions/:id", validateMongoId, deleteAdminQuestion);
 
 // System Settings
@@ -244,5 +251,84 @@ router.patch("/settings/features/:feature", toggleFeature);
 router.patch("/settings/rate-limits", updateRateLimits);
 router.patch("/settings/promotion", updatePromotionSettings);
 router.patch("/settings/promotion/toggle", togglePromotion);
+
+import mongoose from "mongoose";
+import Institution from "../models/Institution.model.js";
+import User from "../models/User.model.js";
+import TPO from "../models/TPO.model.js";
+import {
+  createInstitution,
+  patchInstitution,
+} from "../controllers/adminInstitution.controller.js";
+import StudentInstitution from "../models/StudentInstitution.model.js";
+import { normalizeInstitutionStatus } from "../utils/institutionStatus.js";
+
+// Institutional TPO Oversight
+router.post("/institutions", createInstitution);
+router.patch("/institutions/:id", patchInstitution);
+router.get("/institutions", async (req, res) => {
+  try {
+    const list = await Institution.find().sort({ createdAt: -1 }).lean();
+    const usageRows = await StudentInstitution.aggregate([
+      {
+        $match: { status: { $in: ["pending", "active"] } },
+      },
+      { $group: { _id: "$institutionId", studentSeatsUsed: { $sum: 1 } } },
+    ]);
+    const usageMap = new Map(
+      usageRows.map((r) => [r._id.toString(), r.studentSeatsUsed]),
+    );
+    const institutions = list.map((inst) => ({
+      ...inst,
+      status: normalizeInstitutionStatus(inst.status),
+      studentSeatsUsed: usageMap.get(inst._id.toString()) || 0,
+    }));
+    res.json({ success: true, institutions });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete / Purge Institution (Admin cleanup)
+router.delete("/institutions/:id", async (req, res) => {
+  try {
+    const instId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(instId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid institution ID format" });
+    }
+
+    const inst = await Institution.findById(instId);
+    if (!inst) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Institution not found" });
+    }
+
+    // Delete associated TPO officers from TPO collection
+    await TPO.deleteMany({ institutionId: inst._id });
+
+    // Unlink any legacy TPO users or student users before deleting
+    await User.updateMany(
+      { institutionId: inst._id },
+      { $unset: { institutionId: "" } },
+    );
+
+    await Institution.findByIdAndDelete(instId);
+    return res.json({
+      success: true,
+      message: `Institution ${inst.name} removed successfully.`,
+    });
+  } catch (err) {
+    console.error("Institution deletion error:", err);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: err.message || "Failed to delete institution",
+      });
+  }
+});
 
 export default router;

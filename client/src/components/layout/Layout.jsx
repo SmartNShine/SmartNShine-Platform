@@ -84,6 +84,9 @@ const Layout = () => {
     "/payment",
   ].some((route) => location.pathname.startsWith(route));
 
+  const showGlobalFooter =
+    !isFocusMode && (!isWorkspace || location.pathname === "/dashboard");
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#09090b]">
       {/* Sidebar - Suppressed in Fullscreen Focus Mode */}
@@ -125,8 +128,7 @@ const Layout = () => {
           </PageTransition>
         </main>
 
-        {/* Footer (Hidden on dashboard, workspace pages, and focus mode) */}
-        {!isWorkspace && !isFocusMode && <Footer />}
+        {showGlobalFooter && <Footer />}
       </div>
     </div>
   );

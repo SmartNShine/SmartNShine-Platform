@@ -26,6 +26,15 @@ import {
   Sparkles,
 } from "lucide-react";
 
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 border border-zinc-950/80 dark:border-zinc-300 transition-colors";
+const btnSecondary =
+  "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors";
+const btnSmPrimary =
+  "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 border border-zinc-800 dark:border-zinc-300 transition-colors";
+const btnSmSecondary =
+  "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors";
+
 export default function DashboardOverview() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -98,7 +107,7 @@ export default function DashboardOverview() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md">
                 <Sparkles className="w-3 h-3" />
                 Workspace
               </span>
@@ -117,17 +126,18 @@ export default function DashboardOverview() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <Link
-              to="/templates"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all shadow-xs shadow-blue-600/20 active:scale-95"
-            >
+            <Link to="/templates" className={btnPrimary}>
               <Plus className="w-4 h-4" />
               <span>Create Resume</span>
             </Link>
 
             <Link
-              to={primaryPortfolio ? `/portfolio/${primaryPortfolio._id}/edit` : "/portfolio/new"}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs sm:text-sm font-medium transition-colors"
+              to={
+                primaryPortfolio
+                  ? `/portfolio/${primaryPortfolio._id}/edit`
+                  : "/portfolio/new"
+              }
+              className={btnSecondary}
             >
               <Globe2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span>{primaryPortfolio ? "Edit Portfolio" : "New Portfolio"}</span>
@@ -138,12 +148,12 @@ export default function DashboardOverview() {
         {/* 2. THREE KEY METRIC STAT CARDS (Refined Accents matching Feature Pages) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Stat 1: Resumes (Blue Accent) */}
-          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
+          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Saved Resumes
               </span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                 <FileText className="w-4 h-4" />
               </div>
             </div>
@@ -157,7 +167,7 @@ export default function DashboardOverview() {
             </div>
             <Link
               to="/my-resumes"
-              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline mt-3 inline-flex items-center gap-1"
+              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mt-3 inline-flex items-center gap-1"
             >
               <span>Manage resumes</span>
               <ArrowRight className="w-3 h-3" />
@@ -243,7 +253,7 @@ export default function DashboardOverview() {
           <div className="lg:col-span-7 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                   <FileText className="w-3.5 h-3.5" />
                 </div>
                 <h2 className="text-base font-semibold text-zinc-900 dark:text-white">
@@ -252,7 +262,7 @@ export default function DashboardOverview() {
               </div>
               <Link
                 to="/my-resumes"
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5"
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5"
               >
                 <span>View all ({resumes.length})</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -266,17 +276,14 @@ export default function DashboardOverview() {
                 </div>
               ) : resumes.length === 0 ? (
                 <div className="p-8 text-center space-y-3">
-                  <FileText className="w-8 h-8 text-blue-500 mx-auto" />
+                  <FileText className="w-8 h-8 text-indigo-500 mx-auto" />
                   <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                     No resumes created yet
                   </p>
                   <p className="text-xs text-zinc-500 max-w-sm mx-auto">
                     Choose from 12+ battle-tested ATS templates to generate your first job-winning resume.
                   </p>
-                  <Link
-                    to="/templates"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
-                  >
+                  <Link to="/templates" className={btnSmPrimary}>
                     <span>Browse Templates</span>
                   </Link>
                 </div>
@@ -323,12 +330,13 @@ export default function DashboardOverview() {
 
                       <div className="flex items-center gap-2 shrink-0">
                         <button
+                          type="button"
                           onClick={() => {
                             navigate("/editor", {
                               state: { resumeData: resume, fromDashboard: true },
                             });
                           }}
-                          className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
+                          className={btnSmSecondary}
                         >
                           Edit
                         </button>
@@ -426,8 +434,9 @@ export default function DashboardOverview() {
 
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={() => handleCopyPortfolioUrl(primaryPortfolio.slug)}
-                        className="flex-1 py-1.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors flex items-center justify-center gap-1.5"
+                        className={`${btnSmSecondary} flex-1`}
                       >
                         <Copy className="w-3.5 h-3.5" />
                         <span>Copy Link</span>
@@ -437,7 +446,7 @@ export default function DashboardOverview() {
                         href={`/u/${primaryPortfolio.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="py-1.5 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors flex items-center justify-center gap-1.5"
+                        className={btnSmSecondary}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>View</span>
@@ -445,7 +454,7 @@ export default function DashboardOverview() {
 
                       <Link
                         to={`/portfolio/${primaryPortfolio._id}/edit`}
-                        className="py-1.5 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-semibold transition-colors"
+                        className={btnSmSecondary}
                       >
                         Edit
                       </Link>
@@ -504,16 +513,10 @@ export default function DashboardOverview() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-1">
-                  <Link
-                    to="/career-qa"
-                    className="flex-1 py-1.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 text-xs font-semibold transition-colors text-center shadow-xs"
-                  >
+                  <Link to="/career-qa" className={`${btnSmPrimary} flex-1 text-center`}>
                     Open Q&A Studio
                   </Link>
-                  <Link
-                    to="/career-profile"
-                    className="py-1.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
-                  >
+                  <Link to="/career-profile" className={btnSmSecondary}>
                     Sync Profile
                   </Link>
                 </div>
@@ -544,7 +547,7 @@ export default function DashboardOverview() {
           <div className="flex items-center gap-2.5 shrink-0">
             <Link
               to="/career-profile"
-              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors shadow-xs shadow-amber-600/20"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 border border-amber-600/50 transition-colors"
             >
               Update Profile
             </Link>

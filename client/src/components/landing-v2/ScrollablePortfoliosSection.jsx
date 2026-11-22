@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import Dashboard3DButton from "@/components/dashboard/Dashboard3DButton";
 import {
   Globe,
   ArrowRight,
@@ -53,9 +53,9 @@ const PORTFOLIOS = [
     image: "/img/portfolios/3.png",
     category: "Minimalist II",
     badge: "Minimalist",
-    bgAccent: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
-    description: "Monochrome paper-and-ink grid with rigid typographic index and cobalt highlights.",
-    tags: ["Condensed Swiss", "Cobalt Accent", "Blueprint Rows", "High Signal"],
+    bgAccent: "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400",
+    description: "Monochrome paper-and-ink grid with rigid typographic index and warm accent highlights.",
+    tags: ["Condensed Swiss", "Warm Accent", "Blueprint Rows", "High Signal"],
   },
   {
     id: "liquidglass",
@@ -84,8 +84,8 @@ export default function ScrollablePortfoliosSection() {
       }`}
     >
       {/* Background Soft Glows */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 w-[700px] h-[500px] rounded-full blur-[160px] bg-blue-500/10 dark:bg-blue-500/15 pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[500px] rounded-full blur-[160px] bg-purple-500/10 dark:bg-purple-500/15 pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 w-[700px] h-[500px] rounded-full blur-[160px] bg-zinc-400/8 dark:bg-zinc-500/10 pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[500px] rounded-full blur-[160px] bg-zinc-300/10 dark:bg-zinc-600/8 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
@@ -106,7 +106,7 @@ export default function ScrollablePortfoliosSection() {
             <div className="space-y-2.5 sm:space-y-3 font-light text-xs sm:text-sm text-slate-700 dark:text-zinc-300">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Instant public subdomain (<span className="font-mono text-xs text-blue-500">smartnshine.in/p/you</span>)</span>
+                <span>Instant public subdomain (<span className="font-mono text-xs text-zinc-500 dark:text-zinc-400">smartnshine.in/p/you</span>)</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -141,13 +141,15 @@ export default function ScrollablePortfoliosSection() {
                 Choose any template below to deploy your developer portfolio with zero coding or hosting fees.
               </p>
 
-              <Link
+              <Dashboard3DButton
                 to="/portfolio/new"
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 sm:py-3 px-5 rounded-xl font-medium text-xs sm:text-sm text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                variant="landing"
+                size="lg"
+                className="w-full"
               >
                 <span>Launch Your Web Portfolio</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </Dashboard3DButton>
             </div>
           </div>
 
@@ -162,8 +164,8 @@ export default function ScrollablePortfoliosSection() {
                 transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
                 className={`group rounded-2xl sm:rounded-[32px] border overflow-hidden transition-colors duration-300 shadow-xl hover:shadow-2xl text-left ${
                   isDarkMode
-                    ? "bg-[#11121d] border-zinc-800 shadow-black/80 hover:border-blue-500/40"
-                    : "bg-white border-slate-200 shadow-slate-200/90 hover:border-blue-300"
+                    ? "bg-[#11121d] border-zinc-800 shadow-black/80 hover:border-zinc-600"
+                    : "bg-white border-slate-200 shadow-slate-200/90 hover:border-zinc-300"
                 }`}
               >
                 {/* Browser Mockup Chrome Bar */}
@@ -189,7 +191,7 @@ export default function ScrollablePortfoliosSection() {
                         : "bg-white text-slate-700 border border-slate-200 shadow-xs"
                     }`}
                   >
-                    <Globe className="w-3 h-3 text-blue-500 shrink-0" />
+                    <Globe className="w-3 h-3 text-zinc-400 dark:text-zinc-500 shrink-0" />
                     <span className="truncate">{portfolio.subdomain}</span>
                   </div>
 
@@ -258,14 +260,16 @@ export default function ScrollablePortfoliosSection() {
                       ))}
                     </div>
 
-                    <Link
+                    <Dashboard3DButton
                       to="/portfolio/new"
+                      variant="landing"
+                      size="sm"
+                      className="font-mono text-[11px] sm:text-xs shrink-0"
                       aria-label={`Deploy ${portfolio.title} portfolio theme`}
-                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-[11px] sm:text-xs font-medium shadow-md shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
                     >
                       <span>Deploy</span>
                       <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    </Dashboard3DButton>
                   </div>
                 </div>
               </motion.div>

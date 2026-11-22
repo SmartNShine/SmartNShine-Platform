@@ -24,7 +24,7 @@ const settingsSchema = new mongoose.Schema(
     promotion: {
       enabled: {
         type: Boolean,
-        default: true,
+        default: false,
       },
       title: {
         type: String,
@@ -44,7 +44,7 @@ const settingsSchema = new mongoose.Schema(
       },
       oneTimePrice: {
         type: Number,
-        default: 9,
+        default: 49,
       },
       originalOneTimePrice: {
         type: Number,

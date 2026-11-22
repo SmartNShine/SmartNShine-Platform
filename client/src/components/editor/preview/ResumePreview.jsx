@@ -29,6 +29,16 @@ import Professional2Template from "@/components/templates/Professional2Template"
 import FullPreviewModal from "./FullPreviewModal";
 import ResumeWatermark from "./ResumeWatermark";
 import { TEMPLATE_COLOR_THEMES } from "../templateConfig";
+import {
+  RESUME_PAGE_HEIGHT_PX,
+  buildResumeLayoutCssVars,
+  getContentAreaHeightPx,
+  getLayoutMeasureKey,
+  getResumeContentMetrics,
+  mergeDensityLayoutSettings,
+  normalizeFontScale,
+  resolveEffectiveLayoutScale,
+} from "../utils/resumeLayoutUtils";
 
 const PREVIEW_DENSITIES = [
   { id: "compact", label: "Smart 1-Page" },
@@ -42,12 +52,13 @@ const PREVIEW_FONTS = [
   { id: "techMono", label: "Tech Mono" },
 ];
 
-// Template page height in px (A4 standard: 297mm @ 96 dpi = 1122.52px -> 1123px)
-const PAGE_HEIGHT_PX = 1123;
+const PAGE_HEIGHT_PX = RESUME_PAGE_HEIGHT_PX;
 // Minimum px of content before allowing a page break (avoids near-empty pages)
 const MIN_CONTENT_PX = 100;
 // Subpixel variance tolerance (avoids false 2nd pages on microscopic rounding differences)
 const PAGE_TOLERANCE_PX = 8;
+// Avoids 2–5px bottom clip from transform/zoom rounding in the preview shell
+const PREVIEW_CLIP_BUFFER_PX = 6;
 const NOOP = () => {};
 
 const WOOD_TEXTURE_DATA_URI =
@@ -132,16 +143,35 @@ const ResumePreview = forwardRef(
     const activeDensity = resumeData?.density || localDensity;
     const activeFont = resumeData?.fontPairing || localFont;
 
-    const isCompact = activeDensity === "compact";
+    const contentAreaHeightPx = useMemo(
+      () => getContentAreaHeightPx(layoutSettings, activeDensity),
+      [layoutSettings, activeDensity]
+    );
 
-    // Intelligent Multi-Stage Micro-Scale:
-    // Guarded floor of 0.85 strictly prevents text from becoming tiny or illegible.
-    // Margins (0.22in) and section spacing (52%) handle 90% of the vertical space reduction.
-    const autoFitScale = useMemo(() => {
-      if (!isCompact) return 1.0;
-      if (measuredHeight <= PAGE_HEIGHT_PX + PAGE_TOLERANCE_PX) return 1.0;
-      return Math.max(0.85, Math.min(1.0, (PAGE_HEIGHT_PX - 8) / measuredHeight));
-    }, [isCompact, measuredHeight]);
+    const layoutMeasureKey = useMemo(
+      () => getLayoutMeasureKey(layoutSettings, activeDensity),
+      [layoutSettings, activeDensity]
+    );
+
+    const scaleResolution = useMemo(
+      () =>
+        resolveEffectiveLayoutScale({
+          scrollHeight: measuredHeight,
+          contentAreaHeightPx,
+          density: activeDensity,
+          fontScale: layoutSettings.fontScale,
+          pageTolerancePx: PAGE_TOLERANCE_PX,
+        }),
+      [
+        measuredHeight,
+        contentAreaHeightPx,
+        activeDensity,
+        layoutSettings.fontScale,
+      ]
+    );
+
+    const autoFitScale = scaleResolution.autoFitScale;
+    const useAutoFitScale = scaleResolution.useAutoFit;
 
     const mergedResumeData = useMemo(() => ({
       ...(resumeData || {}),
@@ -163,40 +193,19 @@ const ResumePreview = forwardRef(
       }
     };
 
-    const DENSITY_SPACING_MAP = {
-      compact: 52,
-      medium: 100,
-      spacious: 140,
-    };
-
     const handleDensityChange = (densityId) => {
       setLocalDensity(densityId);
-      const spacingVal = DENSITY_SPACING_MAP[densityId] || 100;
+      const mergedLayout = mergeDensityLayoutSettings(
+        densityId,
+        resumeData?.layoutSettings || {}
+      );
       if (resumeData) {
         resumeData.density = densityId;
-        if (!resumeData.layoutSettings) resumeData.layoutSettings = {};
-        resumeData.layoutSettings.sectionSpacing = spacingVal;
-        if (densityId === "compact") {
-          resumeData.layoutSettings.fontScale = 100;
-          resumeData.layoutSettings.pagePaddingTop = "0.22in";
-          resumeData.layoutSettings.pagePaddingBottom = "0.22in";
-          resumeData.layoutSettings.pagePadding = "0.35in";
-        }
+        resumeData.layoutSettings = mergedLayout;
       }
       if (onUpdateField) {
         onUpdateField("density", densityId);
-        onUpdateField("layoutSettings", {
-          ...(resumeData?.layoutSettings || {}),
-          sectionSpacing: spacingVal,
-          ...(densityId === "compact"
-            ? {
-                fontScale: 100,
-                pagePaddingTop: "0.22in",
-                pagePaddingBottom: "0.22in",
-                pagePadding: "0.35in",
-              }
-            : {}),
-        });
+        onUpdateField("layoutSettings", mergedLayout);
       }
     };
 
@@ -217,45 +226,77 @@ const ResumePreview = forwardRef(
       }
     };
 
-    const handlePageUsageChange = useCallback((usageInfo) => {
-      if (!usageInfo || !usageInfo.currentHeight) return;
+    const updatePaginationFromUsage = useCallback(
+      (currentHeight) => {
+        if (!currentHeight) return;
 
-      setMeasuredHeight((prevHeight) => {
-        if (Math.abs(prevHeight - usageInfo.currentHeight) < 2) {
-          return prevHeight;
-        }
-        return usageInfo.currentHeight;
-      });
-
-      // When in Smart 1-Page mode with auto micro-scaling, the rendered height is compressed by autoFitScale
-      const effectiveScale = isCompact && autoFitScale < 1.0 && (!layoutSettings.fontScale || layoutSettings.fontScale === 100)
-        ? autoFitScale
-        : Number(layoutSettings.fontScale || 100) / 100;
-
-      const effectiveHeight = usageInfo.currentHeight * effectiveScale;
-      const pageLimit = PAGE_HEIGHT_PX;
-
-      const fitsOnOnePage =
-        effectiveHeight <= pageLimit + PAGE_TOLERANCE_PX;
-
-      if (fitsOnOnePage) {
-        setNumberOfPages((prev) => (prev === 1 ? prev : 1));
-        setPageBreaks((prev) => (prev.length === 1 && prev[0] === 0 ? prev : [0]));
-      } else {
-        const pages = Math.max(
-          2,
-          Math.ceil(
-            (effectiveHeight - PAGE_TOLERANCE_PX) / pageLimit
-          )
+        setMeasuredHeight((prevHeight) =>
+          Math.abs(prevHeight - currentHeight) < 2 ? prevHeight : currentHeight
         );
-        setNumberOfPages((prev) => (prev === pages ? prev : pages));
-        setPageBreaks((prev) => {
-          if (prev.length === pages) return prev;
-          return Array.from({ length: pages }, (_, i) => i * pageLimit);
+
+        const { effectiveScale } = resolveEffectiveLayoutScale({
+          scrollHeight: currentHeight,
+          contentAreaHeightPx,
+          density: activeDensity,
+          fontScale: layoutSettings.fontScale,
+          pageTolerancePx: PAGE_TOLERANCE_PX,
         });
-      }
-      if (onPageUsageChange) onPageUsageChange(usageInfo);
-    }, [isCompact, autoFitScale, layoutSettings.fontScale, onPageUsageChange]);
+
+        const effectiveHeight = currentHeight * effectiveScale;
+        const pageLimit = contentAreaHeightPx;
+        const fitsOnOnePage =
+          effectiveHeight <= pageLimit + PAGE_TOLERANCE_PX;
+
+        if (fitsOnOnePage) {
+          setNumberOfPages(1);
+          setPageBreaks([0]);
+        } else {
+          const pages = Math.max(
+            2,
+            Math.ceil((effectiveHeight - PAGE_TOLERANCE_PX) / pageLimit)
+          );
+          setNumberOfPages(pages);
+          setPageBreaks(Array.from({ length: pages }, (_, i) => i * pageLimit));
+        }
+      },
+      [activeDensity, contentAreaHeightPx, layoutSettings.fontScale]
+    );
+
+    const handlePageUsageChange = useCallback(
+      (usageInfo) => {
+        if (!usageInfo?.currentHeight) return;
+        updatePaginationFromUsage(usageInfo.currentHeight);
+        if (onPageUsageChange) onPageUsageChange(usageInfo);
+      },
+      [onPageUsageChange, updatePaginationFromUsage]
+    );
+
+    // Re-measure after font/margin/spacing changes — templates may skip callbacks when
+    // scrollHeight returns to a previously seen value while pagination state is stale.
+    useEffect(() => {
+      setNumberOfPages(1);
+      setPageBreaks([0]);
+
+      let cancelled = false;
+      const remeasure = () => {
+        if (cancelled) return;
+        const metrics = getResumeContentMetrics(templateRef.current);
+        if (metrics?.scrollHeight) {
+          updatePaginationFromUsage(metrics.scrollHeight);
+        }
+      };
+
+      const rafId = requestAnimationFrame(() => {
+        requestAnimationFrame(remeasure);
+      });
+      const retryId = setTimeout(remeasure, 160);
+
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(rafId);
+        clearTimeout(retryId);
+      };
+    }, [layoutMeasureKey, template, updatePaginationFromUsage]);
 
     // After the template renders, find <section> elements that straddle a page
     // boundary and compute smart break points so no section is split mid-content.
@@ -301,7 +342,7 @@ const ResumePreview = forwardRef(
         let pageStart = 0;
 
         for (let p = 0; p < numberOfPages - 1; p++) {
-          const nominalEnd = pageStart + PAGE_HEIGHT_PX;
+          const nominalEnd = pageStart + contentAreaHeightPx;
 
           // Any section whose body spans the page boundary?
           const straddling = sectionRects.find(
@@ -350,8 +391,8 @@ const ResumePreview = forwardRef(
 
         // Guarantee breaks has exactly numberOfPages elements
         while (breaks.length < numberOfPages) {
-          breaks.push(pageStart + PAGE_HEIGHT_PX);
-          pageStart += PAGE_HEIGHT_PX;
+          breaks.push(pageStart + contentAreaHeightPx);
+          pageStart += contentAreaHeightPx;
         }
 
         setPageBreaks(breaks);
@@ -367,6 +408,7 @@ const ResumePreview = forwardRef(
       template,
       isMobile,
       measuredHeight,
+      contentAreaHeightPx,
     ]);
 
     const templates = {
@@ -399,56 +441,30 @@ const ResumePreview = forwardRef(
     const SelectedTemplate = templates[template] || ClassicTemplate;
     const twoPageMode = numberOfPages > 1;
 
-    const activeFontFamily =
-      FONT_MAP[activeFont] ||
-      layoutSettings.fontFamily ||
-      '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
-    const userFontScale = Number(layoutSettings.fontScale || 100) / 100;
-    // If user has set an explicit custom fontScale (not 100), honor user's explicit preference!
-    // Otherwise in 1-Page Fit, gently micro-scale with autoFitScale (capped at 0.92 floor)
-    const finalScale = isCompact && autoFitScale < 1.0 && (!layoutSettings.fontScale || layoutSettings.fontScale === 100)
+    const finalScale = useAutoFitScale
       ? autoFitScale.toFixed(3)
-      : String(userFontScale);
-
-    // Margins adapt to density: ultra-efficient in 1-Page Fit (0.22in top/bottom, 0.35in side)
-    const defaultTopPad = isCompact
-      ? "0.22in"
-      : activeDensity === "spacious"
-        ? "0.50in"
-        : "0.35in";
-    const defaultSidePad = isCompact
-      ? "0.35in"
-      : activeDensity === "spacious"
-        ? "0.50in"
-        : "0.44in";
-    const defaultBottomPad = isCompact
-      ? "0.22in"
-      : activeDensity === "spacious"
-        ? "0.50in"
-        : "0.35in";
-
-    const densityMultiplier =
-      isCompact ? 0.52 : activeDensity === "spacious" ? 1.4 : 1.0;
-    const effectiveSpacing = String(
-      layoutSettings.sectionSpacing != null && layoutSettings.sectionSpacing !== ""
-        ? Number(layoutSettings.sectionSpacing) / 100
-        : densityMultiplier
-    );
+      : String(normalizeFontScale(layoutSettings.fontScale) / 100);
 
     const activeThemeColor =
       templateThemes.find((t) => t.id === activeTheme)?.color ||
       templateThemes[0]?.color ||
       "#4f46e5";
 
+    const builtLayout = buildResumeLayoutCssVars({
+      layoutSettings,
+      density: activeDensity,
+      fontPairing: activeFont,
+      fontMap: FONT_MAP,
+      themeColor: activeThemeColor,
+    });
     const layoutStyle = {
-      "--resume-layout-top": layoutSettings.pagePaddingTop || defaultTopPad,
-      "--resume-layout-side": layoutSettings.pagePadding || defaultSidePad,
-      "--resume-layout-bottom": layoutSettings.pagePaddingBottom || defaultBottomPad,
+      "--resume-layout-top": builtLayout["--resume-layout-top"],
+      "--resume-layout-side": builtLayout["--resume-layout-side"],
+      "--resume-layout-bottom": builtLayout["--resume-layout-bottom"],
       "--resume-layout-scale": finalScale,
-      "--resume-layout-spacing": effectiveSpacing,
-      "--resume-layout-font-family": activeFontFamily,
-      "--resume-layout-bullet-color": activeThemeColor,
+      "--resume-layout-spacing": builtLayout["--resume-layout-spacing"],
+      "--resume-layout-font-family": builtLayout["--resume-layout-font-family"],
+      "--resume-layout-bullet-color": builtLayout["--resume-layout-bullet-color"],
     };
 
     const handlePrint = useReactToPrint({
@@ -613,7 +629,9 @@ const ResumePreview = forwardRef(
     if (!resumeData) return null;
 
     const scaleFactor = isMobile ? 0.38 : zoomFactor;
-    const scaledPageHeightPx = Math.ceil(PAGE_HEIGHT_PX * scaleFactor);
+    const scaleTemplatePx = (templatePx, extraFudge = 0) =>
+      Math.ceil(templatePx * scaleFactor) + extraFudge;
+    const scaledPageHeightPx = scaleTemplatePx(PAGE_HEIGHT_PX, PREVIEW_CLIP_BUFFER_PX);
     const scaledWidthMm = `${(210 * scaleFactor).toFixed(2)}mm`;
 
     return (
@@ -789,7 +807,7 @@ const ResumePreview = forwardRef(
           <div
             className="min-w-0 max-w-full rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 overflow-x-auto overflow-y-visible w-full flex flex-col items-center"
             style={{
-              padding: isMobile ? "0.75rem 0.5rem 3rem" : "1rem 1rem 5rem",
+              padding: isMobile ? "0.75rem 0.5rem 3rem" : "1rem 1rem 2.5rem",
             }}
           >
             {/* Pages stack */}
@@ -808,6 +826,11 @@ const ResumePreview = forwardRef(
                   nextBreak !== undefined
                     ? nextBreak - pageStart // precise clip at section boundary
                     : PAGE_HEIGHT_PX; // last page — show full page height
+                const isLastPage = pageIndex === pageBreaks.length - 1;
+                const clipHeightPx = scaleTemplatePx(
+                  visibleTemplatePx,
+                  isLastPage ? PREVIEW_CLIP_BUFFER_PX : 2
+                );
 
                 const isCreative2 = template === "creative2";
                 const creative2CanvasBg = isCreative2
@@ -840,7 +863,7 @@ const ResumePreview = forwardRef(
                     */}
                     <div
                       style={{
-                        height: `${visibleTemplatePx * scaleFactor}px`,
+                        height: `${clipHeightPx}px`,
                         overflow: "hidden",
                         position: "relative",
                         backgroundColor: creative2CanvasBg || undefined,

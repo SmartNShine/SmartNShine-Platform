@@ -23,6 +23,7 @@ import {
   Home,
   FileText,
   History,
+  GraduationCap,
 } from "lucide-react";
 
 const Navbar = ({ toggleSidebar, isSidebarOpen, promotion }) => {
@@ -155,6 +156,18 @@ const Navbar = ({ toggleSidebar, isSidebarOpen, promotion }) => {
             {user ? (
               <>
                 {/* Admin Portal Button if Admin */}
+                {/* TPO Portal Button if TPO */}
+                {user?.role === "tpo" && (
+                  <BlockableLink
+                    to="/tpo/dashboard"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-white rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 transition-colors"
+                    title="TPO Institutional Portal"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>TPO Portal</span>
+                  </BlockableLink>
+                )}
+
                 {isAdmin && (
                   <BlockableLink
                     to="/admin/dashboard"

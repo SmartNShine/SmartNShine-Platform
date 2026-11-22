@@ -3,8 +3,19 @@ import { useNavigate } from "react-router-dom";
 import {
   Check,
   ArrowRight,
+  ShieldCheck,
+  GraduationCap,
+  Mail,
+  Phone,
+  Copy,
+  Users,
   Sparkles,
-  Zap,
+  Mic2,
+  Globe,
+  ScanSearch,
+  Target,
+  MessageSquareQuote,
+  LayoutDashboard,
   RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -21,25 +32,28 @@ const FALLBACK_PRICING = {
     tier: "free",
     amount: 0,
     features: [
-      "3 Core ATS-Certified Templates",
-      "10 AI Bullet Rewrites / month",
-      "Basic ATS Match Score Diagnostic",
-      "1 Active Resume at a time",
-      "Clean PDF Export",
+      "1 Active resume per month",
+      "OpenAI GPT-4o AI model",
+      "3 Core ATS templates",
+      "Master Career Profile Hub",
+      "5 Career Q&A interview questions",
+      "Basic ATS keyword check",
+      "Standard PDF export",
     ],
   },
   "one-time": {
     tier: "one-time",
-    amount: 9,
+    amount: 49,
     originalAmount: 49,
-    isPromo: true,
-    promoBadge: "FLASH DEAL",
     features: [
-      "All 11 ATS-Certified Templates",
-      "150 AI Rewrites for 21 Days",
-      "Full ATS Compatibility Scan",
-      "1 Dedicated Tailored Resume",
-      "Priority HD Vector PDF Export",
+      "1 Dedicated resume (21-day pass)",
+      "OpenAI GPT-4o AI rewriting",
+      "All 11 ATS-Certified templates",
+      "1 Deep ATS diagnostic scan",
+      "1 Live Portfolio website",
+      "Full Career Q&A Studio access",
+      "AI PDF/DOCX resume parser",
+      "21-day full access",
     ],
   },
   pro: {
@@ -47,17 +61,94 @@ const FALLBACK_PRICING = {
     monthly: {
       amount: 199,
       originalAmount: 299,
-      isPromo: true,
     },
     features: [
-      "Unlimited AI Generation ∞",
-      "All 11 Executive Templates",
-      "Unlimited ATS Diagnostic Scans",
-      "Unlimited Resumes & Web Portfolios",
-      "Career Q&A Studio Bank",
-      "2-Way Master Profile Live Sync",
+      "Unlimited resumes & exports",
+      "OpenAI GPT-4o Premium AI model",
+      "All 11 ATS-Certified templates",
+      "Unlimited ATS diagnostic scans",
+      "Unlimited Public Portfolio websites",
+      "Unlimited Career Q&A mock interviews",
+      "Unlimited AI resume file parsers",
+      "Master Career Profile Hub 2-way sync",
+      "Priority PDF rendering & 24/7 support",
     ],
   },
+};
+
+const CAMPUS_PLAN_DATA = {
+  name: "SmartNShine Campus Plan",
+  badge: "COLLEGES, UNIVERSITIES & TPO CELLS",
+  subtitle:
+    "Comprehensive institutional career ecosystem powering campus placements, AI mock interviews, and student readiness tracking.",
+  pricingNote: "Custom pricing tailored to campus requirements",
+  pricingDesc:
+    "Pricing is tailored based on your institution's campus requirements & placement batch size. Contact our team for customized quotes, institutional onboarding, and full rollout.",
+  features: [
+    {
+      title: "AI Resume Builder",
+      desc: "11 ATS-certified templates & instant PDF export",
+      icon: Sparkles,
+      tint:
+        "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50",
+    },
+    {
+      title: "AI Mock Interview Simulator",
+      desc: "Voice & tech mock interview practice with AI feedback",
+      icon: Mic2,
+      tint:
+        "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/50",
+    },
+    {
+      title: "Live Web Portfolio Builder",
+      desc: "Public student portfolio websites with custom slugs",
+      icon: Globe,
+      tint:
+        "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/50",
+    },
+    {
+      title: "Deep ATS Diagnostic Analyzer",
+      desc: "Comprehensive ATS compatibility scan & scoring engine",
+      icon: ScanSearch,
+      tint:
+        "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50",
+    },
+    {
+      title: "Job Description (JD) Analysis",
+      desc: "Role-matching, missing keywords & skill gap detection",
+      icon: Target,
+      tint:
+        "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50",
+    },
+    {
+      title: "Career Q&A Studio Bank",
+      desc: "Targeted interview question bank & verified answers",
+      icon: MessageSquareQuote,
+      tint:
+        "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/50",
+    },
+    {
+      title: "Institutional TPO Dashboard",
+      desc: "Batch & branch analytics, placement tracking & bulk student import",
+      icon: LayoutDashboard,
+      tint:
+        "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800/50",
+    },
+  ],
+  contacts: [
+    {
+      name: "Atharva Joshi",
+      role: "Co-Founder",
+      email: "atharvasjoshi2005@gmail.com",
+      phone: "+91 91569 06881",
+    },
+    {
+      name: "Rameshwar Sarkale",
+      role: "Co-Founder",
+      email: "rameshwarsarkale21@gmail.com",
+      phone: "+91 8080652957",
+    },
+  ],
 };
 
 export default function PricingSection() {
@@ -70,6 +161,7 @@ export default function PricingSection() {
     useToggle(false);
   const [paymentData, setPaymentData] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
+
   const [resumeChooserOpen, setResumeChooserOpen] = useState(false);
   const [selectableResumes, setSelectableResumes] = useState([]);
   const [pendingOneTimePlan, setPendingOneTimePlan] = useState(null);
@@ -96,7 +188,7 @@ export default function PricingSection() {
       const data = await getPricing();
       setPricing(data.pricing || data);
     } catch (error) {
-      console.error("Pricing fetch error:", error);
+      console.warn("Pricing fetch warning (using fallback):", error.message || error);
       setPricing(FALLBACK_PRICING);
     } finally {
       setLoading(false);
@@ -120,7 +212,7 @@ export default function PricingSection() {
     }
 
     if (tier === "free") {
-      toast.success("You are already active on the Free Starter plan");
+      toast.success("You are active on the Free Starter plan");
       return;
     }
 
@@ -174,342 +266,446 @@ export default function PricingSection() {
     setShowPaymentModalTrue();
   };
 
+  const handleCopyText = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`Copied ${label}: ${text}`);
+  };
+
+  const handleContactCampus = () => {
+    navigate(
+      "/contact?category=business&subject=SmartNShine%20Campus%20Pricing%20%26%20Requirement%20Inquiry"
+    );
+  };
+
   const activePricing = pricing || FALLBACK_PRICING;
 
-  const tiersConfig = [
+  const threeTiersConfig = [
     {
       key: "free",
       name: "Starter Free",
-      subtitle: "Essential toolkit for casual updates",
+      subtitle: "For casual updates and baseline ATS resume generation.",
+      featureLeadIn: "What's included:",
       data: activePricing.free || FALLBACK_PRICING.free,
-    },
-    {
-      key: "one-time",
-      name: "One-Time Pass",
-      subtitle: "Complete 21-day single resume boost",
-      data: activePricing["one-time"] || FALLBACK_PRICING["one-time"],
     },
     {
       key: "pro",
       name: "Pro Unlimited",
-      subtitle: "Unlimited AI generation & ATS diagnostic engine",
+      subtitle: "For job seekers seeking maximum interview callbacks and full AI power.",
+      featureLeadIn: "Everything in One-Time, plus:",
       data: activePricing.pro || FALLBACK_PRICING.pro,
       isPopular: true,
+    },
+    {
+      key: "one-time",
+      name: "One-Time Pass",
+      subtitle: "Complete 21-day single tailored boost for active job apps.",
+      featureLeadIn: "Everything in Free, plus:",
+      data: {
+        ...(activePricing["one-time"] || FALLBACK_PRICING["one-time"]),
+        amount: 49,
+        originalAmount: 49,
+      },
     },
   ];
 
   return (
     <section
       id="pricing"
-      className={`relative py-24 px-6 sm:px-10 lg:px-16 overflow-hidden transition-colors duration-300 ${
-        isDarkMode ? "bg-[#08090e] text-zinc-100" : "bg-[#fbfbfa] text-slate-900"
-      }`}
+      className="relative py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-neutral-50 dark:bg-black text-neutral-900 dark:text-neutral-100 transition-colors duration-200 [text-rendering:optimizeLegibility] [-webkit-font-smoothing:antialiased]"
     >
-      {/* Subtle ambient glass glows */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full blur-[140px] bg-indigo-500/5 dark:bg-indigo-500/10" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 rounded-full blur-[120px] bg-amber-500/5 dark:bg-amber-500/5" />
-      </div>
-
-      <div className="max-w-6xl mx-auto relative z-10 space-y-14">
-        {/* Section Header */}
+      <div className="max-w-6xl mx-auto relative z-10 space-y-10 sm:space-y-12">
+        {/* Section Header (Liveblocks Clean Style) */}
         <motion.div
-          initial={{ opacity: 0, y: 45, scale: 0.95 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-3xl mx-auto space-y-4"
+          transition={{ duration: 0.4 }}
+          className="text-center max-w-3xl mx-auto space-y-3"
         >
-          <h2
-            className={`text-3xl sm:text-4xl lg:text-5xl font-normal tracking-tight leading-tight ${
-              isDarkMode ? "text-white" : "text-slate-900"
-            }`}
-          >
-            Simple, predictable <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500">pricing</span>.
+          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            Pricing
           </h2>
 
-          <p
-            className={`text-base sm:text-lg font-light leading-relaxed ${
-              isDarkMode ? "text-zinc-400" : "text-slate-600"
-            }`}
-          >
-            Transparent plans designed for every stage of your career. Upgrade, downgrade, or cancel anytime.
+          <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed">
+            SmartNShine powers end-to-end career readiness, ATS optimization, and AI interview prep for students and institutions.
           </p>
         </motion.div>
 
         {/* Loading Spinner */}
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center space-y-3">
-              <RefreshCw className="w-7 h-7 text-indigo-500 animate-spin mx-auto" />
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Fetching latest rates...
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center space-y-2">
+              <RefreshCw className="w-7 h-7 text-neutral-400 animate-spin mx-auto" />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Loading rates...
               </p>
             </div>
           </div>
         ) : (
-          /* Glassy Simple Pricing Cards Grid */
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-            {tiersConfig.map((tier, idx) => {
-              const { key, name, subtitle, data, isPopular } = tier;
-              const isCurrentPlan = currentSubscription?.tier === key;
-              const isActivePlan =
-                isCurrentPlan &&
-                (key === "free" ||
-                  (key === "pro" && currentSubscription?.status === "active"));
+          <div className="space-y-10 sm:space-y-12">
+            {/* THREE PLANS — Pro (₹199) centered & elevated on desktop */}
+            <div className="pt-2 md:pt-8 pb-1">
+              <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] shadow-sm dark:shadow-2xl overflow-hidden md:overflow-visible transition-colors">
+                <div className="grid grid-cols-1 md:grid-cols-3 md:items-end divide-y md:divide-y-0 md:divide-x divide-neutral-200 dark:divide-[#1F1F1F]">
+                {threeTiersConfig.map((tier) => {
+                  const { key, name, subtitle, featureLeadIn, data } = tier;
+                  const elevated = key === "pro";
+                  const isCurrentPlan = currentSubscription?.tier === key;
+                  const isActivePlan =
+                    isCurrentPlan &&
+                    (key === "free" ||
+                      (key === "pro" && currentSubscription?.status === "active"));
 
-              const isPro = key === "pro";
-              const isOneTime = key === "one-time";
-              const isFree = key === "free";
+                  const isPro = key === "pro";
+                  const isOneTime = key === "one-time";
+                  const isFree = key === "free";
 
-              const proAmount = data?.monthly?.amount ?? 199;
-              const proOriginalAmount = data?.monthly?.originalAmount ?? 299;
-              const isProDiscounted =
-                data?.monthly?.isPromo || proAmount < proOriginalAmount;
+                  const proAmount = data?.monthly?.amount ?? 199;
+                  const proOriginalAmount = data?.monthly?.originalAmount ?? 299;
+                  const isProDiscounted = proAmount < proOriginalAmount;
 
-              const oneTimeAmount = data?.amount ?? 9;
-              const oneTimeOriginalAmount = data?.originalAmount ?? 49;
-              const isOneTimeDiscounted =
-                data?.isPromo || oneTimeAmount < oneTimeOriginalAmount;
+                  return (
+                    <div
+                      key={key}
+                      className={`flex flex-col justify-between p-6 sm:p-8 h-full transition-all duration-300 ${
+                        elevated
+                          ? "relative z-20 bg-white dark:bg-[#0c0c0c] md:-translate-y-6 md:scale-[1.04] md:rounded-2xl md:border-2 md:border-neutral-900 dark:md:border-white md:shadow-2xl dark:md:shadow-[0_24px_60px_rgba(0,0,0,0.55)] md:ring-1 md:ring-neutral-900/10 dark:md:ring-white/15 md:mx-[-2px]"
+                          : "bg-white dark:bg-[#0c0c0c] md:translate-y-1 md:opacity-[0.98]"
+                      }`}
+                    >
+                      <div className="space-y-6">
+                        {/* Header: Title and discount / active pill */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                              {name}
+                            </h3>
 
-              return (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true, margin: "0px 0px -40px 0px" }}
-                  transition={{ duration: 0.65, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                  whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                  className={`relative flex flex-col justify-between rounded-3xl p-7 sm:p-8 backdrop-blur-xl border transition-colors duration-300 ${
-                    isPro
-                      ? "bg-white/85 dark:bg-zinc-900/70 border-indigo-500/50 dark:border-indigo-400/40 shadow-xl shadow-indigo-500/10 dark:shadow-indigo-950/30 md:-translate-y-2 ring-1 ring-indigo-500/20"
-                      : isOneTime
-                      ? "bg-white/75 dark:bg-zinc-900/40 border-amber-500/30 dark:border-amber-500/20 shadow-sm hover:shadow-lg"
-                      : "bg-white/65 dark:bg-zinc-900/40 border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm hover:shadow-lg"
-                  }`}
-                >
-                  {/* Pro Ambient Light */}
-                  {isPro && (
-                    <div className="pointer-events-none absolute -top-14 -right-14 w-48 h-48 rounded-full bg-indigo-500/15 dark:bg-indigo-500/20 blur-3xl" />
-                  )}
+                            {isActivePlan ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                                <Check className="w-3 h-3 stroke-[2.5]" /> Active
+                              </span>
+                            ) : isPro && isProDiscounted ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                                Save 33%
+                              </span>
+                            ) : null}
+                          </div>
 
-                  <div className="space-y-6 relative z-10">
-                    {/* Header */}
-                    <div className="space-y-2 pt-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3
-                          className={`text-2xl sm:text-3xl font-normal tracking-tight ${
-                            isDarkMode ? "text-white" : "text-slate-900"
-                          }`}
-                        >
-                          {name}
-                        </h3>
+                          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed min-h-[38px]">
+                            {subtitle}
+                          </p>
+                        </div>
 
-                        {isActivePlan ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-mono font-medium uppercase tracking-wider border border-emerald-500/20">
-                            <Check className="w-3.5 h-3.5 stroke-[2.5]" /> Active
-                          </span>
-                        ) : isPopular ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-mono font-medium uppercase tracking-wider border border-indigo-500/25 shadow-xs">
-                            <Sparkles className="w-3.5 h-3.5 fill-current" /> Popular
-                          </span>
-                        ) : null}
+                        {/* Pricing Block */}
+                        <div className="pb-4 border-b border-neutral-100 dark:border-[#1F1F1F]">
+                          {isFree && (
+                            <div className="space-y-1">
+                              <div className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                                ₹0
+                              </div>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                No credit card required
+                              </p>
+                            </div>
+                          )}
+
+                          {isOneTime && (
+                            <div className="space-y-1">
+                              <div className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                                ₹49
+                              </div>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                / 21-day single pass
+                              </p>
+                            </div>
+                          )}
+
+                          {isPro && (
+                            <div className="space-y-1">
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                                  {formatPrice(proAmount)}
+                                </span>
+                                {isProDiscounted && (
+                                  <span className="text-sm text-neutral-400 line-through">
+                                    {formatPrice(proOriginalAmount)}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                per month billed monthly
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Features List */}
+                        <div className="space-y-3">
+                          <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                            {featureLeadIn}
+                          </p>
+                          <ul className="space-y-3">
+                            {data?.features?.map((feat, fIdx) => (
+                              <li
+                                key={fIdx}
+                                className="flex items-start gap-2.5 text-xs sm:text-[13px] text-neutral-600 dark:text-neutral-300 leading-snug"
+                              >
+                                <Check
+                                  className="w-4 h-4 text-neutral-400 dark:text-neutral-500 shrink-0 mt-0.5"
+                                  strokeWidth={2}
+                                />
+                                <span>{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
 
-                      <p
-                        className={`text-sm sm:text-[15px] font-light leading-relaxed ${
-                          isDarkMode ? "text-zinc-400" : "text-slate-500"
-                        }`}
-                      >
-                        {subtitle}
+                      {/* CTA Button */}
+                      <div className="pt-8">
+                        {isPro ? (
+                          <button
+                            onClick={() => handleSelectPlan("pro", "monthly")}
+                            disabled={isActivePlan}
+                            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+                              isActivePlan
+                                ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                                : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black shadow-sm"
+                            }`}
+                          >
+                            <span>
+                              {isActivePlan ? "Current Active Plan ✓" : "Upgrade to Pro"}
+                            </span>
+                            {!isActivePlan && <ArrowRight className="w-4 h-4" />}
+                          </button>
+                        ) : isOneTime ? (
+                          <button
+                            onClick={() =>
+                              handleSelectPlan("one-time", data.plan || "one-time")
+                            }
+                            disabled={isActivePlan}
+                            className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+                              isActivePlan
+                                ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
+                            }`}
+                          >
+                            <span>
+                              {isActivePlan
+                                ? "Current Active Plan ✓"
+                                : "Get 21-Day Pass (₹49)"}
+                            </span>
+                            {!isActivePlan && <ArrowRight className="w-4 h-4" />}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleSelectPlan("free")}
+                            disabled={isActivePlan}
+                            className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+                              isActivePlan
+                                ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
+                            }`}
+                          >
+                            <span>
+                              {isActivePlan ? "Current Active Plan ✓" : "Get started for free"}
+                            </span>
+                            {!isActivePlan && <ArrowRight className="w-4 h-4" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                </div>
+              </div>
+            </div>
+
+            {/* DEDICATED CAMPUS PLAN BELOW (Two Sections: Left Plan & Pricing, Right What We Provide | Contact Cards Below) */}
+            <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] shadow-sm dark:shadow-2xl overflow-hidden divide-y divide-neutral-200 dark:divide-[#1F1F1F] transition-colors">
+              {/* Upper Section: Divided into Left (Plan Details & Pricing) and Right (What We Provide) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-neutral-200 dark:divide-[#1F1F1F]">
+                {/* Left Section (col-span-5): Overview, Custom Pricing & Action CTAs */}
+                <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200 dark:bg-[#18181b] dark:text-neutral-300 dark:border-neutral-800 text-[11px] font-semibold tracking-wide">
+                      <GraduationCap className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400" />
+                      <span>{CAMPUS_PLAN_DATA.badge}</span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                        {CAMPUS_PLAN_DATA.name}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1.5 leading-relaxed">
+                        {CAMPUS_PLAN_DATA.subtitle}
                       </p>
                     </div>
 
-                    {/* Price Tag */}
-                    <div className="py-4 border-y border-slate-100 dark:border-white/5 space-y-2">
-                      {isFree && (
-                        <div className="flex items-baseline gap-2">
-                          <span
-                            className={`text-4xl sm:text-5xl font-light tracking-tight ${
-                              isDarkMode ? "text-white" : "text-slate-900"
-                            }`}
-                          >
-                            ₹0
+                    {/* Highlighted Custom Campus Pricing Box */}
+                    <div className="p-4 rounded-xl bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border border-emerald-500/30 dark:border-emerald-500/25 space-y-2.5 shadow-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-bold text-neutral-900 dark:text-white">
+                          Custom Campus Pricing
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 shadow-xs">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                           </span>
-                          <span
-                            className={`text-sm font-light ${
-                              isDarkMode ? "text-zinc-400" : "text-slate-500"
-                            }`}
-                          >
-                            / forever free
-                          </span>
-                        </div>
-                      )}
-
-                      {isOneTime && (
-                        <div className="space-y-1.5">
-                          <div className="flex items-baseline gap-2.5">
-                            <span className="text-4xl sm:text-5xl font-light tracking-tight text-amber-600 dark:text-amber-400">
-                              {formatPrice(oneTimeAmount)}
-                            </span>
-                            {isOneTimeDiscounted && (
-                              <span className="text-base font-light text-slate-400 dark:text-zinc-500 line-through">
-                                {formatPrice(oneTimeOriginalAmount)}
-                              </span>
-                            )}
-                            <span
-                              className={`text-sm font-light ${
-                                isDarkMode ? "text-zinc-400" : "text-slate-500"
-                              }`}
-                            >
-                              / 21 days
-                            </span>
-                          </div>
-
-                          {isOneTimeDiscounted && (
-                            <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-medium uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              {data.promoBadge || "SPECIAL"} • Flat{" "}
-                              {Math.round(
-                                (1 - oneTimeAmount / oneTimeOriginalAmount) * 100
-                              )}
-                              % OFF
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {isPro && (
-                        <div className="space-y-1.5">
-                          <div className="flex items-baseline gap-2.5">
-                            <span className="text-4xl sm:text-5xl font-light tracking-tight text-indigo-600 dark:text-indigo-400">
-                              {formatPrice(proAmount)}
-                            </span>
-                            {isProDiscounted && (
-                              <span className="text-base font-light text-slate-400 dark:text-zinc-500 line-through">
-                                {formatPrice(proOriginalAmount)}
-                              </span>
-                            )}
-                            <span
-                              className={`text-sm font-light ${
-                                isDarkMode ? "text-zinc-400" : "text-slate-500"
-                              }`}
-                            >
-                              / month
-                            </span>
-                          </div>
-
-                          {isProDiscounted && (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-medium uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                              <Zap className="w-3 h-3 fill-current" />
-                              PRO DEAL • Flat{" "}
-                              {Math.round((1 - proAmount / proOriginalAmount) * 100)}%
-                              OFF
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Features list */}
-                    <div className="space-y-3">
-                      <p
-                        className={`text-xs font-medium uppercase tracking-wider ${
-                          isDarkMode ? "text-zinc-400" : "text-slate-600"
-                        }`}
-                      >
-                        What's Included:
+                          Based on Campus Requirement
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        {CAMPUS_PLAN_DATA.pricingDesc}
                       </p>
-                      <ul className="space-y-3">
-                        {data.features?.map((feat, idx) => (
-                          <li
-                            key={idx}
-                            className="flex items-start gap-3 text-sm sm:text-[15px] font-light leading-relaxed"
+                    </div>
+                  </div>
+
+                  {/* Action CTAs */}
+                  <div className="space-y-2.5 pt-2 border-t border-neutral-100 dark:border-[#1F1F1F]">
+                    <button
+                      type="button"
+                      onClick={handleContactCampus}
+                      className="w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black shadow-sm cursor-pointer"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>Contact for More Info & Pricing</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/tpo/login")}
+                      className="w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60 cursor-pointer"
+                    >
+                      <GraduationCap className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                      <span>Campus TPO Sign In</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Section (col-span-7): What We Provide (Enlarged Cards) */}
+                <div className="lg:col-span-7 p-6 sm:p-8 space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-[#1F1F1F]">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
+                        What We Provide (Full Platform Ecosystem)
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      {CAMPUS_PLAN_DATA.features.length} Modules
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+                    {CAMPUS_PLAN_DATA.features.map((feat, fIdx) => {
+                      const Icon = feat.icon;
+                      return (
+                        <div
+                          key={fIdx}
+                          className="flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border border-neutral-200/80 dark:border-[#222222] bg-neutral-50/70 dark:bg-[#141417] hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+                        >
+                          <div
+                            className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 shadow-xs ${feat.tint || "text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-[#1e1e24] border-neutral-200 dark:border-neutral-800"}`}
                           >
-                            <div
-                              className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                                isPro
-                                  ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
-                                  : isOneTime
-                                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                                  : "bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-zinc-300"
-                              }`}
-                            >
-                              <Check className="w-3 h-3 stroke-[2.5]" />
+                            <Icon className="w-[18px] h-[18px] stroke-[2]" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white tracking-tight">
+                              {feat.title}
                             </div>
-                            <span
-                              className={
-                                isDarkMode ? "text-zinc-300" : "text-slate-700"
-                              }
-                            >
-                              {feat}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                            <div className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-normal leading-relaxed mt-1">
+                              {feat.desc}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+                </div>
+              </div>
 
-                  {/* CTA Button */}
-                  <div className="pt-6 mt-6 border-t border-slate-100 dark:border-white/5 relative z-10">
-                    {isPro ? (
-                      <button
-                        onClick={() => handleSelectPlan("pro", "monthly")}
-                        disabled={isActivePlan}
-                        className={`w-full py-3.5 px-5 rounded-2xl text-sm font-medium transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
-                          isActivePlan
-                            ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 hover:from-indigo-500 hover:via-blue-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/35"
-                        }`}
-                      >
-                        <span>
-                          {isActivePlan
-                            ? "Current Active Plan ✓"
-                            : `Upgrade to Pro (${formatPrice(proAmount)}/mo)`}
-                        </span>
-                        {!isActivePlan && <ArrowRight className="w-4 h-4" />}
-                      </button>
-                    ) : isOneTime ? (
-                      <button
-                        onClick={() =>
-                          handleSelectPlan("one-time", data.plan || "one-time")
-                        }
-                        disabled={isActivePlan}
-                        className={`w-full py-3.5 px-5 rounded-2xl text-sm font-medium transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
-                          isActivePlan
-                            ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-orange-500/20"
-                        }`}
-                      >
-                        <span>
-                          {isActivePlan
-                            ? "Current Active Plan ✓"
-                            : `Get 21-Day Pass (${formatPrice(oneTimeAmount)})`}
-                        </span>
-                        {!isActivePlan && <ArrowRight className="w-4 h-4" />}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSelectPlan("free")}
-                        disabled={isActivePlan}
-                        className={`w-full py-3.5 px-5 rounded-2xl text-sm font-medium transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
-                          isActivePlan
-                            ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                            : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-zinc-100 shadow-sm"
-                        }`}
-                      >
-                        <span>
-                          {isActivePlan ? "Current Active Plan ✓" : "Get Started Free"}
-                        </span>
-                        {!isActivePlan && <ArrowRight className="w-4 h-4" />}
-                      </button>
-                    )}
+              {/* Lower Section: Direct Contact to Team Below */}
+              <div className="p-6 sm:p-8 bg-neutral-50/40 dark:bg-[#0e0e11] space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-neutral-200/80 dark:border-[#1F1F1F]">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
+                      Direct Contact to Team
+                    </span>
                   </div>
-                </motion.div>
-              );
-            })}
+                  <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    Founders Desk
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  {CAMPUS_PLAN_DATA.contacts.map((contact, cIdx) => (
+                    <div
+                      key={cIdx}
+                      className="p-4 sm:p-5 rounded-xl border border-neutral-200/80 dark:border-[#222222] bg-white dark:bg-[#141417] space-y-3 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-base font-bold text-neutral-900 dark:text-white tracking-tight">
+                            {contact.name}
+                          </div>
+                          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                            {contact.role}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800/80 space-y-2 text-xs">
+                        {contact.email && (
+                          <div className="flex items-center justify-between gap-2">
+                            <a
+                              href={`mailto:${contact.email}`}
+                              className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors truncate"
+                            >
+                              <Mail className="w-4 h-4 text-neutral-400 shrink-0" />
+                              <span className="truncate">{contact.email}</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(contact.email, "Email")}
+                              className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white bg-neutral-100 hover:bg-neutral-200 dark:bg-[#1f1f24] dark:hover:bg-[#282830] border border-neutral-200 dark:border-neutral-800 shrink-0 cursor-pointer transition-colors"
+                              title="Copy email"
+                              aria-label="Copy email"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between gap-2">
+                          <a
+                            href={`tel:${contact.phone.replace(/\s+/g, "")}`}
+                            className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors font-mono"
+                          >
+                            <Phone className="w-4 h-4 text-neutral-400 shrink-0" />
+                            <span>{contact.phone}</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(contact.phone, "Phone")}
+                            className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white bg-neutral-100 hover:bg-neutral-200 dark:bg-[#1f1f24] dark:hover:bg-[#282830] border border-neutral-200 dark:border-neutral-800 shrink-0 cursor-pointer transition-colors"
+                            title="Copy phone"
+                            aria-label="Copy phone"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
-
       </div>
 
       {/* Resume Chooser Modal for One-Time Pass */}

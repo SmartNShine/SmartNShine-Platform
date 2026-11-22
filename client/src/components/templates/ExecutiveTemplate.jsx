@@ -353,7 +353,6 @@ const ExecutiveTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, re
       className="bg-white"
       style={{
         width: "210mm",
-        minHeight: "11in",
         boxSizing: "border-box",
         fontFamily: '"Newsreader", "Playfair Display", Georgia, Cambria, serif',
         color: selectedTheme.text,

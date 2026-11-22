@@ -608,7 +608,6 @@ const TechTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref) =>
       className="bg-white text-gray-900"
       style={{
         width: "210mm",
-        minHeight: "11in",
         boxSizing: "border-box",
         padding: styles.padding,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

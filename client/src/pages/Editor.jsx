@@ -34,7 +34,6 @@ import {
 import SEO from "@/components/common/SEO";
 import { GitHubImportModal } from "@/components/common/modals";
 import UpgradeRequiredModal from "@/components/common/modals/UpgradeRequiredModal";
-import { calculateResumeScore } from "@/utils/resumeScoring";
 import { TEMPLATES, TEMPLATE_COLOR_THEMES } from "@/components/editor/templateConfig";
 import {
   DEFAULT_SECTION_ORDER,
@@ -136,11 +135,6 @@ const Editor = () => {
       setAtsRecommendation(location.state.atsRecommendation);
     }
   }, [location.state?.atsRecommendation]);
-
-  const atsScore = useMemo(() => {
-    if (!resumeData) return null;
-    return calculateResumeScore(resumeData);
-  }, [resumeData]);
 
   const [
     showGitHubImportModal,
@@ -994,7 +988,7 @@ const Editor = () => {
   }
 
   return (
-    <div className="min-h-screen lg:h-screen w-full max-w-full overflow-x-hidden lg:overflow-hidden bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen lg:h-screen w-full max-w-full overflow-x-hidden bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
       <SEO
         title={`Editing: ${resumeData.resumeTitle || resumeData.name || "Resume"} | SmartNShine`}
         description="Craft, tailor, and design your ATS-optimized resume with AI assistance and live preview."
@@ -1022,8 +1016,8 @@ const Editor = () => {
         onTogglePreview={isMobile ? handleMobileTogglePreview : togglePreview}
       />
 
-      {/* ── Main content area ── */}
-      <div className="flex-1 min-h-0 w-full max-w-full px-2 sm:px-4 lg:px-8 py-2 sm:py-3 max-w-[1800px] mx-auto overflow-y-auto lg:overflow-hidden">
+      {/* ── Main content area: flex column so workspace fills remaining viewport ── */}
+      <div className="flex flex-1 min-h-0 w-full max-w-[1800px] mx-auto flex-col overflow-y-auto px-2 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 lg:overflow-hidden lg:px-8">
         <MobileActionBar
           showFloatingNav={showFloatingNav}
           onToggleSections={toggleFloatingNav}
@@ -1082,29 +1076,25 @@ const Editor = () => {
           />
         )}
 
-        {/* Sticky Mini Score Bar */}
-        <EditorMiniScoreBar
-          atsScore={atsScore}
-          onOpenAnalysis={() => setIsAnalysisOpen(true)}
-        />
-
         {/* ATS Recommendation Action Banner */}
         {atsRecommendation && (
-          <ATSRecommendationBanner
-            recommendation={atsRecommendation}
-            onDismiss={() => setAtsRecommendation(null)}
-            onJumpToSection={handleJumpToSectionFromAts}
-            onAutoAddKeywords={handleAutoAddKeywordsToSkills}
-            onSave={guardedHandleSave}
-            onOpenAIAnalysis={() => setIsAnalysisOpen(true)}
-            onBackToATS={handleBackToATS}
-            saving={saving}
-            isWizardMode={isWizardMode}
-          />
+          <div className="mb-3 shrink-0">
+            <ATSRecommendationBanner
+              recommendation={atsRecommendation}
+              onDismiss={() => setAtsRecommendation(null)}
+              onJumpToSection={handleJumpToSectionFromAts}
+              onAutoAddKeywords={handleAutoAddKeywordsToSkills}
+              onSave={guardedHandleSave}
+              onOpenAIAnalysis={() => setIsAnalysisOpen(true)}
+              onBackToATS={handleBackToATS}
+              saving={saving}
+              isWizardMode={isWizardMode}
+            />
+          </div>
         )}
 
         {isPaidActionLocked && (
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
+          <div className="mb-3 shrink-0 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <Lock className="mt-0.5 h-5 w-5 shrink-0" />
@@ -1127,7 +1117,7 @@ const Editor = () => {
         {isWizardMode ? (
           <div
             ref={containerRef}
-            className={`flex flex-col lg:flex-row min-w-0 max-w-full gap-0 lg:h-[calc(100vh-8.5rem)] min-h-[300px] overflow-hidden relative ${
+            className={`relative flex min-h-[300px] min-w-0 max-w-full flex-1 flex-col gap-0 overflow-hidden lg:min-h-0 lg:flex-row ${
               isDraggingSplitter ? "select-none cursor-col-resize" : ""
             }`}
           >
@@ -1136,7 +1126,7 @@ const Editor = () => {
                 Desktop: percentage width set by splitter
             */}
             <div
-              className="min-w-0 w-full lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 scrollbar-hide pb-6 lg:pb-0"
+              className="min-h-0 min-w-0 w-full pb-6 scrollbar-hide lg:h-full lg:max-h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-10 lg:[scrollbar-gutter:stable]"
               style={typeof window !== "undefined" && window.innerWidth >= 1024 && showPreview
                 ? { width: `${splitRatio}%`, flexShrink: 0, flexGrow: 0 }
                 : { width: "100%" }}
@@ -1222,11 +1212,9 @@ const Editor = () => {
                 ref={previewSectionRef}
                 id="resume-preview-section"
                 className="
-                  /* Mobile: inline preview at the ending with bottom spacing */
-                  w-full mt-8 pb-32 lg:mt-0 lg:pb-0
-                  /* Desktop: side-by-side column */
-                  lg:static lg:z-auto lg:bg-transparent lg:flex-none lg:min-w-0
-                  lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pl-1 scrollbar-hide
+                  min-h-0 w-full mt-8 pb-32 scrollbar-hide
+                  lg:mt-0 lg:pb-8 lg:static lg:z-auto lg:flex lg:h-full lg:max-h-full lg:flex-none lg:flex-col lg:min-w-0
+                  lg:overflow-y-auto lg:overscroll-contain lg:pl-1 lg:[scrollbar-gutter:stable]
                 "
                 style={{ ...(typeof window !== "undefined" && window.innerWidth >= 1024 ? { width: `${100 - splitRatio}%` } : { width: "100%" }) }}
               >
@@ -1271,16 +1259,15 @@ const Editor = () => {
         ) : (
           <div
             ref={containerRef}
-            className={`flex flex-col lg:flex-row min-w-0 max-w-full gap-0 lg:h-[calc(100vh-8.5rem)] min-h-[300px] overflow-hidden relative ${
+            className={`relative flex min-h-[300px] min-w-0 max-w-full flex-1 flex-col gap-0 overflow-hidden lg:min-h-0 lg:flex-row ${
               isDraggingSplitter ? "select-none cursor-col-resize" : ""
             }`}
           >
             {/* Editor Panel — full width on mobile, % width on desktop */}
             <div
               className={`
-                min-w-0 space-y-3
-                w-full pb-6 lg:pb-0
-                lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 scrollbar-hide
+                min-h-0 min-w-0 w-full space-y-3 pb-6 scrollbar-hide
+                lg:h-full lg:max-h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-10 lg:[scrollbar-gutter:stable]
                 ${isReadOnlyResume ? "pointer-events-none opacity-75" : ""}
               `}
               style={typeof window !== "undefined" && window.innerWidth >= 1024 && showPreview
@@ -1386,11 +1373,9 @@ const Editor = () => {
                 ref={isWizardMode ? undefined : previewSectionRef}
                 id="resume-preview-section-full"
                 className="
-                  /* Mobile: inline preview at the ending with bottom spacing */
-                  w-full mt-8 pb-32 lg:mt-0 lg:pb-0
-                  /* Desktop: column layout */
-                  lg:static lg:z-auto lg:bg-transparent lg:flex-none lg:min-w-0
-                  lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pl-1 scrollbar-hide
+                  min-h-0 w-full mt-8 pb-32 scrollbar-hide
+                  lg:mt-0 lg:pb-8 lg:static lg:z-auto lg:flex lg:h-full lg:max-h-full lg:flex-none lg:flex-col lg:min-w-0
+                  lg:overflow-y-auto lg:overscroll-contain lg:pl-1 lg:[scrollbar-gutter:stable]
                 "
                 style={typeof window !== "undefined" && window.innerWidth >= 1024
                   ? { width: `${100 - splitRatio}%`, flexShrink: 0, flexGrow: 0 }
@@ -1436,83 +1421,77 @@ const Editor = () => {
             )}
           </div>
         )}
+      </div>
 
-        <TemplateSelectorModal
-          isOpen={showTemplateSelector}
-          onClose={showTemplateSelectorFalse}
-          templates={TEMPLATES}
-          resumeData={resumeData}
-          selectedTemplate={selectedTemplate}
-          onApplyTemplate={handleApplyTemplate}
-        />
+      <TemplateSelectorModal
+        isOpen={showTemplateSelector}
+        onClose={showTemplateSelectorFalse}
+        templates={TEMPLATES}
+        resumeData={resumeData}
+        selectedTemplate={selectedTemplate}
+        onApplyTemplate={handleApplyTemplate}
+      />
 
-        {/* Slide-in Analysis Drawer */}
-        <AnalysisDrawer
-          isOpen={isAnalysisOpen}
-          onClose={() => setIsAnalysisOpen(false)}
-          resumeData={resumeData}
-          updateField={updateField}
-          handleApplyAiSuggestion={handleApplyAiSuggestion}
-          aiSuggestions={aiSuggestions}
-          setAiSuggestions={setAiSuggestions}
-        />
+      <AnalysisDrawer
+        isOpen={isAnalysisOpen}
+        onClose={() => setIsAnalysisOpen(false)}
+        resumeData={resumeData}
+        updateField={updateField}
+        handleApplyAiSuggestion={handleApplyAiSuggestion}
+        aiSuggestions={aiSuggestions}
+        setAiSuggestions={setAiSuggestions}
+      />
 
-        {/* GitHub Import Modal */}
-        <GitHubImportModal
-          isOpen={showGitHubImportModal}
-          onClose={() => showGitHubImportModalFalse()}
-          onImport={handleGitHubImport}
-          currentResume={resumeData}
-        />
+      <GitHubImportModal
+        isOpen={showGitHubImportModal}
+        onClose={() => showGitHubImportModalFalse()}
+        onImport={handleGitHubImport}
+        currentResume={resumeData}
+      />
 
-        {/* GitHub Import Success Notification */}
-        {githubImportSuccess && (
-          <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
-            <div className="bg-green-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5" />
-              <div>
-                <p className="font-bold text-sm">Successfully Updated!</p>
-                <p className="text-xs text-green-100">
-                  GitHub data added to your resume
-                </p>
-              </div>
+      {githubImportSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <div className="bg-green-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5" />
+            <div>
+              <p className="font-bold text-sm">Successfully Updated!</p>
+              <p className="text-xs text-green-100">
+                GitHub data added to your resume
+              </p>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Unsaved Changes Confirmation Modal */}
-        <UnsavedChangesModal
-          isOpen={showUnsavedModal}
-          saving={saving}
-          onSaveAndNavigate={handleSaveAndNavigate}
-          onDiscardAndNavigate={handleDiscardAndNavigate}
-          onCancelNavigation={handleCancelNavigation}
-        />
+      <UnsavedChangesModal
+        isOpen={showUnsavedModal}
+        saving={saving}
+        onSaveAndNavigate={handleSaveAndNavigate}
+        onDiscardAndNavigate={handleDiscardAndNavigate}
+        onCancelNavigation={handleCancelNavigation}
+      />
 
-        {/* Hidden ResumePreview instance for printing when preview panel is closed */}
-        {!showPreview && (
-          <div className="absolute pointer-events-none invisible -left-[9999px] w-0 h-0 overflow-hidden" aria-hidden="true">
-            <ResumePreview
-              ref={resumePreviewRef}
-              resumeData={resumeData}
-              template={selectedTemplate}
-              onDownload={handleDownloadPDF}
-              onUpdateField={updateField}
-            />
-          </div>
-        )}
-
-        {/* Upgrade Modal */}
-        {showUpgradeModal && (
-          <UpgradeRequiredModal
-            isOpen={showUpgradeModal}
-            onClose={() => showUpgradeModalFalse()}
-            message={upgradeMessage}
-            title="Upgrade Required"
-            feature="AI-Powered Features"
+      {!showPreview && (
+        <div className="absolute pointer-events-none invisible -left-[9999px] w-0 h-0 overflow-hidden" aria-hidden="true">
+          <ResumePreview
+            ref={resumePreviewRef}
+            resumeData={resumeData}
+            template={selectedTemplate}
+            onDownload={handleDownloadPDF}
+            onUpdateField={updateField}
           />
-        )}
-      </div>
+        </div>
+      )}
+
+      {showUpgradeModal && (
+        <UpgradeRequiredModal
+          isOpen={showUpgradeModal}
+          onClose={() => showUpgradeModalFalse()}
+          message={upgradeMessage}
+          title="Upgrade Required"
+          feature="AI-Powered Features"
+        />
+      )}
     </div>
   );
 };

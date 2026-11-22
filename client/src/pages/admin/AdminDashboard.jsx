@@ -1,4 +1,5 @@
 import {useState, useEffect, useMemo} from "react";
+import Dashboard3DButton from "@/components/dashboard/Dashboard3DButton";
 import {
   Users,
   FileText,
@@ -20,7 +21,13 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
+  Building2,
+  XCircle,
+  ExternalLink,
+  Check,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   AreaChart,
   Area,
@@ -84,6 +91,7 @@ const AdminDashboard = () => {
 
       const response = await getDashboardStats();
       setStats(response.data.data);
+
       setError(null);
     } catch (err) {
       console.error("Error fetching dashboard stats:", err);
@@ -260,12 +268,14 @@ const AdminDashboard = () => {
         <AlertCircle className="w-8 h-8 mx-auto mb-3 text-rose-500" />
         <h2 className="text-sm font-semibold">Failed to Load Dashboard Data</h2>
         <p className="text-xs text-zinc-500 mt-1">{error}</p>
-        <button
+        <Dashboard3DButton
+          variant="primary"
+          size="sm"
+          className="mt-4 font-mono"
           onClick={() => fetchDashboardStats(true)}
-          className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-mono font-medium transition-colors"
         >
           Retry Connection
-        </button>
+        </Dashboard3DButton>
       </div>
     );
   }
@@ -300,18 +310,33 @@ const AdminDashboard = () => {
             <span>Systems: 99.98% Operational</span>
           </div>
 
-          <button
+          <Dashboard3DButton
+            variant="primary"
+            size="sm"
             onClick={() => fetchDashboardStats(true)}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition-colors shadow-xs disabled:opacity-60"
             aria-label="Refresh telemetry data"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
             />
             <span>{refreshing ? "Refreshing..." : "Sync"}</span>
-          </button>
+          </Dashboard3DButton>
         </div>
+      </div>
+
+      <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-zinc-800 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
+          <Building2 className="w-4 h-4 text-indigo-500" />
+          <span>Register campuses and primary TPO accounts from the institutions directory.</span>
+        </div>
+        <Link
+          to="/admin/institutions"
+          className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+        >
+          <span>Campus onboarding</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* Primary KPI Metrics Grid with Subtle Colored Accents */}

@@ -676,7 +676,6 @@ const StrategicLeadershipTemplate = forwardRef(
         }}
         style={{
           width: "210mm",
-          minHeight: "11in",
           backgroundColor: "white",
           fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
           color: "#000000",

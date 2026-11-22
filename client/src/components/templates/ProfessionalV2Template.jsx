@@ -807,7 +807,7 @@ const ProfessionalV2Template = forwardRef(
         }}
         className="professional-v2-template"
         style={{
-          minHeight: isPrintMode ? "auto" : "11in",
+          minHeight: "auto",
           "--pv2-primary": selectedTheme.primary,
           "--pv2-secondary": selectedTheme.secondary,
           "--pv2-accent": selectedTheme.accent,

@@ -49,6 +49,7 @@ const PortfolioPreview = lazy(() => import("./pages/PortfolioPreview"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const InstitutionManagement = lazy(() => import("./pages/admin/InstitutionManagement"));
 const UserDetails = lazy(() => import("./pages/admin/UserDetails"));
 const AIAnalytics = lazy(() => import("./pages/admin/AIAnalytics"));
 const AIQuotaManagement = lazy(() => import("./pages/admin/AIQuotaManagement"));
@@ -91,6 +92,23 @@ const SuperAdminEnvPanel = lazy(
 const TechPortfolioTemplate = lazy(() => import("./pages/TechPortfolioTemplate"));
 const SmartNShinePortfolioTemplate = lazy(() => import("./pages/SmartNShinePortfolioTemplate"));
 const MagazinePortfolioTemplate = lazy(() => import("./pages/MagazinePortfolioTemplate"));
+
+// TPO Institutional Portal
+const TPOLayout = lazy(() => import("./components/tpo/TPOLayout"));
+const TPOProtectedRoute = lazy(() => import("./components/tpo/TPOProtectedRoute"));
+const TPOLogin = lazy(() => import("./pages/tpo/TPOLogin"));
+const TPODashboard = lazy(() => import("./pages/tpo/TPODashboard"));
+const TPOStudents = lazy(() => import("./pages/tpo/TPOStudents"));
+const TPOStudentProfile = lazy(() => import("./pages/tpo/TPOStudentProfile"));
+const TPOResumeAnalytics = lazy(() => import("./pages/tpo/TPOResumeAnalytics"));
+const TPOInterviewAnalytics = lazy(() => import("./pages/tpo/TPOInterviewAnalytics"));
+const TPOReadiness = lazy(() => import("./pages/tpo/TPOReadiness"));
+const TPOAssignments = lazy(() => import("./pages/tpo/TPOAssignments"));
+const TPOAnnouncements = lazy(() => import("./pages/tpo/TPOAnnouncements"));
+const TPOReports = lazy(() => import("./pages/tpo/TPOReports"));
+const TPOSettings = lazy(() => import("./pages/tpo/TPOSettings"));
+const TPOLeaderboard = lazy(() => import("./pages/tpo/TPOLeaderboard"));
+const TPOAcceptInvite = lazy(() => import("./pages/tpo/TPOAcceptInvite"));
 
 import {DarkModeProvider} from "./context/DarkModeContext";
 import {NavigationBlockerProvider} from "./context/NavigationBlockerContext";
@@ -375,6 +393,7 @@ function App() {
             >
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="earnings" element={<Earnings />} />
+              <Route path="institutions" element={<InstitutionManagement />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="users/:userId" element={<UserDetails />} />
               <Route path="careers" element={<CareerApplications />} />
@@ -393,6 +412,33 @@ function App() {
               <Route path="logs" element={<AdminLogs />} />
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="settings" element={<AdminSettings />} />
+            </Route>
+
+                        {/* TPO Institutional Portal Public Routes */}
+            <Route path="/tpo/login" element={<TPOLogin />} />
+            <Route path="/tpo/accept-invite" element={<TPOAcceptInvite />} />
+
+            {/* TPO Protected Portal */}
+            <Route
+              path="/tpo"
+              element={
+                <TPOProtectedRoute>
+                  <TPOLayout />
+                </TPOProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/tpo/dashboard" replace />} />
+              <Route path="dashboard" element={<TPODashboard />} />
+              <Route path="students" element={<TPOStudents />} />
+              <Route path="students/:studentId" element={<TPOStudentProfile />} />
+              <Route path="resume-analytics" element={<TPOResumeAnalytics />} />
+              <Route path="interview-analytics" element={<TPOInterviewAnalytics />} />
+              <Route path="readiness" element={<TPOReadiness />} />
+              <Route path="assignments" element={<TPOAssignments />} />
+              <Route path="announcements" element={<TPOAnnouncements />} />
+              <Route path="reports" element={<TPOReports />} />
+              <Route path="leaderboard" element={<TPOLeaderboard />} />
+              <Route path="settings" element={<TPOSettings />} />
             </Route>
 
             {/* Super Admin Control Panel Routes */}

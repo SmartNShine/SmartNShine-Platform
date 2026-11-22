@@ -351,7 +351,6 @@ const LatexAcademicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }
       className="bg-white text-gray-900"
       style={{
         width: "210mm",
-        minHeight: "11in",
         boxSizing: "border-box",
         padding: styles.padding,
         fontFamily: '"Times New Roman", "Georgia", "Cambria", serif',

@@ -17,6 +17,7 @@ import StructuredPhotoTemplate from "@/components/templates/StructuredPhotoTempl
 import SiliconValleyTemplate from "@/components/templates/SiliconValleyTemplate";
 import LatexAcademicTemplate from "@/components/templates/LatexAcademicTemplate";
 import NordicSplitTemplate from "@/components/templates/NordicSplitTemplate";
+import { buildResumeLayoutCssVars } from "@/components/editor/utils/resumeLayoutUtils";
 
 const templates = {
   "silicon-valley": SiliconValleyTemplate,
@@ -86,21 +87,19 @@ const PdfRender = () => {
   const SelectedTemplate = templates[payload.template] || ClassicTemplate;
 
   const layoutSettings = payload.resumeData?.layoutSettings || {};
-  const activeFontFamily =
-    layoutSettings.fontFamily ||
-    '"Arial", Helvetica, sans-serif';
-
+  const builtLayout = buildResumeLayoutCssVars({
+    layoutSettings,
+    density: payload.resumeData?.density || "medium",
+    fontPairing: payload.resumeData?.fontPairing || "modernSans",
+  });
   const layoutStyle = {
-    "--resume-layout-top": layoutSettings.pagePaddingTop || layoutSettings.pagePadding || "0.35in",
-    "--resume-layout-side": layoutSettings.pagePadding || "0.45in",
-    "--resume-layout-bottom": layoutSettings.pagePaddingBottom || layoutSettings.pagePadding || "0.35in",
-    "--resume-layout-scale": String(Number(layoutSettings.fontScale || 100) / 100),
-    "--resume-layout-spacing": String(
-      layoutSettings.sectionSpacing != null && layoutSettings.sectionSpacing !== ""
-        ? Number(layoutSettings.sectionSpacing) / 100
-        : 1
-    ),
-    "--resume-layout-font-family": activeFontFamily,
+    "--resume-layout-top": builtLayout["--resume-layout-top"],
+    "--resume-layout-side": builtLayout["--resume-layout-side"],
+    "--resume-layout-bottom": builtLayout["--resume-layout-bottom"],
+    "--resume-layout-scale": builtLayout["--resume-layout-scale"],
+    "--resume-layout-spacing": builtLayout["--resume-layout-spacing"],
+    "--resume-layout-font-family": builtLayout["--resume-layout-font-family"],
+    "--resume-layout-bullet-color": builtLayout["--resume-layout-bullet-color"],
   };
 
   return (

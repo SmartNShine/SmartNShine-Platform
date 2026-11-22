@@ -563,7 +563,6 @@ const Creative2Template = forwardRef(({ resumeData = {}, onPageUsageChange }, re
       className="creative-studio-template"
       style={{
         width: "210mm",
-        minHeight: "11in",
         height: "100%",
         boxSizing: "border-box",
         padding: spacing.padding,

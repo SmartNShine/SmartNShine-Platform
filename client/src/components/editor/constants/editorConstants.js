@@ -41,9 +41,9 @@ export const SECTION_META = {
 export const LAYOUT_DEFAULTS = {
   fontScale: 100,
   fontFamily: "Arial, Helvetica, sans-serif",
-  pagePadding: "0.5in",
-  pagePaddingTop: "0.5in",
-  pagePaddingBottom: "0.5in",
+  pagePadding: "0.44in",
+  pagePaddingTop: "0.35in",
+  pagePaddingBottom: "0.35in",
   sectionSpacing: 100,
   contactLayout: "center-inline",
 };

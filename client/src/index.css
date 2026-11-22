@@ -250,13 +250,28 @@
   width: 210mm;
   min-height: 297mm;
   background: #fff;
+  box-sizing: border-box !important;
+  padding: var(--resume-layout-top, 0.35in) var(--resume-layout-side, 0.45in)
+    var(--resume-layout-bottom, 0.35in) !important;
 }
 
+/* Editor preview only — content-height shell; avoids clip edges reading as rules */
+.resume-preview .resume-layout-shell {
+  min-height: auto !important;
+}
+
+.resume-preview .resume-watermark-overlay {
+  mix-blend-mode: normal !important;
+}
+
+/* Page margins live on the shell; zoom only scales resume content. */
 .resume-layout-shell > * {
   box-sizing: border-box !important;
-  width: calc(210mm / var(--resume-layout-scale, 1)) !important;
-  min-height: calc(297mm / var(--resume-layout-scale, 1)) !important;
-  padding: var(--resume-layout-top, 0.35in) var(--resume-layout-side, 0.45in) var(--resume-layout-bottom, 0.35in) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
   zoom: var(--resume-layout-scale, 1);
 }
 

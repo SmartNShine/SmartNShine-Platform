@@ -1232,7 +1232,6 @@ const SiliconValleyTemplate = forwardRef(
         id="resume-container"
         style={{
           width: "210mm",
-          minHeight: "297mm",
           boxSizing: "border-box",
           padding: dynamicStyles.pagePadding,
           backgroundColor: "#ffffff",
@@ -1242,18 +1241,6 @@ const SiliconValleyTemplate = forwardRef(
           overflow: "hidden",
         }}
       >
-        {/* Subtle top accent border strip */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "3px",
-            background: `linear-gradient(90deg, ${selectedTheme.primary} 0%, ${selectedTheme.accent} 100%)`,
-          }}
-        />
-
         {/* Header / Masthead */}
         <header style={{ marginBottom: dynamicStyles.headerMarginBottom, paddingTop: "1px" }}>
           <div

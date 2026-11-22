@@ -1,9 +1,10 @@
-import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import React, { forwardRef, useRef, useMemo } from "react";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
   formatEducationDegreeAndField,
 } from "./templateUtils";
+import { useResumePageUsage } from "./resumePageUsage";
 import {
   Mail,
   Phone,
@@ -63,33 +64,7 @@ const highlightMetrics = (text, primaryColor) => {
 
 const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref) => {
   const containerRef = useRef(null);
-  const lastHeightRef = useRef(0);
-  const onPageUsageChangeRef = useRef(onPageUsageChange);
-  onPageUsageChangeRef.current = onPageUsageChange;
-
-  // Page overflow detection
-  useEffect(() => {
-    if (containerRef.current && onPageUsageChangeRef.current) {
-      const currentHeight = containerRef.current.scrollHeight;
-      if (Math.abs(lastHeightRef.current - currentHeight) < 2) return;
-      lastHeightRef.current = currentHeight;
-
-      const maxHeight = 1123;
-      const isOverflowing = currentHeight > maxHeight;
-      const overflowPercentage = isOverflowing
-        ? Math.round(((currentHeight - maxHeight) / maxHeight) * 100)
-        : 0;
-
-      onPageUsageChangeRef.current({
-        isOverflowing,
-        currentHeight,
-        maxHeight,
-        overflowPercentage,
-        percentage: Math.round((currentHeight / maxHeight) * 100),
-        templateName: "ClassicTemplate",
-      });
-    }
-  }, [resumeData]);
+  useResumePageUsage(containerRef, resumeData, onPageUsageChange, "ClassicTemplate");
 
   // ── Color Palettes ──────────────────────────────────────────────────────────
   const colorThemes = {
@@ -441,7 +416,6 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
       className="bg-white"
       style={{
         width: "210mm",
-        minHeight: "11in",
         boxSizing: "border-box",
         padding: styles.padding,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

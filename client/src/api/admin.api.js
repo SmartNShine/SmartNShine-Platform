@@ -246,3 +246,10 @@ export const updatePaymentSettings = updateSettings;
 
 export default adminAPI;
 
+
+// Institutional TPO Management
+export const getInstitutions = (params) => adminAPI.get("/institutions", { params });
+export const createInstitution = (data) => adminAPI.post("/institutions", data);
+export const updateInstitution = (id, data) =>
+  adminAPI.patch(`/institutions/${id}`, data);
+export const deleteInstitution = (id) => adminAPI.delete(`/institutions/${id}`);

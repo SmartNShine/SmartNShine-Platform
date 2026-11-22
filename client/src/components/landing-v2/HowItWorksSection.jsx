@@ -1,8 +1,8 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { Upload, Cpu, Rocket, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useDarkMode } from "../../context/DarkModeContext";
+import Dashboard3DButton from "@/components/dashboard/Dashboard3DButton";
 
 const steps = [
   {
@@ -115,10 +115,15 @@ export default function HowItWorksSection() {
           transition={{ duration: 0.6, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="text-center pt-4"
         >
-          <Link to="/templates" className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-sm font-medium tracking-wide shadow-xl transition-all active:scale-95">
+          <Dashboard3DButton
+            to="/templates"
+            variant="landing"
+            size="lg"
+            className="!rounded-2xl tracking-wide font-medium px-8"
+          >
             <span>Start Building Free</span>
             <ArrowRight className="w-4 h-4 stroke-[2.2]" />
-          </Link>
+          </Dashboard3DButton>
         </motion.div>
       </div>
     </section>

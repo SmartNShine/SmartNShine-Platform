@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { LAYOUT_DEFAULTS } from "../constants/editorConstants";
 import { TEMPLATE_COLOR_THEMES } from "../templateConfig";
+import { mergeDensityLayoutSettings } from "../utils/resumeLayoutUtils";
 
 const PREVIEW_DENSITIES = [
   { id: "compact", label: "Smart 1-Page" },
@@ -76,24 +77,11 @@ const ResumeLayoutControls = ({ resumeData = {}, template = "classic", updateFie
   };
 
   const handleDensityChange = (densityId) => {
+    const merged = mergeDensityLayoutSettings(densityId, settings);
+    if (onChange) onChange(merged);
     if (updateField) {
       updateField("density", densityId);
-    }
-    if (densityId === "compact") {
-      update("sectionSpacing", 52);
-      update("pagePaddingTop", "0.22in");
-      update("pagePaddingBottom", "0.22in");
-      update("pagePadding", "0.35in");
-    } else if (densityId === "spacious") {
-      update("sectionSpacing", 140);
-      update("pagePaddingTop", "0.50in");
-      update("pagePaddingBottom", "0.50in");
-      update("pagePadding", "0.50in");
-    } else {
-      update("sectionSpacing", 100);
-      update("pagePaddingTop", "0.35in");
-      update("pagePaddingBottom", "0.35in");
-      update("pagePadding", "0.44in");
+      updateField("layoutSettings", merged);
     }
   };
 

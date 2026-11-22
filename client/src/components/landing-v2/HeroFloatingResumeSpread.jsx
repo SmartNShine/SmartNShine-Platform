@@ -105,7 +105,7 @@ export default function HeroFloatingResumeSpread() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
             <Link
               to="/templates"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base transition-colors shadow-sm active:scale-98"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-base transition-colors shadow-sm active:scale-98 w-full sm:w-auto"
             >
               <span>Start Building Free</span>
               <ArrowRight className="w-4 h-4" />
@@ -113,9 +113,9 @@ export default function HeroFloatingResumeSpread() {
 
             <Link
               to="/ats-analyzer"
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium text-base transition-colors active:scale-98"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium text-base transition-colors active:scale-98 w-full sm:w-auto"
             >
-              <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Check ATS Score</span>
             </Link>
           </div>
