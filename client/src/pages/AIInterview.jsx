@@ -80,7 +80,6 @@ const AIInterview = () => {
   };
 
   // Ref bridge for circular dependencies between speech, recording & session
-  const startRecordingBridgeRef = useRef(null);
   const onVoiceSubmitBridgeRef = useRef(null);
   const setInterviewPhaseBridgeRef = useRef(null);
   const isMutedRef = useRef(false);
@@ -95,35 +94,19 @@ const AIInterview = () => {
     selectedVoice,
     voiceEngine,
     serverTtsAvailable: true,
-    voiceAvailable: true,
-    selectedMode: "live",
     isMuted: isMutedRef.current,
     isMutedRef,
     isInterviewActiveRef,
     setInterviewPhase: (phase) => setInterviewPhaseBridgeRef.current?.(phase),
-    startRecordingRef: startRecordingBridgeRef,
   });
 
-  // 2. Hook for Recording & VAD
+  // 2. Hook for manual answer recording
   const recording = useInterviewRecording({
-    selectedMode: "live",
     getSelectedLanguage: () => session.selectedLanguage,
     isInterviewActiveRef,
-    interviewPhase: "idle",
     getInterviewPhase: () => interviewPhaseRef.current,
-    setInterviewPhase: (phase) => setInterviewPhaseBridgeRef.current?.(phase),
-    isPlayingAudio: speech.isPlayingAudio,
-    audioElementRef: speech.audioElementRef,
-    stopLocalAudio: speech.stopLocalAudio,
-    speakAndListen: speech.speakAndListen,
-    onVoiceSubmit: async (blob) => {
-      if (onVoiceSubmitBridgeRef.current) {
-        await onVoiceSubmitBridgeRef.current(blob);
-      }
-    },
+    onVoiceSubmit: (...args) => onVoiceSubmitBridgeRef.current?.(...args),
   });
-
-  startRecordingBridgeRef.current = recording.startRecording;
 
   // 3. Hook for Session Lifecycle
   const session = useInterviewSession({
@@ -134,10 +117,9 @@ const AIInterview = () => {
     selectedVoice,
     speakAndListen: speech.speakAndListen,
     generateIntroduction: speech.generateIntroduction,
-    generateAcknowledgment: speech.generateAcknowledgment,
     stopLocalAudio: speech.stopLocalAudio,
-    startRecording: recording.startRecording,
     cleanupAudioStreams: recording.cleanupAudioStreams,
+    isFinalizingRecordingRef: recording.isFinalizingRef,
     isInterviewActiveRef,
     isMutedRef,
   });
@@ -157,7 +139,7 @@ const AIInterview = () => {
   const proctoring = useProctoringEngine({
     videoRef: camera.videoRef,
     sessionId: activeSessionId,
-    isInterviewActive: session.step === "interview",
+    isInterviewActive: session.step === "interview" && session.interviewPhase !== "completing" && session.interviewPhase !== "report-error",
     interviewStartTime: session.session?.startedAt
       ? new Date(session.session.startedAt).getTime()
       : null,
@@ -168,7 +150,7 @@ const AIInterview = () => {
     if (session.step === "interview") {
       if (!hasStartedCameraRef.current) {
         hasStartedCameraRef.current = true;
-        camera.startCamera();
+        if (!camera.streamRef.current?.active) camera.startCamera();
       }
     } else {
       hasStartedCameraRef.current = false;
@@ -195,10 +177,13 @@ const AIInterview = () => {
   useEffect(() => {
     if (session.step === "result" && videoRecorder.isRecordingVideo) {
       videoRecorder.stopVideoRecording().then((blob) => {
+        camera.stopCamera();
         if (blob && activeSessionId) {
           videoRecorder.uploadSessionVideo(activeSessionId, blob);
         }
       });
+    } else if (session.step === "result") {
+      camera.stopCamera();
     }
   }, [session.step, activeSessionId, videoRecorder.isRecordingVideo]);
 
@@ -271,6 +256,8 @@ const AIInterview = () => {
     setIsAbandoning(true);
     try {
       await session.handleAbandonInterview(true);
+      await videoRecorder.stopVideoRecording();
+      camera.stopCamera();
     } finally {
       setIsAbandoning(false);
       setIsExitModalOpen(false);
@@ -298,51 +285,40 @@ const AIInterview = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-[#0A0A0B] text-gray-900 dark:text-white transition-colors duration-300">
       {session.step === "interview" ? (
         <InterviewStep
-          session={session.session}
           currentQuestion={session.currentQuestion}
           selectedMode={session.selectedMode}
           selectedRole={session.selectedRole}
           interviewPhase={session.interviewPhase}
+          conversationPhase={session.conversationPhase}
           elapsedTime={session.elapsedTime}
           interviewDuration={session.interviewDuration}
-          progress={session.progress}
-          isMuted={session.isMuted}
           isRecording={recording.isRecording}
           isPlayingAudio={speech.isPlayingAudio}
-          aiMessage={speech.aiMessage}
           answer={session.answer}
           setAnswer={session.setAnswer}
-          evaluation={session.evaluation}
-          conversationHistory={session.conversationHistory}
           isSubmitting={session.isSubmitting}
-          voiceEngine={voiceEngine}
-          setVoiceEngine={setVoiceEngine}
-          selectedVoice={selectedVoice}
-          setSelectedVoice={handlePersonaChange}
           micFrequencyBins={recording.micFrequencyBins}
           liveCandidateTranscript={recording.liveCandidateTranscript}
-          bargeInNotice={recording.bargeInNotice}
-          isProduction={isProduction}
-          theme={theme}
           user={user}
-          onToggleTheme={toggleTheme}
-          onToggleMute={session.handleToggleMute}
-          onSkip={session.handleSkipQuestion}
-          onSkipQuestion={session.handleSkipQuestion}
+          onSkip={async () => {
+            if (await session.handleSkipQuestion()) recording.discardDraft();
+          }}
           onRequestRepeat={session.handleRepeatQuestion}
           onAbandon={handleRequestExit}
-          onAbandonInterview={handleRequestExit}
-          onSubmitAnswer={recording.isRecording ? recording.stopRecording : session.handleSubmitAnswer}
-          onStartRecording={() => recording.startRecording(false)}
-          onStopRecording={recording.stopRecording}
+          onSubmitAnswer={session.handleSubmitAnswer}
+          onStartRecording={recording.startRecording}
+          onSubmitRecording={recording.submitRecording}
+          hasRecordingDraft={recording.hasRecordingDraft}
+          onRetryReport={session.handleCompleteInterview}
           formatTime={formatTime}
           cameraVideoRef={camera.attachVideoRef}
           isCameraActive={camera.isCameraActive}
+          isCameraInitializing={camera.isInitializing}
           cameraError={camera.cameraError}
           proctoringState={proctoring.proctoringState}
           activeAlert={proctoring.activeAlert}
           isPhoneInView={proctoring.isPhoneInView}
-          onRetryCamera={camera.startCamera}
+          onRetryCamera={() => camera.startCamera(camera.selectedDeviceId)}
           audioDevices={recording.audioDevices}
           selectedAudioDeviceId={recording.selectedAudioDeviceId}
           onSwitchAudioDevice={recording.switchAudioDevice}

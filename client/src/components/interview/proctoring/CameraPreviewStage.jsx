@@ -1,5 +1,5 @@
 import React from "react";
-import { Camera, CameraOff, RefreshCw, User } from "lucide-react";
+import { Camera, CameraOff, RefreshCw } from "lucide-react";
 
 export const CameraPreviewStage = ({
   videoRef,
@@ -73,7 +73,8 @@ export const CameraPreviewStage = ({
         autoPlay
         playsInline
         muted
-        className={`w-full h-full object-cover transform scale-x-[-1] ${
+        aria-label="Your camera preview"
+        className={`block w-full h-full object-contain transform scale-x-[-1] ${
           isCameraActive ? "opacity-100" : "opacity-0"
         } transition-opacity duration-300`}
       />

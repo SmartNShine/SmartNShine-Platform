@@ -12,10 +12,9 @@ export function useInterviewSession({
   selectedVoice,
   speakAndListen,
   generateIntroduction,
-  generateAcknowledgment,
   stopLocalAudio,
-  startRecording,
   cleanupAudioStreams,
+  isFinalizingRecordingRef,
   isInterviewActiveRef: externalIsInterviewActiveRef,
   isMutedRef: externalIsMutedRef,
 }) {
@@ -70,6 +69,7 @@ export function useInterviewSession({
   const internalActiveRef = useRef(false);
   const isInterviewActiveRef = externalIsInterviewActiveRef || internalActiveRef;
   const isCompletingRef = useRef(false);
+  const turnInFlightRef = useRef(null);
 
   const updateSession = (newSession) => {
     setSession(newSession);
@@ -156,31 +156,20 @@ export function useInterviewSession({
     }
   }, [user]);
 
-  // Timer interval
+  // Let an explicitly submitted answer finish before closing on the timer.
   useEffect(() => {
-    let interval;
-    if (step === "interview" && startTime) {
-      interval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setElapsedTime(elapsed);
-
-        const totalDurationSec = interviewDuration * 60;
-        const remainingTime = totalDurationSec - elapsed;
-
-        if (remainingTime <= 0 && selectedMode === "live" && conversationPhase !== CONVERSATION_PHASES.COMPLETED) {
-          clearInterval(interval);
-          setConversationPhase(CONVERSATION_PHASES.COMPLETED);
-          const closingMessage =
-            "We have reached the end of our allotted time. Thank you so much for your participation! Generating your comprehensive evaluation report now.";
-          speakAndListen(closingMessage, async () => {
-            setInterviewPhase("idle");
-            await handleCompleteInterview();
-          });
-        }
-      }, 1000);
-    }
+    if (step !== "interview" || !startTime) return;
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      setElapsedTime(elapsed);
+      if (elapsed >= interviewDuration * 60 && !isFinalizingRecordingRef.current &&
+          !turnInFlightRef.current && isInterviewActiveRef.current) {
+        clearInterval(interval);
+        void handleCompleteInterview();
+      }
+    }, 1000);
     return () => clearInterval(interval);
-  }, [step, startTime, interviewDuration, selectedMode, conversationPhase]);
+  }, [step, startTime, interviewDuration, isFinalizingRecordingRef, isInterviewActiveRef]);
 
   const handleToggleMute = useCallback(() => {
     setIsMuted((prev) => {
@@ -258,9 +247,7 @@ export function useInterviewSession({
           // Do not auto-start recording; candidate will click "Record Answer" when ready
         });
       } else {
-        setInterviewPhase("greeting");
-        toast.success("Interview started! Good luck!");
-        setTimeout(() => setInterviewPhase("waiting"), 1500);
+        setInterviewPhase("waiting");
       }
     } catch (error) {
       console.error("Failed to start interview:", error);
@@ -270,344 +257,165 @@ export function useInterviewSession({
     }
   };
 
-  const handleSubmitAnswer = async () => {
-    if (selectedMode === "live") {
-      // In live voice mode, response is captured via microphone
-      if (!answer.trim()) {
-        toast("Click 'Record Answer' to speak your response.", { icon: "🎙️" });
-        return;
-      }
-    }
-    if (!answer.trim() || answer.length < 10) {
-      return toast.error("Please provide an answer of at least 10 characters");
-    }
+  const beginTurn = () => {
+    if (!isInterviewActiveRef.current || turnInFlightRef.current ||
+        !sessionRef.current?.id || !currentQuestionRef.current) return null;
 
+    const turn = { sessionId: sessionRef.current.id, question: currentQuestionRef.current };
+    turnInFlightRef.current = turn;
     setIsSubmitting(true);
-    setEvaluation(null);
     setInterviewPhase("processing");
+    return turn;
+  };
 
-    try {
-      const response = await interviewAPI.submitAnswer(session.id, {
-        answer: answer.trim(),
-        questionNumber: currentQuestion.number,
-      });
+  const isCurrentTurn = (turn) => isInterviewActiveRef.current && turnInFlightRef.current === turn;
 
-      if (!response.success) throw new Error(response.error || "Failed to submit answer");
-
-      setEvaluation(response.data.evaluation);
-      setProgress(response.data.progress);
-      setInterviewPhase("evaluation");
-
-      if (response.data.isComplete) {
-        toast.success("Interview complete! Generating your report...");
-        setInterviewPhase("idle");
-        await handleCompleteInterview();
-      } else if (response.data.nextQuestion) {
-        const showEvalDuration = selectedMode === "live" ? 2500 : 3000;
-        setTimeout(async () => {
-          if (selectedMode === "live") {
-            const randomAck = generateAcknowledgment();
-            setInterviewPhase("transitioning");
-            speakAndListen(randomAck, () => {
-              updateCurrentQuestion(response.data.nextQuestion);
-              setAnswer("");
-              setEvaluation(null);
-              setInterviewPhase("asking");
-
-              if (response.data.nextQuestion?.text) {
-                speakAndListen(response.data.nextQuestion.text, () => {
-                  setInterviewPhase("waiting");
-                  // Candidate will manually click "Record Answer" when ready
-                });
-              }
-            });
-          } else {
-            updateCurrentQuestion(response.data.nextQuestion);
-            setAnswer("");
-            setEvaluation(null);
-            setInterviewPhase("waiting");
-          }
-        }, showEvalDuration);
-      }
-    } catch (error) {
-      console.error("Failed to submit answer:", error);
-      toast.error(error.message || "Failed to submit answer");
-      setInterviewPhase("waiting");
-    } finally {
+  const finishTurn = (turn) => {
+    if (turnInFlightRef.current === turn) {
+      turnInFlightRef.current = null;
       setIsSubmitting(false);
     }
   };
 
-  const handleVoiceSubmit = async (audioBlob, clientTranscript = "") => {
-    if (!isInterviewActiveRef.current) return;
-    const currentSession = sessionRef.current;
-    const currentQ = currentQuestionRef.current;
-
-    if (!audioBlob || audioBlob.size === 0) {
-      if (selectedMode === "live" && isInterviewActiveRef.current) {
-        setInterviewPhase("waiting");
-      }
-      return;
+  const showQuestion = (question) => {
+    updateCurrentQuestion(question);
+    setAnswer("");
+    setEvaluation(null);
+    if (selectedMode === "live") {
+      setInterviewPhase("asking");
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "ai", type: "question", content: question.text, timestamp: Date.now() },
+      ]);
+      void speakAndListen(question.text, () => setInterviewPhase("waiting"));
+    } else {
+      setInterviewPhase("waiting");
     }
+  };
 
-    if (!currentSession?.id) return;
+  const advanceInterview = (data) => {
+    setProgress(data.progress);
+    const timeIsUp = startTimeRef.current &&
+      Date.now() - startTimeRef.current >= interviewDuration * 60 * 1000;
+    if (data.isComplete || timeIsUp) {
+      void handleCompleteInterview();
+    } else if (data.nextQuestion) {
+      setQuestionCount(data.nextQuestion.number);
+      showQuestion(data.nextQuestion);
+    }
+  };
 
-    setIsSubmitting(true);
-    setInterviewPhase("processing");
+  const showTurnError = (turn, error, fallback) => {
+    if (!isCurrentTurn(turn)) return;
+    toast.error(error.response?.data?.error || error.message || fallback);
+    setInterviewPhase("waiting");
+  };
+
+  const handleSubmitAnswer = async (event) => {
+    event?.preventDefault();
+    const text = answer.trim();
+    if (text.length < 10) return toast.error("Please provide an answer of at least 10 characters");
+    const turn = beginTurn();
+    if (!turn) return;
+
+    try {
+      const response = await interviewAPI.submitAnswer(turn.sessionId, { answer: text, questionNumber: turn.question.number });
+      if (!isCurrentTurn(turn)) return;
+      if (!response.success) throw new Error(response.error || "Failed to submit answer");
+      advanceInterview(response.data);
+    } catch (error) {
+      showTurnError(turn, error, "Failed to submit answer");
+    } finally {
+      finishTurn(turn);
+    }
+  };
+
+  const handleVoiceSubmit = async (audioBlob, clientTranscript = "", durationSeconds) => {
+    if (!audioBlob?.size) return false;
+    const turn = beginTurn();
+    if (!turn) return false;
 
     try {
       const mimeType = audioBlob.type || "audio/webm";
-      const extension = mimeType.includes("webm") ? "webm" : mimeType.includes("mp4") ? "m4a" : "webm";
+      const extension = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
       const audioFile = new File([audioBlob], `answer.${extension}`, { type: mimeType });
 
-      // Warm-up phase
       if (conversationPhase === CONVERSATION_PHASES.WARM_UP && selectedMode === "live") {
-        let selfIntroText = "";
-        try {
-          const transcribeResponse = await interviewAPI.transcribeAudioOnly(audioFile, {
-            languageCode: selectedLanguage,
-            clientTranscript,
+        let introduction = clientTranscript.trim();
+        if (introduction.length < 4) {
+          const response = await interviewAPI.transcribeAudioOnly(audioFile, {
+            languageCode: selectedLanguage, durationSeconds,
           });
-          if (transcribeResponse?.success && transcribeResponse.data?.text) {
-            selfIntroText = transcribeResponse.data.text.trim();
-          }
-        } catch (transcribeErr) {
-          console.warn("Warm-up audio transcription warning:", transcribeErr.message);
+          introduction = response.data?.text?.trim() || "";
         }
-
-        // Fallback to client real-time speech transcript if available
-        if (!selfIntroText && clientTranscript && clientTranscript.trim().length >= 4) {
-          selfIntroText = clientTranscript.trim();
-        }
-
-        if (!selfIntroText) {
-          console.log("Warm-up intro had no clear speech. Re-prompting candidate gently...");
-          const reprompt = "I didn't quite catch that. Could you please tell me a little bit about yourself and your background?";
-          setInterviewPhase("asking");
-          await speakAndListen(reprompt, () => {
-            setInterviewPhase("waiting");
-          });
-          setIsSubmitting(false);
-          return;
-        }
+        if (!isCurrentTurn(turn)) return false;
+        if (!introduction) throw new Error("No speech was detected. You can retry or record your introduction again.");
 
         setConversationHistory((prev) => [
-          ...prev,
-          { role: "user", type: "self-introduction", content: selfIntroText, timestamp: Date.now() },
+          ...prev, { role: "user", type: "self-introduction", content: introduction, timestamp: Date.now() },
         ]);
-
-        const warmAcknowledgments = [
-          `Great introduction! Let's dive right into your first question.`,
-          `Thanks for sharing that background! Let's get started.`,
-          `Awesome! Let's jump into the first question for the ${selectedRole} role.`,
-        ];
-        const randomAck = warmAcknowledgments[Math.floor(Math.random() * warmAcknowledgments.length)];
-        const firstQText = currentQ?.text || "Let's start with the first question.";
-        const fullIntroSpeech = `${randomAck} ${firstQText}`;
-
         setConversationPhase(CONVERSATION_PHASES.CORE_INTERVIEW);
-        setInterviewPhase("asking");
-
-        setConversationHistory((prev) => [
-          ...prev,
-          { role: "ai", type: "question", content: fullIntroSpeech, timestamp: Date.now() },
-        ]);
-
-        await speakAndListen(fullIntroSpeech, () => {
-          setInterviewPhase("waiting");
-        });
-
-        setIsSubmitting(false);
-        return;
+        showQuestion(turn.question);
+        return true;
       }
 
-      // Live time check
-      const currentStartTime = startTimeRef.current || Date.now();
-      const elapsed = Math.floor((Date.now() - currentStartTime) / 1000);
-      const totalDurationSec = interviewDuration * 60;
-      const remainingTime = totalDurationSec - elapsed;
-
-      if (selectedMode === "live" && (remainingTime <= 10 || elapsed >= totalDurationSec)) {
-        const closingMessage =
-          "We've reached the end of our allotted time. Thank you so much for your answers today. Generating your evaluation report now.";
-        setConversationPhase(CONVERSATION_PHASES.COMPLETED);
-
-        await speakAndListen(closingMessage, async () => {
-          setInterviewPhase("idle");
-          await handleCompleteInterview();
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      const response = await interviewAPI.submitVoiceAnswer(
-        currentSession.id,
-        audioFile,
-        currentQ.number,
-        { voiceEngine, languageCode: selectedLanguage, clientTranscript }
-      );
-
+      const response = await interviewAPI.submitVoiceAnswer(turn.sessionId, audioFile, turn.question.number, {
+        voiceEngine, languageCode: selectedLanguage, clientTranscript, durationSeconds,
+      });
+      if (!isCurrentTurn(turn)) return false;
       if (!response.success) throw new Error(response.error || "Failed to process voice answer");
 
-      const transcribedText = response.data.transcription?.text || "";
-      setAnswer(transcribedText);
-      setProgress(response.data.progress);
-      setQuestionCount((prev) => prev + 1);
-
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: "user", content: transcribedText, timestamp: Date.now() },
-      ]);
-
-      // Check repeat/clarify requests
-      if (selectedMode === "live" && transcribedText) {
-        const userText = transcribedText.toLowerCase().trim();
-        const wordCount = userText.split(/\s+/).filter(Boolean).length;
-
-        const isExplicitRepeat =
-          wordCount < 12 &&
-          (userText.startsWith("repeat") ||
-            userText.startsWith("can you repeat") ||
-            userText.startsWith("please repeat") ||
-            userText.startsWith("say that again") ||
-            userText.startsWith("what was the question"));
-
-        const isExplicitClarify =
-          wordCount < 12 &&
-          (userText.startsWith("clarify") ||
-            userText.startsWith("can you clarify") ||
-            userText.startsWith("what do you mean") ||
-            userText.startsWith("i don't understand"));
-
-        if (isExplicitRepeat) {
-          const repeatSpeech = `Sure, no problem! Here's the question again: ${currentQ?.text || ""}`;
-          setInterviewPhase("asking");
-          await speakAndListen(repeatSpeech, () => {
-            setInterviewPhase("waiting");
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (isExplicitClarify) {
-          const clarifySpeech = `Sure! In simple terms for the ${selectedRole} role: ${currentQ?.text || ""}`;
-          setInterviewPhase("asking");
-          await speakAndListen(clarifySpeech, () => {
-            setInterviewPhase("waiting");
-          });
-          setIsSubmitting(false);
-          return;
-        }
+      const { transcription, questionRequest } = response.data;
+      if (transcription?.text) {
+        setConversationHistory((prev) => [...prev, { role: "user", content: transcription.text, timestamp: Date.now() }]);
       }
-
-      const shouldEndInterview = response.data.isComplete || (remainingTime <= 20 && elapsed >= 60);
-
-      if (shouldEndInterview) {
-        const closingMessage =
-          "We've covered all our topics for today. Thank you so much for your time and thoughtful responses! Let me generate your detailed report.";
-        setConversationPhase(CONVERSATION_PHASES.COMPLETED);
-
-        await speakAndListen(closingMessage, async () => {
-          setInterviewPhase("idle");
-          await handleCompleteInterview();
-        });
-      } else if (response.data.nextQuestion) {
-        if (selectedMode === "live") {
-          const ack = response.data.nextQuestion.acknowledgmentBridge || generateAcknowledgment();
-          const nextQText = response.data.nextQuestion.text;
-          const fullSpeech = `${ack} ${nextQText}`;
-
-          updateCurrentQuestion(response.data.nextQuestion);
-          setAnswer("");
-          setEvaluation(null);
-
-          setConversationHistory((prev) => [
-            ...prev,
-            { role: "ai", type: "question", content: fullSpeech, timestamp: Date.now() },
-          ]);
-
-          await speakAndListen(fullSpeech, () => {
-            setInterviewPhase("waiting");
-          });
-        } else {
-          setEvaluation(response.data.evaluation);
-          setInterviewPhase("evaluation");
-          setTimeout(() => {
-            updateCurrentQuestion(response.data.nextQuestion);
-            setAnswer("");
-            setEvaluation(null);
-            setInterviewPhase("waiting");
-          }, 3000);
-        }
+      if (questionRequest) {
+        showQuestion(turn.question);
       } else {
-        await handleCompleteInterview();
+        advanceInterview(response.data);
       }
+      return true;
     } catch (error) {
-      console.error("Failed to submit voice answer:", error);
-      toast.error(error.message || "Failed to process voice answer");
-      setInterviewPhase("waiting");
+      showTurnError(turn, error, "Failed to process voice answer");
+      return false;
     } finally {
-      setIsSubmitting(false);
+      finishTurn(turn);
     }
   };
 
   const handleSkipQuestion = async () => {
-    if (!window.confirm("Are you sure you want to skip this question? It will affect your score.")) return;
-
-    const currentSession = sessionRef.current;
-    const currentQ = currentQuestionRef.current;
-    setIsSubmitting(true);
+    if (turnInFlightRef.current || interviewPhase !== "waiting" ||
+        !window.confirm("Skip this question? It will affect your score.")) return;
+    const turn = beginTurn();
+    if (!turn) return;
 
     try {
-      const response = await interviewAPI.skipQuestion(currentSession.id, currentQ.number);
+      const response = await interviewAPI.skipQuestion(turn.sessionId, turn.question.number);
+      if (!isCurrentTurn(turn)) return;
       if (!response.success) throw new Error(response.error || "Failed to skip question");
-
-      setProgress(response.data.progress);
-
-      if (response.data.isComplete) {
-        await handleCompleteInterview();
-      } else if (response.data.nextQuestion) {
-        updateCurrentQuestion(response.data.nextQuestion);
-        setAnswer("");
-        setEvaluation(null);
-        setInterviewPhase("asking");
-
-        if (selectedMode === "live" && response.data.nextQuestion?.text) {
-          setTimeout(() => {
-            speakAndListen(response.data.nextQuestion.text, () => {
-              setInterviewPhase("waiting");
-            });
-          }, 500);
-        } else {
-          setTimeout(() => setInterviewPhase("waiting"), 500);
-        }
-      }
-      toast.success("Question skipped");
+      advanceInterview(response.data);
+      return true;
     } catch (error) {
-      console.error("Failed to skip question:", error);
-      toast.error(error.message || "Failed to skip question");
-      setInterviewPhase("waiting");
+      showTurnError(turn, error, "Failed to skip question");
     } finally {
-      setIsSubmitting(false);
+      finishTurn(turn);
     }
   };
 
-  const handleRepeatQuestion = async () => {
-    const currentQ = currentQuestionRef.current;
-    if (!currentQ?.text || !isInterviewActiveRef.current) return;
-
-    if (cleanupAudioStreams) cleanupAudioStreams();
+  const handleRepeatQuestion = () => {
+    const question = currentQuestionRef.current;
+    if (!question?.text || !isInterviewActiveRef.current || interviewPhase !== "waiting") return;
     setInterviewPhase("asking");
-    const repeatSpeech = `Sure! Here is the question again: ${currentQ.text}`;
-    await speakAndListen(repeatSpeech, () => {
-      setInterviewPhase("waiting");
-    });
+    void speakAndListen(question.text, () => setInterviewPhase("waiting"));
   };
 
   const handleCompleteInterview = async () => {
     if (isCompletingRef.current) return;
+    if (!sessionRef.current?.id) return;
     isCompletingRef.current = true;
     isInterviewActiveRef.current = false;
+    setConversationPhase(CONVERSATION_PHASES.COMPLETED);
+    setInterviewPhase("completing");
 
     const currentSession = sessionRef.current;
     stopLocalAudio();
@@ -622,7 +430,9 @@ export function useInterviewSession({
       setInterviewPhase("idle");
     } catch (error) {
       console.error("Failed to complete interview:", error);
-      toast.error(error.message || "Failed to generate report");
+      toast.error(error.response?.data?.error || error.message || "Failed to generate report");
+      isCompletingRef.current = false;
+      setInterviewPhase("report-error");
     }
   };
 
@@ -657,6 +467,9 @@ export function useInterviewSession({
     cleanupAudioStreams();
 
     startTimeRef.current = null;
+    turnInFlightRef.current = null;
+    isCompletingRef.current = false;
+    setIsSubmitting(false);
     isMutedRef.current = false;
 
     updateSession(null);

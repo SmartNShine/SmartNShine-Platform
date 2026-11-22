@@ -117,11 +117,3 @@ export const CONVERSATION_PHASES = {
   WRAP_UP: "wrap_up",
   COMPLETED: "completed",
 };
-
-// Human Voice Activity & Silence detection settings (Tuned for conversational pause & mic sensitivity)
-export const SILENCE_THRESHOLD = 14; // Audio level below this is considered quiet
-export const VOCAL_SPEECH_THRESHOLD = 18; // Vocal presence required to confirm user speech activity
-export const SILENCE_DURATION = 7000; // 7.0 seconds of sustained quiet after spoken answer before auto-submitting
-export const MIN_RECORDING_DURATION = 4000; // 4.0s minimum duration before silence checking starts
-export const EXTENDED_SILENCE_DURATION = 20000; // 20 seconds if user hasn't spoken at all
-export const MAX_WAITING_SILENCE = 25000; // 25 seconds - max time to wait before prompting again

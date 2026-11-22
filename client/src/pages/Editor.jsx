@@ -55,6 +55,8 @@ const Editor = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?._id || user?.id;
+  const isAdmin = user?.role === "admin";
   const { unblockNavigation } = useNavigationBlocker();
   const resumePreviewRef = useRef(null);
   const previewSectionRef = useRef(null);
@@ -62,7 +64,7 @@ const Editor = () => {
 
   // Helper function to check if subscription is expired
   const isSubscriptionExpired = () => {
-    if (!user || !user.subscription) return false;
+    if (isAdmin || !user?.subscription) return false;
     const { status, endDate, tier } = user.subscription;
     if (tier === "free") return false;
     if (status === "expired") return true;
@@ -307,14 +309,16 @@ const Editor = () => {
       }
       sessionStorage.removeItem("templatePreSelected");
 
-      const resumeIdToFetch = stateData?._id || localStorage.getItem("currentResumeId");
+      // A draft has no saved ID; use the cached ID only when navigation supplies no resume data.
+      const resumeIdToFetch = stateData ? stateData._id : localStorage.getItem("currentResumeId");
 
       // Case 1: The resume already exists in the database (has an _id or saved in localStorage).
       // ALWAYS fetch the latest saved version from MongoDB so that reloads/updates never show stale data!
-      if (resumeIdToFetch && user) {
+      if (resumeIdToFetch && userId) {
         try {
           console.log(`📥 [EDITOR LOAD] Fetching latest resume from MongoDB (ID: ${resumeIdToFetch})...`);
           const response = await resumeAPI.getById(resumeIdToFetch);
+          if (!isMounted) return;
           const loadedData = response.data;
           console.log("✅ [EDITOR LOAD] MongoDB resume fetched successfully! Custom sections:", loadedData?.customSections);
 
@@ -323,6 +327,7 @@ const Editor = () => {
           localStorage.setItem("currentResumeId", loadedData._id);
           return;
         } catch (err) {
+          if (!isMounted) return;
           console.error("❌ Error loading resume from database, trying fallback:", err);
           if (stateData) {
             console.log("ℹ️ Using stateData as fallback");
@@ -373,9 +378,9 @@ const Editor = () => {
     return () => {
       isMounted = false;
     };
-  }, [location.pathname, location.state, user]);
+  }, [location.pathname, location.state, userId]);
 
-  const resumeAccess = resumeData?.access || {};
+  const resumeAccess = isAdmin ? {} : resumeData?.access || {};
   const isPaidActionLocked = Boolean(
     resumeData?._id &&
       (resumeAccess.upgradeRequired ||
@@ -448,12 +453,13 @@ const Editor = () => {
       }
 
       if (err.response?.status === 403) {
-        setUpgradeMessage(
-          errorData.message ||
-            errorData.error ||
-            "You need an active subscription to download your resume!"
-        );
-        showUpgradeModalTrue();
+        const message = errorData?.message || errorData?.error || "Unable to download this resume.";
+        if (!isAdmin && (errorData?.upgradeRequired || errorData?.requiresUpgrade)) {
+          setUpgradeMessage(message);
+          showUpgradeModalTrue();
+        } else {
+          toast.error(message);
+        }
       } else {
         if (resumePreviewRef.current) {
           resumePreviewRef.current.downloadPDF();

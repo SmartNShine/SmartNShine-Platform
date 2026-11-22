@@ -11,6 +11,7 @@ export function useCameraStream({ autoStart = false } = {}) {
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const cameraRequestIdRef = useRef(0);
 
   // Enumerate connected cameras
   const refreshDevices = useCallback(async () => {
@@ -19,17 +20,18 @@ export function useCameraStream({ autoStart = false } = {}) {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter((d) => d.kind === "videoinput");
       setVideoDevices(videoInputs);
-      if (videoInputs.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(videoInputs[0].deviceId);
+      if (videoInputs.length > 0) {
+        setSelectedDeviceId((current) => current || videoInputs[0].deviceId);
       }
     } catch (err) {
       console.warn("Could not enumerate video devices:", err);
     }
-  }, [selectedDeviceId]);
+  }, []);
 
   // Start or restart camera stream
   const startCamera = useCallback(
     async (deviceId) => {
+      const requestId = ++cameraRequestIdRef.current;
       setIsInitializing(true);
       setCameraError(null);
 
@@ -68,6 +70,10 @@ export function useCameraStream({ autoStart = false } = {}) {
           }
         }
 
+        if (cameraRequestIdRef.current !== requestId) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          return null;
+        }
         streamRef.current = mediaStream;
         setStream(mediaStream);
         setIsCameraActive(true);
@@ -80,6 +86,7 @@ export function useCameraStream({ autoStart = false } = {}) {
         await refreshDevices();
         return mediaStream;
       } catch (err) {
+        if (cameraRequestIdRef.current !== requestId) return null;
         console.error("Camera access failed:", err);
         let errorMsg = "Unable to access webcam.";
         if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
@@ -96,7 +103,7 @@ export function useCameraStream({ autoStart = false } = {}) {
         toast.error(errorMsg);
         return null;
       } finally {
-        setIsInitializing(false);
+        if (cameraRequestIdRef.current === requestId) setIsInitializing(false);
       }
     },
     [refreshDevices]
@@ -104,6 +111,7 @@ export function useCameraStream({ autoStart = false } = {}) {
 
   // Stop camera stream
   const stopCamera = useCallback(() => {
+    cameraRequestIdRef.current += 1;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -113,6 +121,7 @@ export function useCameraStream({ autoStart = false } = {}) {
     }
     setStream(null);
     setIsCameraActive(false);
+    setIsInitializing(false);
   }, []);
 
   // Switch to specific camera

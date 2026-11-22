@@ -60,6 +60,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.config?.quietErrors && error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
     // Handle specific error status codes
     handleErrorByStatus(error, {
       401: () => {

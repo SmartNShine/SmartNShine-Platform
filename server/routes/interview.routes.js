@@ -4,6 +4,8 @@ import {checkSubscription} from "../middleware/subscription.middleware.js";
 import * as interviewController from "../controllers/interview.controller.js";
 import {
   interviewLimiter,
+  interviewTurnLimiter,
+  interviewProctoringLimiter,
   checkInterviewLimit,
   checkVoiceAccess,
 } from "../middleware/interview.middleware.js";
@@ -56,6 +58,7 @@ router.post(
 router.post(
   "/sessions/:sessionId/start",
   authenticateToken,
+  interviewTurnLimiter,
   checkSubscription,
   interviewController.startSession
 );
@@ -68,6 +71,7 @@ router.post(
 router.post(
   "/sessions/:sessionId/answer",
   authenticateToken,
+  interviewTurnLimiter,
   checkSubscription,
   interviewController.submitAnswer
 );
@@ -79,13 +83,8 @@ router.post(
  */
 router.post(
   "/sessions/:sessionId/voice-answer",
-  (req, res, next) => {
-    console.log("🔵 Voice-answer route hit!");
-    console.log("  - Content-Type:", req.headers["content-type"]);
-    console.log("  - Content-Length:", req.headers["content-length"]);
-    next();
-  },
   authenticateToken,
+  interviewTurnLimiter,
   checkSubscription,
   audioUpload.single("audio"), // Multer MUST run before any middleware that accesses req.body
   interviewController.submitVoiceAnswer
@@ -99,6 +98,7 @@ router.post(
 router.post(
   "/sessions/:sessionId/skip",
   authenticateToken,
+  interviewTurnLimiter,
   checkSubscription,
   interviewController.skipQuestion
 );
@@ -110,6 +110,7 @@ router.post(
 router.post(
   "/sessions/:sessionId/complete",
   authenticateToken,
+  interviewTurnLimiter,
   checkSubscription,
   interviewController.completeSession
 );
@@ -121,12 +122,14 @@ router.post(
 router.post(
   "/sessions/:sessionId/proctoring/heartbeat",
   authenticateToken,
+  interviewProctoringLimiter,
   interviewController.recordProctoringHeartbeat
 );
 
 router.post(
   "/sessions/:sessionId/proctoring/event",
   authenticateToken,
+  interviewProctoringLimiter,
   interviewController.recordProctoringEvent
 );
 

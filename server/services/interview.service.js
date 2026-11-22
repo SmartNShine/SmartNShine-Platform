@@ -307,6 +307,7 @@ function buildQuestionPrompt(config) {
     currentDifficulty,
     questionNumber,
     targetSkills,
+    targetCategory,
   } = config;
 
   let contextPrompt = "";
@@ -406,6 +407,7 @@ Generate a COMPLETELY DIFFERENT question that has not been asked yet. Explore ne
 CURRENT STATUS:
 - Question Number: ${questionNumber}
 - Current Difficulty: ${currentDifficulty}
+${targetCategory ? `- Target Topic: ${targetCategory}` : ""}
 ${previousContext}
 
 Generate the next interview question. Make it specific and practical.`;

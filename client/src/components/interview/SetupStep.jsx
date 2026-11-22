@@ -588,7 +588,7 @@ export const SetupStep = ({
                     Live Conversational Voice
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                    AI speaks questions aloud. Answer naturally with your voice and hands-free recording.
+                    Hear each question aloud, then record and submit your answer when ready.
                   </p>
                 </div>
 

@@ -22,6 +22,7 @@ import EditResumeModal from "@/components/dashboard/EditResumeModal";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -98,7 +99,7 @@ export default function Dashboard() {
   };
 
   const getResumeAccessBadge = (resume) => {
-    if (resume.access?.upgradeRequired) {
+    if (!isAdmin && resume.access?.upgradeRequired) {
       return {
         label: "Paid actions locked",
         icon: Lock,
@@ -107,9 +108,9 @@ export default function Dashboard() {
       };
     }
 
-    if (resume.access?.accessTier === "pro") {
+    if (isAdmin || resume.access?.accessTier === "pro") {
       return {
-        label: "Pro access",
+        label: isAdmin ? "Administrator access" : "Pro access",
         icon: CheckCircle2,
         className:
           "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300 border border-emerald-500/20",
@@ -253,6 +254,7 @@ export default function Dashboard() {
                 <ResumeCard
                   key={resume._id}
                   resume={resume}
+                  isAdmin={isAdmin}
                   onLoad={handleLoad}
                   onEditInfo={handleEditInfo}
                   onDelete={handleDelete}

@@ -1,391 +1,184 @@
-import React, { useRef, useEffect } from "react";
-import {
-  Mic,
-  MicOff,
-  PhoneOff,
-  SkipForward,
-  RotateCcw,
-  Check,
-  Clock,
-  Volume2,
-  Square,
-  Sparkles,
-} from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Check, Clock, Mic, PhoneOff, RotateCcw, SkipForward } from "lucide-react";
+import { CONVERSATION_PHASES } from "./constants";
 import { CameraPreviewStage } from "./proctoring/CameraPreviewStage";
 import { ProctoringBadge } from "./proctoring/ProctoringBadge";
 
 export const ExecutiveStudioStage = ({
   currentQuestion,
-  elapsedTime = 0,
-  interviewDuration = 15,
+  elapsedTime,
+  interviewDuration,
   formatTime,
-  answer = "",
+  answer,
   setAnswer,
-  selectedVoice = "anushka",
-  selectedRole = "Technical Interview",
-  isRecording = false,
-  isPlayingAudio = false,
-  interviewPhase = "waiting", // "greeting" | "asking" | "waiting" | "processing" | "evaluation"
-  aiMessage = "",
-  micFrequencyBins = [],
-  liveCandidateTranscript = "",
-  bargeInNotice = false,
-  isMuted = false,
-  onToggleMute,
+  selectedMode,
+  selectedRole,
+  isRecording,
+  isSubmitting,
+  isPlayingAudio,
+  interviewPhase,
+  conversationPhase,
+  micFrequencyBins,
+  liveCandidateTranscript,
+  hasRecordingDraft,
   onSubmitAnswer,
   onStartRecording,
-  onStopRecording,
-  onSkipQuestion,
-  onEndMeeting,
+  onSubmitRecording,
+  onSkip,
+  onAbandon,
   onRequestRepeat,
-  isDarkMode = true,
-  // Video & Proctoring props
+  onRetryReport,
   cameraVideoRef,
-  isCameraActive = false,
-  cameraError = null,
+  isCameraActive,
+  isCameraInitializing,
+  cameraError,
   proctoringState,
   activeAlert,
-  isPhoneInView = false,
+  isPhoneInView,
   onRetryCamera,
-  userName = "Candidate",
+  userName,
   audioDevices = [],
-  selectedAudioDeviceId = "",
+  selectedAudioDeviceId,
   onSwitchAudioDevice,
 }) => {
-  // Approximate timer calculation
-  const totalSeconds = (interviewDuration || 15) * 60;
-  const remainingSeconds = Math.max(0, totalSeconds - elapsedTime);
-  const remainingMinutes = Math.ceil(remainingSeconds / 60);
+  const remainingSeconds = Math.max(0, interviewDuration * 60 - elapsedTime);
+  const isWarmUp = conversationPhase === CONVERSATION_PHASES.INTRODUCTION ||
+    conversationPhase === CONVERSATION_PHASES.WARM_UP;
+  const isTextMode = selectedMode === "text";
+  const canAnswer = interviewPhase === "waiting" && !isSubmitting && !isPlayingAudio;
+  const isCompleting = interviewPhase === "completing";
+  const reportFailed = interviewPhase === "report-error";
+  const canSkip = canAnswer && !isWarmUp && !isRecording;
+  const transcriptRef = useRef(null);
 
-  const isAISpeaking =
-    isPlayingAudio || interviewPhase === "asking" || interviewPhase === "greeting";
-
-  // Prompt text (Question text stays permanently visible)
-  const promptText =
-    currentQuestion?.text ||
-    aiMessage ||
-    "Please introduce yourself and your technical background.";
-
-  // Safe frequency bins (16 bands default)
-  const safeBins = micFrequencyBins?.length ? micFrequencyBins : new Array(16).fill(3);
-
-  // Auto-scroll transcript container as candidate speaks multiple sentences
-  const transcriptScrollRef = useRef(null);
   useEffect(() => {
-    if (transcriptScrollRef.current) {
-      transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
-    }
+    const transcript = transcriptRef.current;
+    if (transcript) transcript.scrollTop = transcript.scrollHeight;
   }, [liveCandidateTranscript]);
 
+  const prompt = isWarmUp
+    ? "Please introduce yourself and tell me a little about your background."
+    : currentQuestion?.text;
+  const status = isCompleting ? "Generating your interview report?" :
+    reportFailed ? "Your report could not be generated." :
+    isSubmitting ? "Submitting your response?" :
+    isRecording ? "Recording your answer" :
+    hasRecordingDraft ? "Your recording is ready to submit." :
+    isPlayingAudio || interviewPhase === "asking" || interviewPhase === "greeting" ? "Interviewer speaking" :
+    "";
+
+  const primaryButton = "inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50";
+  const secondaryButton = "inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-neutral-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
-    <div className="min-h-screen bg-[#090A0F] text-neutral-100 flex flex-col font-sans select-none antialiased">
-      {/* 1. TOP MINIMAL BAR */}
-      <header className="h-16 px-6 sm:px-10 flex items-center justify-between border-b border-white/[0.08] bg-[#0E1017]">
-        {/* Left: Role Title & Live Status */}
+    <div className="flex min-h-dvh flex-col bg-[#090A0F] font-sans text-neutral-100">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0E1017] px-4 py-3 sm:px-8">
+        <h1 className="min-w-0 break-words text-sm font-semibold">{selectedRole || "Mock Interview"}</h1>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">
-              Live Session
-            </span>
+          <div className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs tabular-nums text-neutral-300">
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+            {formatTime(remainingSeconds)} remaining
           </div>
-          <span className="text-neutral-600">/</span>
-          <h1 className="text-sm font-medium text-neutral-200 tracking-tight truncate max-w-[260px] sm:max-w-md">
-            {selectedRole || "Technical Round"}
-          </h1>
-        </div>
-
-        {/* Right: Approximate Timer & Clean End Button */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-neutral-300">
-            <Clock className="w-3.5 h-3.5 text-neutral-400" />
-            <span>
-              {formatTime
-                ? `${formatTime(remainingSeconds)} remaining`
-                : `~${remainingMinutes} min remaining`}
-            </span>
-          </div>
-
-          <button
-            onClick={onEndMeeting}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
-            title="Leave Interview"
-          >
-            <PhoneOff className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">End Call</span>
+          <button type="button" onClick={onAbandon} disabled={isCompleting}
+            className="inline-flex items-center gap-2 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-300 disabled:opacity-50">
+            <PhoneOff className="h-4 w-4" aria-hidden="true" /> End call
           </button>
         </div>
       </header>
 
-      {/* 2. MAIN VIDEO CALL CANVAS */}
-      <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 max-w-5xl mx-auto w-full relative">
-        {/* Barge-In Notification Toast */}
-        {bargeInNotice && (
-          <div className="absolute top-4 z-40 px-4 py-2 rounded-full bg-neutral-900 border border-white/20 text-neutral-200 text-xs font-medium shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            <span>Interruption detected • Microphone taking priority</span>
+      <main className="mx-auto grid w-full max-w-6xl flex-1 content-start gap-4 p-3 sm:p-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <section aria-label="Camera" className="min-w-0 self-start overflow-hidden rounded-2xl border border-white/10 bg-[#0E1017]">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+            <span className="text-sm font-medium">{userName} (you)</span>
+            <ProctoringBadge proctoringState={proctoringState} activeAlert={activeAlert} />
           </div>
-        )}
-
-        {/* EXECUTIVE VIDEO CALL STAGE */}
-        <div
-          className={`w-full aspect-[16/10] sm:aspect-[16/9] max-h-[72vh] rounded-2xl sm:rounded-3xl bg-[#090A0E] border transition-all duration-300 shadow-2xl flex flex-col justify-between p-4 sm:p-6 relative overflow-hidden ${
-            isPhoneInView
-              ? "border-rose-500 ring-2 ring-rose-500/80 shadow-[0_0_35px_rgba(244,63,94,0.45)]"
-              : "border-white/[0.1]"
-          }`}
-        >
-          {/* Real-time Prohibited Device Banner */}
+          <div className={`relative aspect-video min-h-[180px] bg-black ${isPhoneInView ? "ring-2 ring-inset ring-rose-500" : ""}`}>
+            <CameraPreviewStage
+              videoRef={cameraVideoRef}
+              isCameraActive={isCameraActive}
+              isInitializing={isCameraInitializing}
+              cameraError={cameraError}
+              layout="center-stage"
+              userName={userName}
+              onRetryCamera={onRetryCamera}
+            />
+          </div>
           {isPhoneInView && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-rose-600/90 text-white text-xs font-semibold backdrop-blur-md shadow-2xl animate-bounce">
-              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-              <span>📱 Prohibited Device in View: Mobile Phone</span>
+            <p role="alert" className="px-4 py-2 text-sm font-semibold text-rose-300">Mobile phone detected. Remove it from view.</p>
+          )}
+          {!isPhoneInView && proctoringState?.status === "warning" && !activeAlert && (
+            <p role="status" className="px-4 py-2 text-xs text-amber-200">{proctoringState.message}</p>
+          )}
+        </section>
+
+        <section aria-label="Interview question and answer" className="flex min-w-0 flex-col gap-4 rounded-2xl border border-white/10 bg-[#0E1017] p-4 sm:p-5">
+          <div>
+            <h2 className="text-sm font-semibold text-blue-300">
+              {isWarmUp ? "Introduction" : `Question ${currentQuestion?.number ?? ""}`}
+            </h2>
+            <p className="mt-2 break-words text-base leading-relaxed sm:text-lg">{prompt}</p>
+          </div>
+
+          {status && <p role="status" className="text-sm text-neutral-300">{status}</p>}
+
+          {isRecording && (
+            <div aria-hidden="true" className="flex h-7 items-center gap-1">
+              {micFrequencyBins.map((level, index) => (
+                <span key={index} className="w-1 rounded-full bg-emerald-400" style={{ height: Math.min(24, Math.max(3, level * 0.45)) }} />
+              ))}
+            </div>
+          )}
+          {(isRecording || hasRecordingDraft) && liveCandidateTranscript && (
+            <div ref={transcriptRef} className="max-h-36 overflow-y-auto rounded-xl bg-black/30 p-3 text-sm leading-relaxed text-neutral-300">
+              {liveCandidateTranscript}
             </div>
           )}
 
-          {/* A. Live Centered Full-Stage Video */}
-          <CameraPreviewStage
-            videoRef={cameraVideoRef}
-            isCameraActive={isCameraActive}
-            cameraError={cameraError}
-            layout="center-stage"
-            userName={userName}
-            onRetryCamera={onRetryCamera}
-          />
-
-          {/* B. Subtle Vignette Gradient Overlay for high-contrast legible overlays */}
-          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/25 to-black/70" />
-
-          {/* C. Top Floating HUD (Status + Real-time AI Proctoring Shield) */}
-          <div className="relative z-20 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 shadow-lg">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isAISpeaking
-                    ? "bg-blue-400 animate-pulse"
-                    : isRecording
-                    ? "bg-emerald-400 animate-ping"
-                    : interviewPhase === "processing"
-                    ? "bg-amber-400 animate-spin"
-                    : "bg-emerald-500"
-                }`}
-              />
-              <span className="text-xs font-medium text-neutral-200">
-                {isAISpeaking
-                  ? "Interviewer Speaking"
-                  : isRecording
-                  ? "Recording Your Answer..."
-                  : interviewPhase === "processing"
-                  ? "Analyzing Response..."
-                  : "Ready • Click 'Record Answer' when ready"}
-              </span>
-            </div>
-
-            {/* AI Proctoring Shield Pill */}
-            <div className="flex items-center gap-2">
-              <ProctoringBadge proctoringState={proctoringState} activeAlert={activeAlert} />
-            </div>
-          </div>
-
-          {proctoringState?.status === "warning" && !activeAlert && (
-            <p role="status" className="relative z-20 px-4 py-2 text-center text-xs text-amber-200 bg-black/70">
-              {proctoringState.message}
-            </p>
-          )}
-
-          {/* D. Overlaid Question & Live Speech Stage (Permanently Visible Question) */}
-          <div className="relative z-20 w-full max-w-3xl mx-auto flex flex-col items-center gap-2.5 mt-auto">
-            {/* Audio Waveform Pills */}
-            {isRecording ? (
-              <div className="flex items-center justify-center gap-1.5 h-8 px-4 rounded-full bg-black/80 backdrop-blur-md border border-emerald-500/30 shadow-xl">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1" />
-                {safeBins.map((level, idx) => (
-                  <div
-                    key={idx}
-                    className="w-1 sm:w-1.5 bg-emerald-400 rounded-full transition-all duration-75 ease-out shadow-[0_0_6px_rgba(52,211,153,0.5)]"
-                    style={{
-                      height: `${Math.max(4, Math.min(22, Math.round(level * 0.45)))}px`,
-                    }}
-                  />
-                ))}
-                <span className="text-[11px] font-semibold text-emerald-300 ml-1.5 hidden sm:inline">
-                  Microphone Live
-                </span>
+          {reportFailed ? (
+            <div><button type="button" className={primaryButton} onClick={onRetryReport}>Retry report</button></div>
+          ) : isCompleting ? null : isTextMode ? (
+            <form onSubmit={onSubmitAnswer} className="flex flex-col gap-3">
+              <label htmlFor="interview-answer" className="text-sm font-medium text-neutral-200">Your answer</label>
+              <textarea id="interview-answer" value={answer} onChange={(event) => setAnswer(event.target.value)}
+                rows={5} disabled={!canAnswer}
+                className="w-full resize-y rounded-xl border border-white/15 bg-black/30 p-3 text-sm text-white" />
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" disabled={!canAnswer || answer.trim().length < 10} className={primaryButton}>Submit answer</button>
+                <button type="button" disabled={!canSkip} onClick={onSkip} className={secondaryButton}>Skip question</button>
               </div>
-            ) : isAISpeaking ? (
-              <div className="flex items-center justify-center gap-1.5 h-8 px-4 rounded-full bg-black/80 backdrop-blur-md border border-blue-500/30 shadow-xl">
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse mr-1" />
-                {[10, 16, 22, 14, 24, 18, 22, 12, 20, 14, 24, 16].map((h, idx) => (
-                  <div
-                    key={idx}
-                    className="w-1 sm:w-1.5 bg-blue-400 rounded-full animate-pulse"
-                    style={{
-                      height: `${h * 0.7}px`,
-                      animationDuration: `${0.35 + (idx % 4) * 0.12}s`,
-                      animationDelay: `${idx * 40}ms`,
-                    }}
-                  />
-                ))}
-                <span className="text-[11px] font-medium text-blue-200 ml-1.5 hidden sm:inline">
-                  Interviewer Speaking
-                </span>
-              </div>
-            ) : interviewPhase === "processing" ? (
-              <div className="flex items-center justify-center gap-2 h-8 px-4 rounded-full bg-black/80 backdrop-blur-md border border-amber-500/30 shadow-xl">
-                <div className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-amber-300 font-medium">Evaluating your answer with AI...</span>
-              </div>
-            ) : null}
-
-            {/* 1. PERMANENT INTERVIEWER QUESTION CARD - ALWAYS VISIBLE */}
-            <div className="w-full rounded-2xl bg-[#0B0D14]/90 backdrop-blur-xl border border-white/15 px-5 py-3.5 shadow-2xl transition-all">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      isAISpeaking ? "bg-blue-400 animate-ping" : "bg-blue-500"
-                    }`}
-                  />
-                  <span className="text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-blue-400">
-                    {isAISpeaking ? "Interviewer Asking Question" : "Current Question"}
-                  </span>
-                </div>
-                {currentQuestion?.number && (
-                  <span className="text-[10px] font-medium text-neutral-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
-                    Question #{currentQuestion.number}
-                  </span>
-                )}
-              </div>
-              <div className="max-h-20 sm:max-h-24 overflow-y-auto pr-1 text-sm sm:text-base text-neutral-100 font-medium leading-relaxed scrollbar-thin scrollbar-thumb-white/20">
-                "{promptText}"
-              </div>
-            </div>
-
-            {/* 2. DEDICATED LIVE CANDIDATE SPEECH CONTAINER (VISIBLE WHEN RECORDING) */}
-            {isRecording && (
-              <div className="w-full rounded-2xl bg-black/85 backdrop-blur-xl border border-emerald-500/40 px-5 py-3 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-emerald-400">
-                      Live Candidate Speech (You)
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-amber-300/90 font-medium hidden sm:inline">
-                    English preferred • Auto-Detect
-                  </span>
-                </div>
-                <div
-                  ref={transcriptScrollRef}
-                  className="max-h-16 sm:max-h-20 overflow-y-auto pr-1 text-xs sm:text-sm text-emerald-100 font-normal leading-relaxed scrollbar-thin scrollbar-thumb-emerald-500/30"
-                >
-                  {liveCandidateTranscript || (
-                    <span className="text-neutral-400 italic">
-                      Listening... Speak your answer clearly in English.
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* 3. BOTTOM CONTROL DOCK (Manual Record & Submit Workflow) */}
-      <footer className="min-h-20 py-3 px-6 sm:px-10 flex items-center justify-center border-t border-white/[0.08] bg-[#0E1017]">
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-          {/* A. CORE ACTION BUTTON: MANUAL RECORD / DONE RECORDING & SUBMIT */}
-          {!isRecording ? (
-            <button
-              onClick={() => {
-                if (isAISpeaking) return;
-                if (onStartRecording) onStartRecording();
-              }}
-              disabled={isAISpeaking || interviewPhase === "processing"}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-xl cursor-pointer ${
-                isAISpeaking || interviewPhase === "processing"
-                  ? "bg-white/[0.06] text-neutral-400 cursor-not-allowed border border-white/[0.06]"
-                  : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-95"
-              }`}
-              title="Click when you are ready to answer the question"
-            >
-              <Mic className="w-4 h-4" />
-              <span>Record Answer</span>
-            </button>
+            </form>
           ) : (
-            <button
-              onClick={() => {
-                if (onStopRecording) onStopRecording();
-              }}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-neutral-100 text-black text-xs sm:text-sm font-bold shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
-              title="Click when you have finished speaking your response"
-            >
-              <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
-              <span>Done Recording & Submit</span>
-            </button>
-          )}
-
-          {/* B. MICROPHONE SELECTOR (Choose between internal, headset, AirPods, or USB mic) */}
-          {audioDevices.length > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.1] text-xs font-medium text-neutral-300">
-              <Mic className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-              <select
-                value={selectedAudioDeviceId}
-                onChange={(e) => onSwitchAudioDevice?.(e.target.value)}
-                className="bg-transparent text-neutral-200 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[190px] truncate"
-                title="Select Active Microphone"
-              >
-                {audioDevices.map((d, idx) => (
-                  <option
-                    key={d.deviceId || idx}
-                    value={d.deviceId}
-                    className="bg-[#11131A] text-neutral-200"
-                  >
-                    {d.label || `Microphone ${idx + 1}`}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-wrap items-center gap-2">
+              {(isRecording || hasRecordingDraft) && (
+                <button type="button" onClick={onSubmitRecording} disabled={isSubmitting || (!isRecording && !canAnswer)} className={primaryButton}>
+                  <Check className="h-4 w-4" aria-hidden="true" /> {isRecording ? "Done Recording & Submit" : "Submit Recording"}
+                </button>
+              )}
+              {!isRecording && (
+                <button type="button" onClick={onStartRecording} disabled={!canAnswer}
+                  className={hasRecordingDraft ? secondaryButton : primaryButton}>
+                  <Mic className="h-4 w-4" aria-hidden="true" /> {hasRecordingDraft ? "Record Again" : "Record Answer"}
+                </button>
+              )}
+              <button type="button" onClick={onRequestRepeat} disabled={!canSkip} className={secondaryButton}>
+                <RotateCcw className="h-4 w-4" aria-hidden="true" /> Repeat
+              </button>
+              <button type="button" onClick={onSkip} disabled={!canSkip} className={secondaryButton}>
+                <SkipForward className="h-4 w-4" aria-hidden="true" /> Skip
+              </button>
+              {audioDevices.length > 0 && (
+                <select value={selectedAudioDeviceId} onChange={(event) => onSwitchAudioDevice(event.target.value)}
+                  disabled={isRecording || isSubmitting} aria-label="Microphone"
+                  className="max-w-full rounded-xl border border-white/15 bg-[#0E1017] px-3 py-2.5 text-sm text-neutral-200 disabled:opacity-50">
+                  {audioDevices.map((device, index) => (
+                    <option key={device.deviceId || index} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
-
-          {/* C. REPEAT QUESTION BUTTON */}
-          <button
-            onClick={() => {
-              if (onRequestRepeat) onRequestRepeat();
-            }}
-            disabled={isAISpeaking || isRecording || interviewPhase === "processing"}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-              isAISpeaking || isRecording || interviewPhase === "processing"
-                ? "bg-white/[0.02] text-neutral-500 border-white/[0.04] cursor-not-allowed"
-                : "bg-white/[0.04] hover:bg-white/[0.08] text-neutral-300 border-white/[0.08]"
-            }`}
-            title="Hear the interviewer repeat this question"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-neutral-400" />
-            <span>Repeat Question</span>
-          </button>
-
-          {/* D. SKIP QUESTION BUTTON */}
-          <button
-            onClick={() => {
-              if (onSkipQuestion) onSkipQuestion();
-            }}
-            disabled={isAISpeaking || isRecording || interviewPhase === "processing"}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-              isAISpeaking || isRecording || interviewPhase === "processing"
-                ? "bg-white/[0.02] text-neutral-500 border-white/[0.04] cursor-not-allowed"
-                : "bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-neutral-200 border-white/[0.08]"
-            }`}
-            title="Skip to next topic"
-          >
-            <SkipForward className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Skip</span>
-          </button>
-        </div>
-      </footer>
+        </section>
+      </main>
     </div>
   );
 };

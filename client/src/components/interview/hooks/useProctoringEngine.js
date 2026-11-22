@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import { getFaceLandmarker, getObjectDetector } from "@/lib/vision/visionModels";
 import { extractHeadPose, extractGazeFromBlendshapes, isAttentionDiverted } from "@/lib/vision/gazeCalculator";
 import { TemporalEvidence, CandidateContinuity, faceDescriptor, DETECTOR_VERSION } from "../proctoring/temporalEvidence";
-import remoteLogger from "@/utils/remoteLogger";
 
 const DETAILS = {
   PHONE_DETECTED: "Mobile phone detected. Remove it from the camera view.",
@@ -83,7 +82,6 @@ export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, in
     if (severity === "high") toast.error(payload.details, { id: `proctor-${eventType}`, duration: 4000 });
     else toast(payload.details, { id: `proctor-${eventType}`, duration: 4000 });
     runtime.onViolation?.(payload);
-    remoteLogger.proctor(runtime.sessionId, eventType, payload.details, { severity, confidence: payload.confidence, durationMs: payload.durationMs });
     setRecentViolations((previous) => [{ ...payload, snapshotData: undefined, timeString: new Date().toLocaleTimeString() }, ...previous.slice(0, 9)]);
     if (!runtime.sessionId) return;
     try {
@@ -200,13 +198,14 @@ export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, in
 
   useEffect(() => {
     if (!isInterviewActive || !sessionId) return;
+    const controller = new AbortController();
     let cancelled = false;
     let timer;
     const heartbeat = async () => {
       const now = Date.now();
       const detectorHealthy = now - healthRef.current.faceAt < 5000 && now - healthRef.current.objectAt < 5000;
       try {
-        const response = await sendProctoringHeartbeat(sessionId, { detectorHealthy, detectorVersion: DETECTOR_VERSION });
+        const response = await sendProctoringHeartbeat(sessionId, { detectorHealthy, detectorVersion: DETECTOR_VERSION }, controller.signal);
         if (cancelled) return;
         if (detectorHealthy && !response.data.offline) applySummary(response.data.summary);
         else setProctoringState((previous) => ({ ...previous, status: "warning", message: "Camera or detector unavailable. Restore the camera and keep this tab open." }));
@@ -214,11 +213,11 @@ export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, in
         if (!cancelled) setProctoringState((previous) => ({ ...previous, status: "warning", message: "Proctoring connection interrupted. Retrying..." }));
       } finally {
         // Retry well within the server's 60-second grace period; no overlapping requests.
-        if (!cancelled) timer = setTimeout(heartbeat, 10000);
+        if (!cancelled) timer = setTimeout(heartbeat, 15000);
       }
     };
     void heartbeat();
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; controller.abort(); clearTimeout(timer); };
   }, [isInterviewActive, sessionId, applySummary]);
 
   useEffect(() => {

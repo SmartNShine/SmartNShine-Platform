@@ -2,13 +2,14 @@ import { FileText, Edit, Edit3, Trash2, Calendar, CreditCard, Lock, CheckCircle2
 
 export default function ResumeCard({
   resume,
+  isAdmin,
   onLoad,
   onEditInfo,
   onDelete,
   onUnlockOneTime,
   getResumeAccessBadge,
 }) {
-  const isLocked = resume.access?.upgradeRequired;
+  const isLocked = !isAdmin && resume.access?.upgradeRequired;
   const badge = getResumeAccessBadge(resume);
   const BadgeIcon = badge.icon;
 
