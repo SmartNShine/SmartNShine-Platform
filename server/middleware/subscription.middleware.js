@@ -67,6 +67,11 @@ export async function checkSubscription(req, res, next) {
       });
     }
 
+    if (user.role === "admin") {
+      req.user = user;
+      return next();
+    }
+
     await Subscription.updateMany(
       {
         userId,
@@ -558,7 +563,7 @@ export function cleanupRateLimitStore() {
 }
 
 // Run cleanup every hour
-setInterval(cleanupRateLimitStore, 60 * 60 * 1000);
+setInterval(cleanupRateLimitStore, 60 * 60 * 1000).unref();
 
 /**
  * Get user's current usage statistics
@@ -736,10 +741,13 @@ export function checkResumeActionAccess(action = "edit") {
   return async (req, res, next) => {
     try {
       const user = req.user;
-      const resumeId = req.body.resumeId || req.params.id || req.params.resumeId;
+      const resumeId = req.params.id || req.params.resumeId || req.body?.resumeId || req.body?.resumeData?._id;
       const actionField = ACTION_FIELD_MAP[action] || ACTION_FIELD_MAP.edit;
 
       if (!resumeId) {
+        if (user?.role === "admin" && (action === "ai" || action === "download")) {
+          return next();
+        }
         return res.status(400).json({
           error: "Resume ID required",
           message: "Please provide a resume ID",

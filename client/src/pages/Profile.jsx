@@ -21,7 +21,7 @@ export default function Profile() {
       try {
         const response = await getSubscriptionStatus();
         if (response?.subscription?.tier) {
-          setCurrentTier(response.subscription.tier);
+          setCurrentTier(response.subscription.isAdmin ? "admin" : response.subscription.tier);
         }
       } catch (err) {
         console.error("Failed to load subscription tier:", err);

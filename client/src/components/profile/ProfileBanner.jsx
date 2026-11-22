@@ -6,7 +6,9 @@ export default function ProfileBanner({ user, currentTier = "free" }) {
     (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : null) ||
     user?.email?.split("@")[0] ||
     "My Profile";
-  const isPro = currentTier === "pro";
+  const isAdmin = user?.role === "admin" || currentTier === "admin";
+  const hasPremiumAccess = isAdmin || currentTier === "pro";
+  const accessLabel = isAdmin ? "Administrator Access" : currentTier === "pro" ? "Pro Plan" : "Free Plan";
 
   return (
     <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-zinc-900/90 dark:to-zinc-950/90 p-5 sm:p-6 lg:py-6 lg:px-8 shadow-sm dark:shadow-2xl mb-6">
@@ -21,12 +23,12 @@ export default function ProfileBanner({ user, currentTier = "free" }) {
               {displayName}
             </h1>
             <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
-              isPro
+              hasPremiumAccess
                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
                 : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
             }`}>
-              {isPro ? <Crown className="w-3 h-3 text-amber-500" /> : <Sparkles className="w-3 h-3 text-blue-500" />}
-              <span>{isPro ? "Pro Plan" : "Free Plan"}</span>
+              {hasPremiumAccess ? <Crown className="w-3 h-3 text-amber-500" /> : <Sparkles className="w-3 h-3 text-blue-500" />}
+              <span>{accessLabel}</span>
             </span>
           </div>
 

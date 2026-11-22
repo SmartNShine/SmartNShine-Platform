@@ -43,12 +43,12 @@ export const startSession = async (sessionId) => {
 };
 
 export const recordProctoringEvent = async (sessionId, payload) => {
-  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/event`, payload);
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/event`, payload, { timeout: 8000, quietErrors: true });
   return response.data;
 };
 
-export const sendProctoringHeartbeat = async (sessionId, payload) => {
-  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/heartbeat`, payload, { timeout: 8000 });
+export const sendProctoringHeartbeat = async (sessionId, payload, signal) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/heartbeat`, payload, { timeout: 8000, quietErrors: true, signal });
   return response.data;
 };
 
@@ -65,7 +65,7 @@ export const submitAnswer = async (sessionId, {answer, questionNumber}) => {
     answer,
     questionNumber,
     answerMode: "text",
-  });
+  }, { quietErrors: true });
   return response.data;
 };
 
@@ -95,6 +95,9 @@ export const submitVoiceAnswer = async (
   }
   if (typeof options === "object" && options?.clientTranscript) {
     formData.append("clientTranscript", options.clientTranscript);
+  }
+  if (typeof options === "object" && Number.isFinite(options?.durationSeconds)) {
+    formData.append("durationSeconds", String(options.durationSeconds));
   }
 
   console.log("📤 Submitting voice answer:", {
@@ -139,7 +142,7 @@ export const submitVoiceAnswer = async (
 export const skipQuestion = async (sessionId, questionNumber) => {
   const response = await api.post(`/interview/sessions/${sessionId}/skip`, {
     questionNumber,
-  });
+  }, { quietErrors: true });
   return response.data;
 };
 
@@ -149,7 +152,7 @@ export const skipQuestion = async (sessionId, questionNumber) => {
  * @returns {Promise<Object>} Interview result/report
  */
 export const completeSession = async (sessionId) => {
-  const response = await api.post(`/interview/sessions/${sessionId}/complete`);
+  const response = await api.post(`/interview/sessions/${sessionId}/complete`, undefined, { quietErrors: true });
   return response.data;
 };
 
@@ -229,10 +232,14 @@ export const transcribeAudioOnly = async (audioFile, options = {}) => {
   if (options.clientTranscript) {
     formData.append("clientTranscript", options.clientTranscript);
   }
+  if (Number.isFinite(options.durationSeconds)) {
+    formData.append("durationSeconds", String(options.durationSeconds));
+  }
 
   console.log("📤 Transcribing audio (no evaluation):", audioFile.name, audioFile.size, "bytes");
 
   const response = await api.post("/voice/transcribe", formData, {
+    quietErrors: true,
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -269,7 +276,7 @@ export const synthesizeSpeech = async (text, optionsOrVoiceId = {}, preset) => {
   const response = await api.post(
     "/voice/tts/synthesize",
     payload,
-    {responseType: "blob"}
+    {responseType: "blob", timeout: 3500, quietErrors: true}
   );
   return response.data; // Returns Blob directly
 };

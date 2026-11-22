@@ -1,4 +1,5 @@
 import rateLimit from "express-rate-limit";
+import {hasInterviewTrafficLimiter} from "./interview.middleware.js";
 
 /**
  * Rate Limiter Middleware
@@ -116,7 +117,7 @@ export const uploadLimiter = rateLimit({
  * Applied to: All /api/* routes (global protection)
  * Purpose: Protect against DoS attacks and general API abuse
  */
-export const apiLimiter = rateLimit({
+const generalApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === "development" ? 1000 : 100, // Higher limit in dev mode
   message: {
@@ -138,9 +139,26 @@ export const apiLimiter = rateLimit({
       window: "15 minutes",
     });
   },
-  // Skip rate limiting for health check endpoint
-  skip: (req) => req.path === "/api/health",
+  skip: (req) => req.path === "/health",
 });
+
+const interviewAuthFailureLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) => res.statusCode !== 401 && res.statusCode !== 403,
+  message: { error: "Too many failed interview requests from this IP. Please try again later." },
+  standardHeaders: false,
+  legacyHeaders: false,
+});
+
+export function apiLimiter(req, res, next) {
+  const hasBearerToken = /^Bearer \S+$/i.test(req.headers.authorization || "");
+  const limiter = hasBearerToken && hasInterviewTrafficLimiter(req)
+    ? interviewAuthFailureLimiter
+    : generalApiLimiter;
+  return limiter(req, res, next);
+}
 
 /**
  * Contact Form Rate Limiter

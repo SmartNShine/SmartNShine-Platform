@@ -1,5 +1,6 @@
 import express from "express";
 import {authenticateToken} from "../middleware/auth.middleware.js";
+import {interviewTurnLimiter} from "../middleware/interview.middleware.js";
 import {audioUpload} from "../config/multer.config.js";
 // ElevenLabs DISABLED - using Sarvam AI (Production) + Chatterbox TTS (Local) + Browser TTS (Fallback)
 import * as sarvamService from "../services/sarvam.service.js";
@@ -226,6 +227,7 @@ router.get("/transcribe/health", authenticateToken, async (req, res) => {
 router.post(
   "/transcribe",
   authenticateToken,
+  interviewTurnLimiter,
   audioUpload.single("audio"),
   async (req, res) => {
     try {
@@ -242,8 +244,9 @@ router.post(
       let detectedLanguage = "unknown";
       let languageProbability = null;
 
-      // 1. Try Sarvam AI STT (Saaras v4)
-      if (sarvamService.isAvailable()) {
+      // Longer clips go directly to the long-form transcription provider.
+      const durationSeconds = Number(req.body.durationSeconds);
+      if (sarvamService.isAvailable() && !(durationSeconds > 28)) {
         try {
           const sarvamResult = await sarvamService.speechToText(audioFile.buffer, {
             filename: audioFile.originalname || "audio.webm",
@@ -357,7 +360,7 @@ router.get("/tts/voices", authenticateToken, async (req, res) => {
  * @body    { text: string, speaker?: string, language?: string, voiceRef?: string, engine?: 'sarvam' | 'chatterbox' | 'browser' | 'auto' }
  * @returns Binary audio/wav stream
  */
-router.post("/tts/synthesize", authenticateToken, async (req, res) => {
+router.post("/tts/synthesize", authenticateToken, interviewTurnLimiter, async (req, res) => {
   try {
     const {text, speaker, language, voiceRef, engine, voiceEngine} = req.body;
     const requestedEngine = engine || voiceEngine || process.env.VOICE_ENGINE_PREFERENCE || "auto";

@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import toast from "react-hot-toast";
 import { resumeAPI } from "@/api/api";
+import { useAuth } from "@/context/AuthContext";
 import { parseValidationErrors } from "@/utils/errorHandler";
 import { authStorage } from "@/utils/storage";
 import { useToggle } from "@/hooks";
@@ -34,6 +35,7 @@ const EditableSection = ({
   projectData,
   onUpdateProject,
 }) => {
+  const { user } = useAuth();
   const [enhancing, toggleEnhancing, setEnhancingTrue, setEnhancingFalse] =
     useToggle(false);
   const [useRichText, setUseRichText] = useState(false);
@@ -150,7 +152,7 @@ const EditableSection = ({
         return;
       }
 
-      if (!resumeData?._id) {
+      if (!resumeData?._id && user?.role !== "admin") {
         toast.error(
           "Please save your resume first before using AI enhancement",
           {
@@ -213,8 +215,6 @@ const EditableSection = ({
     } catch (err) {
       if (err.response?.status === 401) {
         toast.error("Authentication required. Please log in.");
-      } else if (err.response?.status === 403) {
-        toast.error("You've reached your AI generation limit. Please upgrade.");
       } else {
         toast.error("Failed to enhance content: " + parseValidationErrors(err));
       }

@@ -251,12 +251,15 @@ userSchema.methods.hasActiveSubscription = function () {
 
 userSchema.methods.isPremiumUser = function () {
   return (
-    this.hasActiveSubscription() &&
-    ["one-time", "pro"].includes(this.subscription.tier)
+    this.role === "admin" ||
+    (this.hasActiveSubscription() &&
+      ["one-time", "pro"].includes(this.subscription.tier))
   );
 };
 
 userSchema.methods.canAccessFeature = function (feature) {
+  if (this.role === "admin") return true;
+
   const tier = this.subscription.tier;
 
   const featureAccess = {

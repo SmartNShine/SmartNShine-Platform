@@ -36,11 +36,17 @@ const interviewQuestionSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  evaluationPending: {
+    type: Boolean,
+    default: false,
+  },
   answerMode: {
     type: String,
     enum: ["text", "voice", "live"],
     default: "text",
   },
+  transcriptionProvider: String,
+  transcriptionDuration: Number,
   audioUrl: {
     type: String, // Temporary audio file URL if voice mode
   },
@@ -265,6 +271,7 @@ const interviewSessionSchema = new mongoose.Schema(
       max: 20,
     },
     questions: [interviewQuestionSchema],
+    preparedQuestion: interviewQuestionSchema,
     syllabus: [
       {
         phase: String,
@@ -521,7 +528,7 @@ interviewSessionSchema.statics.getUserHistory = async function (
     .sort({createdAt: -1})
     .skip(skip)
     .limit(limit)
-    .select("-questions.evaluation.suggestedAnswer") // Exclude detailed answers in list view
+    .select("-questions.evaluation.suggestedAnswer -preparedQuestion")
     .lean();
 };
 

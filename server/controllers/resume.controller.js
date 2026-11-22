@@ -153,22 +153,21 @@ export const uploadResume = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({error: "No file uploaded"});
     }
+    filePath = req.file.path;
 
     // Get user and check tier for AI extraction
-    const userId = req.user._id || req.user.userId;
-    const user = await User.findById(userId);
+    const user = req.user;
+    const userId = user._id || user.userId;
     const tier = user?.subscription?.tier || "free";
     const isAdmin = user?.role === "admin";
-
-    // Admin users have unlimited access
-    const canUseAIExtraction = isAdmin || tier === "pro";
+    const hasExtractionLimit = !isAdmin && tier === "pro";
 
     // Get usage limits for response
     let limit = null;
     let used = null;
 
     // If using AI extraction and not admin, check daily limit
-    if (canUseAIExtraction && !isAdmin) {
+    if (hasExtractionLimit) {
       limit = user.getUsageLimit("aiResumeExtractionsPerDay");
       used = user.usage?.aiResumeExtractionsToday || 0;
 
@@ -184,7 +183,6 @@ export const uploadResume = async (req, res) => {
       }
     }
 
-    filePath = req.file.path;
     console.log("📄 Processing file:", req.file.originalname);
 
     // Extract text from file
@@ -196,20 +194,35 @@ export const uploadResume = async (req, res) => {
       );
     }
 
-    // Use OpenAI for all parsing operations
-    const parseResumeWithAI = parseResumeWithOpenAI;
-    const aiProvider = "OpenAI";
+    let parsedData;
+    let aiUsed = "openai";
+    let message = "Resume uploaded and parsed successfully";
+    try {
+      ({data: parsedData} = await parseResumeWithOpenAI(extractedText));
+      if (!parsedData || typeof parsedData !== "object" || Array.isArray(parsedData)) {
+        throw new Error("AI parser returned invalid resume data");
+      }
+    } catch (error) {
+      console.warn("AI resume parsing unavailable:", error.message);
+      if (!isAdmin) {
+        return res.status(503).json({
+          error: "Resume parsing is temporarily unavailable. Please try again later.",
+        });
+      }
 
-    // Parse resume using AI
-    console.log(`🤖 Using ${aiProvider} for ${tier} user's resume extraction`);
-    const startTime = Date.now();
-    const {data: parsedData, tokenUsage} = await parseResumeWithAI(
-      extractedText
-    );
-    const responseTime = Date.now() - startTime;
+      aiUsed = null;
+      message = "AI parsing is temporarily unavailable. Your extracted text is editable under Custom Sections.";
+      parsedData = {
+        customSections: [{
+          id: "imported-resume",
+          title: "Imported Resume",
+          items: [{id: "imported-text", title: "Original resume text", description: extractedText}],
+        }],
+      };
+    }
 
     // Increment AI extraction counter for pro users (skip for admins)
-    if (canUseAIExtraction && !isAdmin) {
+    if (hasExtractionLimit) {
       await User.findByIdAndUpdate(userId, {
         $inc: {
           "usage.aiResumeExtractions": 1,
@@ -227,51 +240,19 @@ export const uploadResume = async (req, res) => {
     // Add raw text to parsed data
     parsedData.rawText = extractedText;
 
-    // Delete temporary uploaded file after successful processing
-    // (Data is already parsed and will be saved to database by client)
-    await deleteFile(filePath);
-    console.log("✅ Resume data parsed and ready for database storage");
-
     res.json({
-      message: "Resume uploaded and parsed successfully",
+      message,
       data: parsedData,
-      aiUsed: aiProvider.toLowerCase(),
-      extractionsRemaining: canUseAIExtraction ? limit - (used + 1) : null,
+      aiUsed,
+      extractionsRemaining: hasExtractionLimit ? limit - (used + 1) : null,
     });
   } catch (error) {
-    // Clean up file on error
-    if (filePath) {
-      await deleteFile(filePath);
-    }
-
     console.error("Upload error:", error);
-
-    // Check if it's an AI quota or rate limit error (more comprehensive check)
-    const errorMsg = error.message?.toLowerCase() || "";
-    const isQuotaError =
-      errorMsg.includes("429") ||
-      errorMsg.includes("quota") ||
-      errorMsg.includes("too many requests") ||
-      errorMsg.includes("rate limit");
-
-    if (isQuotaError) {
-      console.log(
-        "🚫 Detected quota error - sending upgrade required response"
-      );
-      return res.status(403).json({
-        error: "AI Parsing Limit Reached",
-        message:
-          "The free AI resume parsing service has reached its daily limit. Upgrade to Pro for AI-powered resume parsing.",
-        upgradeRequired: true,
-        feature: "AI Resume Parsing",
-        availableIn: ["pro"],
-        quotaExceeded: true,
-      });
-    }
-
     res.status(500).json({
       error: error.message || "Failed to process resume",
     });
+  } finally {
+    if (filePath) await deleteFile(filePath);
   }
 };
 
@@ -491,7 +472,7 @@ export const saveResume = async (req, res) => {
       linkedAt: null,
     };
 
-    if (["one-time", "pro"].includes(userTier) && userStatus === "active") {
+    if (user.role !== "admin" && ["one-time", "pro"].includes(userTier) && userStatus === "active") {
       const activeSubscription = await Subscription.findOne({
         userId: user._id,
         tier: userTier,

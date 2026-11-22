@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
+import toast from "react-hot-toast";
 import SEO from "@/components/common/SEO";
 import { resumeAPI } from "@/api/api";
+import { useAuth } from "@/context/AuthContext";
 import { parseValidationErrors } from "@/utils/errorHandler";
 import UpgradeRequiredModal from "@/components/common/modals/UpgradeRequiredModal";
 import { useToggle } from "@/hooks";
@@ -25,6 +27,8 @@ export default function Upload() {
   ] = useToggle(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const onDrop = async (acceptedFiles) => {
     if (acceptedFiles.length === 0) return;
@@ -38,16 +42,23 @@ export default function Upload() {
       formData.append("resume", file);
 
       const response = await resumeAPI.upload(formData);
+      const resumeData = response.data?.data;
+      if (!resumeData || typeof resumeData !== "object" || Array.isArray(resumeData)) {
+        setError("The uploaded file could not be parsed into a resume. Please try again.");
+        return;
+      }
 
-      // Navigate to editor with parsed data
-      navigate("/editor", { state: { resumeData: response.data.data } });
+      if (response.data.aiUsed === null) {
+        toast(response.data.message);
+      }
+      navigate("/editor", { state: { resumeData, fromUpload: true } });
     } catch (err) {
       console.error("Upload error:", err);
 
       // Check if it's a subscription/upgrade required error
       if (
-        err.response?.data?.upgradeRequired ||
-        err.response?.data?.quotaExceeded
+        !isAdmin &&
+        (err.response?.data?.upgradeRequired || err.response?.data?.quotaExceeded)
       ) {
         setUpgradeMessage(
           err.response.data.message || "Upgrade to access this premium feature!"
@@ -94,6 +105,7 @@ export default function Upload() {
       state: {
         resumeData: blankResumeData,
         isNewResume: true,
+        fromUpload: true,
         templateSelected: hasPreSelected,
         selectedTemplate: preSelectedTemplate || undefined,
       },

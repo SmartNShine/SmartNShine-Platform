@@ -8,13 +8,10 @@ export function useInterviewSpeech({
   selectedVoice,
   voiceEngine,
   serverTtsAvailable,
-  voiceAvailable,
-  selectedMode,
   isMuted,
   isMutedRef,
   isInterviewActiveRef,
   setInterviewPhase,
-  startRecordingRef,
 }) {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -66,33 +63,8 @@ export function useInterviewSpeech({
         // User will manually click Record Answer when ready to speak
       }
     },
-    [clearSpeechTimeouts, isInterviewActiveRef, selectedMode, setInterviewPhase, setManagedSpeechTimeout, startRecordingRef, voiceAvailable]
+    [clearSpeechTimeouts, isInterviewActiveRef, setInterviewPhase]
   );
-
-  const splitSpeechIntoChunks = useCallback((text) => {
-    const sentences = text
-      .split(/(?<=[.!?])\s+/)
-      .map((sentence) => sentence.trim())
-      .filter(Boolean);
-
-    if (sentences.length <= 1) return [text];
-
-    const chunks = [];
-    let currentChunk = "";
-
-    sentences.forEach((sentence) => {
-      const nextChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence;
-      if (nextChunk.length > 130 && currentChunk) {
-        chunks.push(currentChunk);
-        currentChunk = sentence;
-      } else {
-        currentChunk = nextChunk;
-      }
-    });
-
-    if (currentChunk) chunks.push(currentChunk);
-    return chunks;
-  }, []);
 
   const speakAndListen = useCallback(
     async (text, onComplete) => {
@@ -112,17 +84,11 @@ export function useInterviewSpeech({
       };
 
       const playTtsChunk = async (chunkText) => {
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Voice TTS timeout (> 6.0s)")), 6000)
-        );
-        const audioBlob = await Promise.race([
-          interviewAPI.synthesizeSpeech(chunkText, {
-            engine: voiceEngine === "local" ? "local" : "sarvam",
-            speaker: selectedVoice || "shubh",
-            language: "en-IN",
-          }),
-          timeoutPromise,
-        ]);
+        const audioBlob = await interviewAPI.synthesizeSpeech(chunkText, {
+          engine: voiceEngine === "local" ? "local" : "sarvam",
+          speaker: selectedVoice || "shubh",
+          language: "en-IN",
+        });
 
         if (!audioBlob || !(audioBlob instanceof Blob) || audioBlob.size === 0) {
           throw new Error("Empty audio response from TTS service");
@@ -140,9 +106,9 @@ export function useInterviewSpeech({
         audioElementRef.current = audio;
         setAudioRef(audio);
 
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
           let hasResolved = false;
-          const finish = () => {
+          const finish = (error) => {
             if (hasResolved) return;
             hasResolved = true;
             clearTimeout(safetyTimer);
@@ -151,7 +117,8 @@ export function useInterviewSpeech({
               audioElementRef.current = null;
               setAudioRef(null);
             }
-            resolve();
+            if (error) reject(error);
+            else resolve();
           };
 
           const wordCount = chunkText.split(/\s+/).filter(Boolean).length;
@@ -166,107 +133,31 @@ export function useInterviewSpeech({
             }
           };
 
-          audio.onended = finish;
-          audio.onerror = (e) => {
-            console.warn("⚠️ Audio chunk error, proceeding:", e);
-            finish();
-          };
-
-          audio.play().catch((playErr) => {
-            console.warn("⚠️ Audio autoplay blocked or failed, proceeding:", playErr.message);
-            finish();
-          });
+          audio.onended = () => finish();
+          audio.onerror = () => finish(new Error("Audio playback failed"));
+          audio.play().catch(finish);
         });
-      };
-
-      const playPipelinedTts = async () => {
-        if (text.length <= 450) {
-          if (!isCurrentSpeech()) return;
-          await playTtsChunk(text);
-          completeSpeech();
-          return;
-        }
-
-        const chunks = splitSpeechIntoChunks(text);
-        let nextChunkPromise = interviewAPI.synthesizeSpeech(chunks[0], {
-          engine: voiceEngine === "local" ? "local" : "sarvam",
-          speaker: selectedVoice || "shubh",
-          language: "en-IN",
-        });
-
-        for (let i = 0; i < chunks.length; i++) {
-          if (!isCurrentSpeech()) return;
-
-          const currentBlob = await nextChunkPromise;
-
-          if (i + 1 < chunks.length) {
-            nextChunkPromise = interviewAPI.synthesizeSpeech(chunks[i + 1], {
-              engine: voiceEngine === "local" ? "local" : "sarvam",
-              speaker: selectedVoice || "shubh",
-              language: "en-IN",
-            });
-          }
-
-          if (!currentBlob || !(currentBlob instanceof Blob) || currentBlob.size === 0 || currentBlob.type?.includes("json")) {
-            continue;
-          }
-
-          if (!isCurrentSpeech()) return;
-
-          const audioUrl = URL.createObjectURL(currentBlob);
-          const audio = new Audio(audioUrl);
-          audioElementRef.current = audio;
-          setAudioRef(audio);
-
-          await new Promise((resolve, reject) => {
-            audio.onplay = () => {
-              if (isCurrentSpeech()) {
-                setIsPlayingAudio(true);
-                setIsSpeaking(true);
-                setInterviewPhase("asking");
-              }
-            };
-            audio.onended = () => {
-              URL.revokeObjectURL(audioUrl);
-              if (audioElementRef.current === audio) {
-                audioElementRef.current = null;
-                setAudioRef(null);
-              }
-              resolve();
-            };
-            audio.onerror = (e) => {
-              URL.revokeObjectURL(audioUrl);
-              reject(e);
-            };
-            audio.play().catch(reject);
-          });
-        }
-
-        completeSpeech();
       };
 
       setAiMessage(text);
 
       try {
         if (isMutedRef.current) {
-          setIsPlayingAudio(true);
-          setIsSpeaking(true);
-          setInterviewPhase("asking");
-          const wordCount = text.split(" ").length;
-          const readingTimeMs = Math.max(3000, (wordCount / 150) * 60 * 1000);
-          setManagedSpeechTimeout(completeSpeech, readingTimeMs);
+          completeSpeech();
           return;
         }
 
         try {
           if (voiceEngine !== "browser" && (serverTtsAvailable || voiceEngine === "sarvam" || voiceEngine === "auto")) {
-            await playPipelinedTts();
+            await playTtsChunk(text);
+            completeSpeech();
             return;
           }
         } catch (ttsError) {
           console.warn("⚠️ Server TTS failed, falling back to Web Speech:", ttsError.message);
         }
 
+        if (!isCurrentSpeech()) return;
         if ("speechSynthesis" in window) {
           return new Promise((resolve) => {
             try {
@@ -327,15 +218,13 @@ export function useInterviewSpeech({
           });
         }
 
-        const wordCount = text.split(" ").length;
-        const readingTimeMs = Math.max(3000, (wordCount / 150) * 60 * 1000);
-        setManagedSpeechTimeout(completeSpeech, readingTimeMs);
+        completeSpeech();
       } catch (error) {
-        console.error("❌ TTS speech error:", error);
-        setManagedSpeechTimeout(completeSpeech, 4000);
+        console.error("Could not play interview speech:", error);
+        completeSpeech();
       }
     },
-    [isInterviewActiveRef, isMutedRef, selectedMode, selectedVoice, serverTtsAvailable, setInterviewPhase, setManagedSpeechTimeout, splitSpeechIntoChunks, stopLocalAudio, voiceEngine]
+    [isMutedRef, selectedVoice, serverTtsAvailable, setInterviewPhase, stopLocalAudio, voiceEngine]
   );
 
   const handleTestVoice = async (preset = "greeting") => {

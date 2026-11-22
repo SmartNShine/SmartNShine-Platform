@@ -140,6 +140,7 @@ export const useResumeSaveActions = ({
         logger.error("Save error:", err);
 
         if (
+          user.role !== "admin" &&
           err.response?.status === 403 &&
           (err.response?.data?.upgradeRequired || err.response?.data?.quotaExceeded)
         ) {

@@ -246,6 +246,23 @@ export async function getSubscriptionStatus(req, res) {
       });
     }
 
+    if (req.user?.role === "admin") {
+      return res.json({
+        success: true,
+        subscription: {
+          tier: "pro",
+          plan: "admin",
+          status: "active",
+          isAdmin: true,
+          startDate: req.user.subscription?.startDate || req.user.createdAt,
+          endDate: null,
+          daysRemaining: null,
+          autoRenew: false,
+          features: paymentService.PRICING.pro?.features || [],
+        },
+      });
+    }
+
     console.log("📊 Getting subscription status for user:", userId);
 
     // Get active subscription from database (not cached req.user)
@@ -257,15 +274,11 @@ export async function getSubscriptionStatus(req, res) {
     console.log("📊 Active subscription from DB:", subscription);
     console.log("📊 User subscription from DB:", user?.subscription);
 
-    const isAdmin = user?.role === "admin";
     // If there's an active subscription, use its data
     // Otherwise, fall back to user.subscription or free tier
     const subscriptionData = subscription || user?.subscription;
-    let tier = paymentService.normalizeTier(subscriptionData?.tier || "free");
-    if (isAdmin) {
-      tier = "pro";
-    }
-    const plan = isAdmin ? "admin" : (tier === "free" ? "free" : subscriptionData?.plan);
+    const tier = paymentService.normalizeTier(subscriptionData?.tier || "free");
+    const plan = tier === "free" ? "free" : subscriptionData?.plan;
 
     res.json({
       success: true,
@@ -273,11 +286,11 @@ export async function getSubscriptionStatus(req, res) {
         tier,
         plan,
         status: "active",
-        isAdmin,
+        isAdmin: false,
         startDate: subscriptionData?.startDate || user?.createdAt,
-        endDate: isAdmin ? null : subscriptionData?.endDate,
-        daysRemaining: isAdmin ? null : (subscription ? subscription.daysRemaining() : null),
-        autoRenew: isAdmin ? false : (subscriptionData?.autoRenew || false),
+        endDate: subscriptionData?.endDate,
+        daysRemaining: subscription ? subscription.daysRemaining() : null,
+        autoRenew: subscriptionData?.autoRenew || false,
         features:
           paymentService.PRICING[tier]?.features || [],
       },

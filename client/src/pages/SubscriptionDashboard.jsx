@@ -52,6 +52,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
     setShowAISettingsFalse,
   ] = useToggle(false);
   const [selectedAI, setSelectedAI] = useState("auto");
+  const isAdmin = authUser?.role === "admin" || subscription?.isAdmin === true;
 
   useEffect(() => {
     fetchDashboardData();
@@ -77,18 +78,15 @@ const SubscriptionDashboard = ({embedded = false}) => {
 
       // Extract subscription from response (API returns {success: true, subscription: {...}})
       const fetchedSub = subData?.subscription || subData;
-      setSubscription(fetchedSub);
-
-      const isProOrAdmin =
-        authUser?.role === "admin" ||
-        fetchedSub?.tier === "pro" ||
-        fetchedSub?.isAdmin ||
-        usageData?.stats?.tier === "pro" ||
-        usageData?.stats?.isAdmin;
+      const adminFromApi = fetchedSub?.isAdmin === true || usageData?.stats?.isAdmin === true;
+      setSubscription(adminFromApi ? {...fetchedSub, isAdmin: true} : fetchedSub);
+      const hasAdminAccess = authUser?.role === "admin" || adminFromApi;
+      const isPro = fetchedSub?.tier === "pro" || usageData?.stats?.tier === "pro";
 
       const resolveLimit = (itemKey, fallbackLimit) => {
         const item = usageData?.stats?.usage?.[itemKey];
-        if (isProOrAdmin) {
+        if (hasAdminAccess) return Infinity;
+        if (isPro) {
           if (["resumes", "aiGenerations", "atsScans", "coverLetters"].includes(itemKey)) {
             return Infinity;
           }
@@ -310,7 +308,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
       )}
 
       {/* Current Plan Card - Only show for Free tier */}
-      {subscription?.tier === "free" && (
+      {!isAdmin && subscription?.tier === "free" && (
         <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg dark:shadow-2xl border border-gray-200/50 dark:border-white/10 p-6 mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div className="flex items-center mb-4 md:mb-0">
@@ -341,7 +339,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
       )}
 
       {/* Admin / Direct Pro Plan Card */}
-      {(authUser?.role === "admin" || subscription?.isAdmin || (subscription?.tier === "pro" && getActiveProPlans().length === 0)) && (
+      {(isAdmin || (subscription?.tier === "pro" && getActiveProPlans().length === 0)) && (
         <div className="bg-gradient-to-br from-amber-500/10 via-white/80 to-blue-500/10 dark:from-amber-500/10 dark:via-zinc-900/90 dark:to-blue-500/10 backdrop-blur-xl rounded-2xl shadow-lg dark:shadow-2xl border border-amber-500/30 p-6 mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-4">
@@ -351,7 +349,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {authUser?.role === "admin" || subscription?.isAdmin
+                    {isAdmin
                       ? "Administrator Pro Access"
                       : "Active Pro Plan"}
                   </h2>
@@ -360,7 +358,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-zinc-300 mt-0.5">
-                  {authUser?.role === "admin" || subscription?.isAdmin
+                  {isAdmin
                     ? "Your administrator account has unrestricted access to all features, AI models, and resume tools."
                     : "You have full access to all Pro features with unlimited generations."}
                 </p>
@@ -368,7 +366,7 @@ const SubscriptionDashboard = ({embedded = false}) => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700">
-                {authUser?.role === "admin" || subscription?.isAdmin
+                {isAdmin
                   ? "Admin Lifetime Access"
                   : "Unlimited Plan"}
               </span>
@@ -501,18 +499,22 @@ const SubscriptionDashboard = ({embedded = false}) => {
 
                     {/* Action Buttons for Pro Plan */}
                     <div className="p-3 bg-gray-50/50 dark:bg-white/5 flex flex-wrap gap-2 border-t border-gray-200/50 dark:border-white/10">
-                      <button
-                        onClick={() => navigate("/pricing")}
-                        className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-all text-xs"
-                      >
-                        Change Plan
-                      </button>
-                      <button
-                        onClick={handleRenewSubscription}
-                        className="flex-1 bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-green-700 transition-all text-xs"
-                      >
-                        Renew Now
-                      </button>
+                      {!isAdmin && (
+                        <>
+                          <button
+                            onClick={() => navigate("/pricing")}
+                            className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-all text-xs"
+                          >
+                            Change Plan
+                          </button>
+                          <button
+                            onClick={handleRenewSubscription}
+                            className="flex-1 bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-green-700 transition-all text-xs"
+                          >
+                            Renew Now
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={setShowCancelModalTrue}
                         className="flex-1 bg-red-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-red-700 transition-all text-xs"
@@ -641,32 +643,36 @@ const SubscriptionDashboard = ({embedded = false}) => {
                     </div>
 
                     {/* Action Buttons for One-Time Plan */}
-                    <div className="p-3 bg-gray-50/50 dark:bg-white/5 flex flex-wrap gap-2 border-t border-gray-200/50 dark:border-white/10">
-                      <button
-                        onClick={() => navigate("/pricing")}
-                        className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-all text-xs"
-                      >
-                        Upgrade to Pro
-                      </button>
-                      <button
-                        onClick={handleRenewSubscription}
-                        className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-all text-xs"
-                      >
-                        Buy Another
-                      </button>
-                    </div>
+                    {!isAdmin && (
+                      <div className="p-3 bg-gray-50/50 dark:bg-white/5 flex flex-wrap gap-2 border-t border-gray-200/50 dark:border-white/10">
+                        <button
+                          onClick={() => navigate("/pricing")}
+                          className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-all text-xs"
+                        >
+                          Upgrade to Pro
+                        </button>
+                        <button
+                          onClick={handleRenewSubscription}
+                          className="flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-all text-xs"
+                        >
+                          Buy Another
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            <div className="mt-4 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-600 p-3 rounded-r-lg">
-              <p className="text-xs text-blue-800 dark:text-blue-300">
-                💡 <strong>Tip:</strong> Each one-time plan gives you 21 days of
-                access from its purchase date. You can buy multiple plans to
-                extend your access period!
-              </p>
-            </div>
+            {!isAdmin && (
+              <div className="mt-4 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-600 p-3 rounded-r-lg">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  💡 <strong>Tip:</strong> Each one-time plan gives you 21 days of
+                  access from its purchase date. You can buy multiple plans to
+                  extend your access period!
+                </p>
+              </div>
+            )}
           </div>
         );
       })()}
@@ -1055,11 +1061,11 @@ const SubscriptionDashboard = ({embedded = false}) => {
         ) : (
           <div className="text-center py-6">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
-              {authUser?.role === "admin" || subscription?.isAdmin
+              {isAdmin
                 ? "Administrator Account — Unlimited access active (No billing required)"
                 : "No payment history yet"}
             </p>
-            {!(authUser?.role === "admin" || subscription?.isAdmin) && (
+            {!isAdmin && (
               <button
                 onClick={() => navigate("/pricing")}
                 className="text-sm text-blue-600 hover:text-blue-700 font-semibold mt-2"

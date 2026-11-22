@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, {ipKeyGenerator} from "express-rate-limit";
 import InterviewSession from "../models/InterviewSession.model.js";
 
 /**
@@ -38,6 +38,28 @@ export const interviewLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+function createSessionTrafficLimiter(max, error) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: max,
+    keyGenerator: (req) => String(req.user?.userId || req.user?._id || ipKeyGenerator(req.ip)),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {success: false, error},
+  });
+}
+
+export const interviewTurnLimiter = createSessionTrafficLimiter(120, "Interview request limit reached. Please wait before trying again.");
+export const interviewProctoringLimiter = createSessionTrafficLimiter(360, "Camera monitoring request limit reached.");
+
+// These authenticated routes have their own per-user budgets in the routers.
+export function hasInterviewTrafficLimiter(req) {
+  return req.method === "POST" && (
+    /^\/interview\/sessions\/[^/]+\/(start|answer|voice-answer|skip|complete|proctoring\/(event|heartbeat))\/?$/i.test(req.path) ||
+    /^\/voice\/(transcribe|tts\/synthesize)\/?$/i.test(req.path)
+  );
+}
 
 /**
  * Check if user has exceeded their daily interview limit
