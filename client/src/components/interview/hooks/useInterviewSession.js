@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import interviewAPI from "@/api/interview.api";
 import { resumeAPI } from "@/api/api";
-import { CONVERSATION_PHASES } from "../constants";
+import { CONVERSATION_PHASES, estimateQuestionCount } from "../constants";
+
+// Never open a new question with less time than this left on the clock.
+const MIN_SECONDS_FOR_NEXT_QUESTION = 60;
 
 export function useInterviewSession({
   user,
@@ -15,6 +18,7 @@ export function useInterviewSession({
   stopLocalAudio,
   cleanupAudioStreams,
   isFinalizingRecordingRef,
+  answerWindowOpenRef,
   isInterviewActiveRef: externalIsInterviewActiveRef,
   isMutedRef: externalIsMutedRef,
 }) {
@@ -156,13 +160,15 @@ export function useInterviewSession({
     }
   }, [user]);
 
-  // Let an explicitly submitted answer finish before closing on the timer.
+  // Grace period: when the clock runs out mid-answer, let the candidate finish
+  // that answer (bounded by its own answer timer) before closing the interview.
   useEffect(() => {
     if (step !== "interview" || !startTime) return;
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setElapsedTime(elapsed);
       if (elapsed >= interviewDuration * 60 && !isFinalizingRecordingRef.current &&
+          !answerWindowOpenRef?.current &&
           !turnInFlightRef.current && isInterviewActiveRef.current) {
         clearInterval(interval);
         void handleCompleteInterview();
@@ -194,7 +200,8 @@ export function useInterviewSession({
 
     setIsSubmitting(true);
     try {
-      const estimatedQuestions = Math.floor(interviewDuration * 0.8);
+      // The server derives the count from interviewDuration; this is a fallback.
+      const estimatedQuestions = estimateQuestionCount(interviewDuration, selectedMode);
       const createRes = await interviewAPI.createSession({
         interviewType: selectedType,
         role: selectedRole,
@@ -202,7 +209,7 @@ export function useInterviewSession({
         mode: selectedMode,
         resumeId: selectedResume || undefined,
         jobDescription: selectedType === "job-description" ? jobDescription : undefined,
-        totalQuestions: Math.max(5, Math.min(15, estimatedQuestions)),
+        totalQuestions: estimatedQuestions,
         interviewDuration: interviewDuration,
         voiceEngineUsed: voiceEngine,
         personaUsed: selectedVoice,
@@ -243,8 +250,8 @@ export function useInterviewSession({
 
         speakAndListen(introductionText, () => {
           setConversationPhase(CONVERSATION_PHASES.WARM_UP);
+          // Hands over to useInterviewTurnFlow: think time, then auto-recording.
           setInterviewPhase("waiting");
-          // Do not auto-start recording; candidate will click "Record Answer" when ready
         });
       } else {
         setInterviewPhase("waiting");
@@ -295,9 +302,11 @@ export function useInterviewSession({
 
   const advanceInterview = (data) => {
     setProgress(data.progress);
-    const timeIsUp = startTimeRef.current &&
-      Date.now() - startTimeRef.current >= interviewDuration * 60 * 1000;
-    if (data.isComplete || timeIsUp) {
+    const remainingMs = startTimeRef.current
+      ? interviewDuration * 60 * 1000 - (Date.now() - startTimeRef.current)
+      : Infinity;
+    const noTimeForAnotherQuestion = remainingMs < MIN_SECONDS_FOR_NEXT_QUESTION * 1000;
+    if (data.isComplete || noTimeForAnotherQuestion) {
       void handleCompleteInterview();
     } else if (data.nextQuestion) {
       setQuestionCount(data.nextQuestion.number);
@@ -383,9 +392,9 @@ export function useInterviewSession({
     }
   };
 
-  const handleSkipQuestion = async () => {
-    if (turnInFlightRef.current || interviewPhase !== "waiting" ||
-        !window.confirm("Skip this question? It will affect your score.")) return;
+  const handleSkipQuestion = async ({ skipConfirm = false } = {}) => {
+    if (turnInFlightRef.current || interviewPhase !== "waiting") return;
+    if (!skipConfirm && !window.confirm("Skip this question? It will affect your score.")) return;
     const turn = beginTurn();
     if (!turn) return;
 

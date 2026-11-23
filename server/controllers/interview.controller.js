@@ -18,6 +18,7 @@ import {
   finishPendingEvaluations, prepareNextInterviewQuestion, saveInterviewTurn,
   scheduleInterviewWork, validateInterviewTurn,
 } from "../services/interview-progression.service.js";
+import { estimateQuestionCount, getAnswerTimeLimitSec } from "../services/interview-difficulty.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -107,6 +108,7 @@ export const createSession = async (req, res) => {
       jobDescription,
       targetSkills = [],
       totalQuestions = 10,
+      interviewDuration,
       voiceEngineUsed = "sarvam",
       personaUsed = "shubh",
       interviewLanguage = "unknown",
@@ -166,7 +168,10 @@ export const createSession = async (req, res) => {
       });
     }
 
-    const clampedTotalQuestions = Math.min(Math.max(totalQuestions, 5), 15);
+    // Question count follows the chosen duration: spoken turns get 2-3 min each.
+    const durationBasedCount = estimateQuestionCount(interviewDuration, mode);
+    const clampedTotalQuestions = durationBasedCount ??
+      Math.min(Math.max(Number(totalQuestions) || 10, 2), 15);
     const syllabus = interviewService.generateInterviewSyllabus({
       role,
       experienceLevel,
@@ -313,6 +318,8 @@ export const startSession = async (req, res) => {
           category: questionData.category || firstPlan.category,
           cognitiveLevel: cogLevel,
           cognitiveMeta: cogMeta,
+          difficulty: questionData.difficulty,
+          answerTimeLimitSec: getAnswerTimeLimitSec({ cognitiveLevel: cogLevel, difficulty: questionData.difficulty }),
           audio: null,
         },
         progress: {

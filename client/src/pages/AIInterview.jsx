@@ -15,6 +15,10 @@ import {
   useCameraStream,
   useVideoRecorder,
   useProctoringEngine,
+  useInterviewTurnFlow,
+  getAnswerTimeLimitSec,
+  CONVERSATION_PHASES,
+  INTRO_ANSWER_TIME_SEC,
 } from "@/components/interview";
 
 const AIInterview = () => {
@@ -87,6 +91,7 @@ const AIInterview = () => {
   const interviewPhaseRef = useRef("idle");
   const hasStartedCameraRef = useRef(false);
   const hasStartedVideoRecRef = useRef(false);
+  const answerWindowOpenRef = useRef(false);
 
   // 1. Hook for Speech & TTS
   const speech = useInterviewSpeech({
@@ -120,9 +125,44 @@ const AIInterview = () => {
     stopLocalAudio: speech.stopLocalAudio,
     cleanupAudioStreams: recording.cleanupAudioStreams,
     isFinalizingRecordingRef: recording.isFinalizingRef,
+    answerWindowOpenRef,
     isInterviewActiveRef,
     isMutedRef,
   });
+
+  // 3b. Automatic spoken turn: think time → auto-record → timed answer → auto-submit
+  const isWarmUpTurn = session.conversationPhase === CONVERSATION_PHASES.WARM_UP;
+  const turnFlow = useInterviewTurnFlow({
+    enabled: session.step === "interview" && session.selectedMode !== "text",
+    interviewPhase: session.interviewPhase,
+    turnKey: isWarmUpTurn ? "intro" : `q${session.currentQuestion?.number ?? 0}`,
+    answerLimitSec: isWarmUpTurn
+      ? INTRO_ANSWER_TIME_SEC
+      : getAnswerTimeLimitSec(session.currentQuestion),
+    isRecording: recording.isRecording,
+    hasRecordingDraft: recording.hasRecordingDraft,
+    startRecording: recording.startRecording,
+    submitRecording: recording.submitRecording,
+    cancelRecording: recording.cancelRecording,
+    prepareMic: recording.startMicPreview,
+    answerWindowOpenRef,
+  });
+
+  const handleSkip = async () => {
+    turnFlow.pause();
+    if (!window.confirm("Skip this question? It will affect your score.")) {
+      turnFlow.resume();
+      return;
+    }
+    recording.cancelRecording();
+    await session.handleSkipQuestion({ skipConfirm: true });
+  };
+
+  const handleRepeat = () => {
+    if (!turnFlow.canRepeat) return;
+    turnFlow.recordRepeat();
+    session.handleRepeatQuestion();
+  };
 
   // 4. Hook for Camera Video Stream
   const camera = useCameraStream({ autoStart: false });
@@ -300,14 +340,13 @@ const AIInterview = () => {
           micFrequencyBins={recording.micFrequencyBins}
           liveCandidateTranscript={recording.liveCandidateTranscript}
           user={user}
-          onSkip={async () => {
-            if (await session.handleSkipQuestion()) recording.discardDraft();
-          }}
-          onRequestRepeat={session.handleRepeatQuestion}
+          onSkip={handleSkip}
+          onRequestRepeat={handleRepeat}
           onAbandon={handleRequestExit}
           onSubmitAnswer={session.handleSubmitAnswer}
-          onStartRecording={recording.startRecording}
-          onSubmitRecording={recording.submitRecording}
+          interviewer={INTERVIEWER_VOICES[selectedVoice]}
+          progress={session.progress}
+          turn={turnFlow}
           hasRecordingDraft={recording.hasRecordingDraft}
           onRetryReport={session.handleCompleteInterview}
           formatTime={formatTime}

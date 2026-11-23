@@ -106,14 +106,14 @@ export default function PortfolioDashboard() {
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Your Published Websites ({portfolios.length})
+                Your portfolios ({portfolios.length})
               </h2>
               <Link
                 to="/portfolio/new"
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>New Portfolio</span>
+                <span>Create portfolio</span>
               </Link>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">

@@ -16,7 +16,7 @@ export default function PortfolioPanel({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   useEffect(() => {
-    if (forceVersion) {
+    if (typeof forceVersion === "number" && forceState !== null && forceState !== undefined) {
       setIsOpen(Boolean(forceState));
     }
   }, [forceState, forceVersion]);

@@ -811,7 +811,6 @@ export default {
   checkSubscription,
   checkUsageLimit,
   requirePremium,
-  requireCredits,
   requireFeature,
   trackUsage,
   tierBasedRateLimit,

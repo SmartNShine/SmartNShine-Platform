@@ -209,7 +209,13 @@ export const getDashboardStats = async (req, res) => {
       },
     });
 
-    // Get subscription earnings statistics
+    // Get subscription earnings statistics (excluding manual admin grants)
+    const paidSubscriptionMatch = {
+      status: {$in: ["active", "expired"]},
+      paymentMethod: {$ne: "manual"},
+      isManualGrant: {$ne: true},
+    };
+
     const [
       totalEarnings,
       earningsByTier,
@@ -217,9 +223,9 @@ export const getDashboardStats = async (req, res) => {
       subscriptionCounts,
       recentSubscriptions,
     ] = await Promise.all([
-      // Total earnings from all successful subscriptions
+      // Total earnings from all successful paid subscriptions
       Subscription.aggregate([
-        {$match: {status: {$in: ["active", "expired"]}}},
+        {$match: paidSubscriptionMatch},
         {
           $group: {
             _id: null,
@@ -236,7 +242,7 @@ export const getDashboardStats = async (req, res) => {
       ]),
       // Earnings breakdown by tier
       Subscription.aggregate([
-        {$match: {status: {$in: ["active", "expired"]}}},
+        {$match: paidSubscriptionMatch},
         {
           $group: {
             _id: "$tier",
@@ -250,7 +256,7 @@ export const getDashboardStats = async (req, res) => {
       Subscription.aggregate([
         {
           $match: {
-            status: {$in: ["active", "expired"]},
+            ...paidSubscriptionMatch,
             createdAt: {
               $gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
             },
@@ -675,7 +681,12 @@ export const getUserDetails = async (req, res) => {
             (summary.failedAmountByCurrency[currency] || 0) + amount;
         }
 
-        if (successfulPaymentStatuses.includes(subscription.status)) {
+        const isPaidRealPayment =
+          successfulPaymentStatuses.includes(subscription.status) &&
+          subscription.paymentMethod !== "manual" &&
+          !subscription.isManualGrant;
+
+        if (isPaidRealPayment) {
           summary.successfulPayments += 1;
           summary.paidAmountByCurrency[currency] =
             (summary.paidAmountByCurrency[currency] || 0) + amount;
@@ -906,10 +917,11 @@ export const activateUserSubscription = async (req, res) => {
 
     const now = new Date();
     const endDate = addDays(now, normalizedDurationDays);
+    // Admin manual activations are complimentary grants and must NOT increase platform earnings; default to 0
     const normalizedAmount =
-      amount === "" || amount === null || amount === undefined
-        ? getPlanAmount(tier, plan)
-        : Number(amount);
+      amount !== "" && amount !== null && amount !== undefined
+        ? Math.max(0, Number(amount))
+        : 0;
 
     if (!Number.isFinite(normalizedAmount) || normalizedAmount < 0) {
       return res.status(400).json({
@@ -940,14 +952,16 @@ export const activateUserSubscription = async (req, res) => {
       amount: normalizedAmount,
       currency,
       paymentMethod: "manual",
+      isManualGrant: true,
       receiptId,
       paymentId: receiptId,
       orderId: receiptId,
       autoRenew: Boolean(autoRenew),
-      notes: notes || "Manually activated by admin",
+      notes: notes || "Manually activated by admin (complimentary grant)",
       metadata: {
         activatedByAdminId: req.user.userId,
         durationDays: normalizedDurationDays,
+        isManualGrant: true,
       },
     });
 

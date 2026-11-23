@@ -6,6 +6,7 @@ export * from "./ExecutiveStudioStage";
 export * from "./ResultStep";
 export * from "./hooks/useInterviewSpeech";
 export * from "./hooks/useInterviewRecording";
+export * from "./hooks/useInterviewTurnFlow";
 export * from "./hooks/useInterviewSession";
 export * from "./hooks/useCameraStream";
 export * from "./hooks/useVideoRecorder";

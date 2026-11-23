@@ -267,7 +267,7 @@ const interviewSessionSchema = new mongoose.Schema(
     totalQuestions: {
       type: Number,
       default: 10,
-      min: 5,
+      min: 2,
       max: 20,
     },
     questions: [interviewQuestionSchema],

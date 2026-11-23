@@ -169,4 +169,4 @@ only when actively needed.
 ## Known Issues
 - TTS: Sarvam (prod) → Chatterbox (local) → browser Web Speech fallback
 - STT: Whisper local service (port 5001) via server proxy
-- Interview timer auto-complete lacks grace period
+- Interview: Sarvam STT skipped for answers > 28 s, so 2–3 min spoken answers fall back to OpenAI Whisper (see docs/interview-upgrade-plan.md Phase 5)

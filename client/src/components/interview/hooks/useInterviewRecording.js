@@ -146,13 +146,13 @@ export function useInterviewRecording({
 
   const startRecording = async () => {
     if (!isInterviewActiveRef.current || getInterviewPhase() !== "waiting" ||
-        captureRef.current || startingRef.current || submittingRef.current) return;
+        captureRef.current || startingRef.current || submittingRef.current) return false;
     startingRef.current = true;
     try {
       const stream = await startMicPreview();
       if (!stream || !isInterviewActiveRef.current || getInterviewPhase() !== "waiting") {
         if (!stream && isInterviewActiveRef.current) toast.error("Microphone access is unavailable.");
-        return;
+        return false;
       }
 
       const mimeType = audioFormats.find((type) => MediaRecorder.isTypeSupported(type));
@@ -192,9 +192,11 @@ export function useInterviewRecording({
       setLiveCandidateTranscript("");
       setIsRecording(true);
       startRecognition(capture);
+      return true;
     } catch (error) {
       console.error("Could not start recording:", error);
       toast.error("Could not start recording. Check your microphone access.");
+      return false;
     } finally {
       startingRef.current = false;
     }
@@ -252,6 +254,20 @@ export function useInterviewRecording({
     setLiveCandidateTranscript("");
   };
 
+  // Abort an in-progress capture without submitting it; the mic stays open.
+  const cancelRecording = () => {
+    const capture = captureRef.current;
+    captureRef.current = null;
+    isFinalizingRef.current = false;
+    if (capture) {
+      stopRecognition(capture);
+      if (capture.recorder.state === "recording") capture.recorder.stop();
+    }
+    discardDraft();
+    setIsRecording(false);
+    setMicFrequencyBins(quietBins);
+  };
+
   const cleanupAudioStreams = () => {
     const capture = captureRef.current;
     captureRef.current = null;
@@ -268,7 +284,7 @@ export function useInterviewRecording({
 
   return {
     isRecording, hasRecordingDraft, micFrequencyBins, liveCandidateTranscript, isFinalizingRef,
-    startRecording, submitRecording, discardDraft, cleanupAudioStreams,
+    startRecording, submitRecording, cancelRecording, discardDraft, cleanupAudioStreams,
     audioDevices, selectedAudioDeviceId, switchAudioDevice, audioInputLevel, startMicPreview,
   };
 }

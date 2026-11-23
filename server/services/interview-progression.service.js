@@ -1,6 +1,6 @@
 import InterviewSession from "../models/InterviewSession.model.js";
 import { generateQuestion } from "./interview.service.js";
-import { COGNITIVE_LEVELS, TURN_DECISIONS } from "./interview-difficulty.service.js";
+import { COGNITIVE_LEVELS, TURN_DECISIONS, getAnswerTimeLimitSec } from "./interview-difficulty.service.js";
 import { calculateCompetencyCoverage, generateInterviewSyllabus } from "./interview-syllabus.service.js";
 import { processInterviewTurn } from "./interview-turn.service.js";
 import { checkAutoComplete, STATES } from "./interview-state.service.js";
@@ -98,6 +98,7 @@ export function getInterviewTurnResponse(session, questionNumber) {
       cognitiveLevel: next.cognitiveLevel,
       cognitiveMeta: next.cognitiveMeta,
       difficulty: next.difficulty,
+      answerTimeLimitSec: getAnswerTimeLimitSec(next),
       audio: null,
     } : null,
   };

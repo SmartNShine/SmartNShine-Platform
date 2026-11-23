@@ -34,7 +34,7 @@ import {
   CheckCircle2,
   HelpCircle,
 } from "lucide-react";
-import { INTERVIEWER_VOICES, TYPE_ICONS } from "./constants";
+import { INTERVIEWER_VOICES, TYPE_ICONS, estimateQuestionCount } from "./constants";
 import { InterviewerGraphic } from "./InterviewerGraphic";
 import { CameraPreviewStage } from "./proctoring/CameraPreviewStage";
 import { useDarkMode } from "../../context/DarkModeContext";
@@ -50,11 +50,13 @@ const POPULAR_ROLES = [
   { id: "mobile", name: "Mobile App Engineer" },
 ];
 
+// Spoken answers get 2-3 minutes each, so question counts are derived from
+// the same pacing the server uses (see estimateQuestionCount).
 const DURATION_PRESETS = [
-  { mins: 5, label: "5 mins", estimate: "~4 Qs" },
-  { mins: 10, label: "10 mins", estimate: "~8 Qs" },
-  { mins: 15, label: "15 mins", estimate: "~12 Qs (Recommended)" },
-  { mins: 20, label: "20 mins", estimate: "~16+ Qs" },
+  { mins: 10, label: "10 mins" },
+  { mins: 15, label: "15 mins", recommended: true },
+  { mins: 20, label: "20 mins" },
+  { mins: 30, label: "30 mins" },
 ];
 
 export const SetupStep = ({
@@ -680,7 +682,9 @@ export const SetupStep = ({
                       }`}
                     >
                       <span className="block font-bold">{preset.label}</span>
-                      <span className="text-[11px] opacity-80 mt-0.5 block">{preset.estimate}</span>
+                      <span className="text-[11px] opacity-80 mt-0.5 block">
+                        ~{estimateQuestionCount(preset.mins, selectedMode)} Qs{preset.recommended ? " (Recommended)" : ""}
+                      </span>
                     </button>
                   );
                 })}

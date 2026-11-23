@@ -91,7 +91,7 @@ const portfolioSchema = new mongoose.Schema(
     themeId: {
       type: String,
       trim: true,
-      default: "minimalDeveloper",
+      default: "smartnshine",
     },
     themeAccent: {
       type: String,
@@ -197,24 +197,18 @@ const portfolioSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    customSections: {
-      type: [
-        {
-          id: String,
-          title: String,
-          content: {
-            type: String,
-            default: "",
-          },
-          // Resume editor stores rich entries (title, date, bullets); legacy rows may be plain strings
-          items: {
-            type: [mongoose.Schema.Types.Mixed],
-            default: [],
-          },
+    customSections: [
+      {
+        id: String,
+        title: String,
+        content: {
+          type: String,
+          default: "",
         },
-      ],
-      default: [],
-    },
+        // Resume editor stores rich entries (title, date, bullets); legacy rows may be plain strings
+        items: [mongoose.Schema.Types.Mixed],
+      },
+    ],
     sections: {
       showAbout: {
         type: Boolean,

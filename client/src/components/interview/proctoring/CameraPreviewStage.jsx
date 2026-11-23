@@ -74,7 +74,9 @@ export const CameraPreviewStage = ({
         playsInline
         muted
         aria-label="Your camera preview"
-        className={`block w-full h-full object-contain transform scale-x-[-1] ${
+        className={`block w-full h-full ${
+          layout === "center-stage" ? "object-cover" : "object-contain"
+        } transform scale-x-[-1] ${
           isCameraActive ? "opacity-100" : "opacity-0"
         } transition-opacity duration-300`}
       />

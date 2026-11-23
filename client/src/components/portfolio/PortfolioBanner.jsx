@@ -32,7 +32,7 @@ export default function PortfolioBanner({
               Developer Portfolios Hub
             </h1>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-              Transform your resume into a stunning, responsive portfolio website. Track visitor analytics, project engagement, and resume downloads in real-time.
+              Create from a resume or start blank, pick a theme, refine in the live editor, then publish your public site.
             </p>
           </div>
 
@@ -42,7 +42,7 @@ export default function PortfolioBanner({
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-500/20 transition-all duration-200 active:scale-95 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Create New Portfolio</span>
+              <span>Create portfolio</span>
             </Link>
           </div>
         </div>

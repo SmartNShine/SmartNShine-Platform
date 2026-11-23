@@ -117,3 +117,26 @@ export const CONVERSATION_PHASES = {
   WRAP_UP: "wrap_up",
   COMPLETED: "completed",
 };
+
+// Live-interview pacing. Mirrors server/services/interview-difficulty.service.js;
+// the server sends answerTimeLimitSec per question, these are the fallbacks.
+export const THINK_TIME_SEC = 10;
+export const INTRO_ANSWER_TIME_SEC = 90;
+export const ANSWER_WARNING_SEC = 30;
+const ANSWER_TIME_BY_DIFFICULTY = { easy: 120, medium: 150, hard: 180 };
+
+export function getAnswerTimeLimitSec(question) {
+  if (Number(question?.answerTimeLimitSec) > 0) return Number(question.answerTimeLimitSec);
+  const level = Number(question?.cognitiveLevel);
+  if (level >= 4) return ANSWER_TIME_BY_DIFFICULTY.hard;
+  if (level === 3) return ANSWER_TIME_BY_DIFFICULTY.medium;
+  if (level === 1 || level === 2) return ANSWER_TIME_BY_DIFFICULTY.easy;
+  return ANSWER_TIME_BY_DIFFICULTY[question?.difficulty] || ANSWER_TIME_BY_DIFFICULTY.medium;
+}
+
+export function estimateQuestionCount(minutes, mode = "live") {
+  if (mode === "text") return Math.max(3, Math.min(15, Math.floor(minutes * 0.8)));
+  const introSec = 30 + THINK_TIME_SEC + INTRO_ANSWER_TIME_SEC;
+  const perQuestionSec = THINK_TIME_SEC + 120 + 20;
+  return Math.max(2, Math.min(15, Math.floor((minutes * 60 - introSec) / perQuestionSec)));
+}

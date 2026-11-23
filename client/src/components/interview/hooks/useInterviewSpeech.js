@@ -60,7 +60,6 @@ export function useInterviewSpeech({
 
       if (advanceToListening && isInterviewActiveRef.current) {
         setInterviewPhase("waiting");
-        // User will manually click Record Answer when ready to speak
       }
     },
     [clearSpeechTimeouts, isInterviewActiveRef, setInterviewPhase]

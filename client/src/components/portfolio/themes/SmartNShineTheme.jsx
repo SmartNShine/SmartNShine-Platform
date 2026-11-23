@@ -1371,6 +1371,7 @@ export default function SmartNShineTheme({
                         const date = isObj ? item.date || "" : "";
                         const link = isObj ? item.link || item.url || "" : "";
                         const desc = isObj ? item.description || "" : "";
+                        const image = isObj ? item.image || item.imageUrl || item.thumbnail || "" : "";
                         const bullets = isObj && Array.isArray(item.bullets) ? item.bullets.filter(Boolean) : [];
 
                         return (
@@ -1378,6 +1379,14 @@ export default function SmartNShineTheme({
                             key={isObj ? item.id || itemIdx : itemIdx}
                             className="p-6 rounded-xs border border-[var(--sns-border)] bg-[var(--sns-bg-subtle)] space-y-2"
                           >
+                            {image && (
+                              <img
+                                src={image}
+                                alt={title || "Entry"}
+                                className="w-full h-36 object-cover rounded-xs border border-[var(--sns-border)] mb-2"
+                                loading="lazy"
+                              />
+                            )}
                             <div className="flex justify-between items-baseline gap-2 flex-wrap">
                               {title && (
                                 <h4 className="sns-serif text-xl text-[var(--sns-text-primary)]">
