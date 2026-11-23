@@ -77,9 +77,9 @@ export async function getFaceLandmarker() {
       minFaceDetectionConfidence: 0.7,
       minFacePresenceConfidence: 0.7,
     });
-    console.log("⚡ FaceLandmarker initialized with GPU delegate");
+    console.log("FaceLandmarker initialized with GPU delegate");
   } catch (gpuError) {
-    console.warn("⚠️ GPU delegate failed for FaceLandmarker, falling back to CPU:", gpuError.message);
+    console.warn("GPU delegate failed for FaceLandmarker, falling back to CPU:", gpuError.message);
     faceLandmarkerInstance = await FaceLandmarker.createFromOptions(resolver, {
       baseOptions: {
         modelAssetPath: FACE_LANDMARKER_MODEL,
@@ -116,9 +116,9 @@ export async function getObjectDetector() {
       scoreThreshold: 0.32, // Calibrated threshold for cell phones (prevents false positives from laptops/desks)
       runningMode: "VIDEO",
     });
-    console.log("⚡ ObjectDetector initialized with GPU delegate");
+    console.log("ObjectDetector initialized with GPU delegate");
   } catch (gpuError) {
-    console.warn("⚠️ GPU delegate failed for ObjectDetector, falling back to CPU:", gpuError.message);
+    console.warn("GPU delegate failed for ObjectDetector, falling back to CPU:", gpuError.message);
     objectDetectorInstance = await ObjectDetector.createFromOptions(resolver, {
       baseOptions: {
         modelAssetPath: OBJECT_DETECTOR_MODEL,
@@ -144,7 +144,7 @@ export async function preloadVisionModels() {
       const [fl, od] = await Promise.all([getFaceLandmarker(), getObjectDetector()]);
       return { faceLandmarker: fl, objectDetector: od };
     } catch (err) {
-      console.error("❌ Failed to preload vision models:", err);
+      console.error("Failed to preload vision models:", err);
       initPromise = null;
       throw err;
     }
@@ -167,7 +167,7 @@ export function cleanupVisionModels() {
       objectDetectorInstance = null;
     }
     initPromise = null;
-    console.log("🧹 Vision models disposed successfully");
+    console.log("Vision models disposed successfully");
   } catch (err) {
     console.warn("Error during vision models disposal:", err.message);
   }

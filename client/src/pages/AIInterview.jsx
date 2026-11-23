@@ -1,12 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useOutletContext } from "react-router-dom";
-import { History, Mic } from "lucide-react";
+import { ArrowRight, AudioLines, FileBarChart2, History, ScanFace } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
-import ConfirmationModal from "@/components/common/modals/ConfirmationModal";
+import { StudioDialog } from "@/components/interview/StudioDialog";
+import { primeVoiceActivity } from "@/components/interview/voiceActivity";
+import { CallEndIcon, ShieldIcon, SkipIcon } from "@/components/interview/StudioIcons";
+import {
+  useScreenShare,
+  requestScreenShare,
+  stopScreenShare,
+  isFullScreenShare,
+  isPartialScreenShare,
+} from "@/components/interview/hooks/useScreenShare";
 import {
   INTERVIEWER_VOICES,
   SetupStep,
+  MonitoringCheckStep,
   InterviewStep,
   ResultStep,
   useInterviewSpeech,
@@ -16,10 +26,17 @@ import {
   useVideoRecorder,
   useProctoringEngine,
   useInterviewTurnFlow,
+  useEnvironmentGuard,
+  requestInterviewFullscreen,
+  exitInterviewFullscreen,
   getAnswerTimeLimitSec,
   CONVERSATION_PHASES,
   INTRO_ANSWER_TIME_SEC,
 } from "@/components/interview";
+
+// Screen sharing is mandatory only for TPO-assigned assessments (security plan S1.5).
+// They are not linked to interview sessions yet, so self-chosen proctored mode only flags.
+const SCREEN_SHARE_REQUIRED = false;
 
 const AIInterview = () => {
   const navigate = useNavigate();
@@ -28,7 +45,12 @@ const AIInterview = () => {
   const setIsFocusMode = outletContext?.setIsFocusMode;
   const isProduction = import.meta.env.PROD || false;
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isSkipDialogOpen, setIsSkipDialogOpen] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
+  // { previous, resolve } while asking to share the entire screen instead of a window/tab.
+  const [partialShare, setPartialShare] = useState(null);
+  // Setup → monitoring check (camera, system check, consent, screen share) → interview.
+  const [isMonitoringCheckOpen, setIsMonitoringCheckOpen] = useState(false);
 
   const [theme, setTheme] = useState(() => {
     return (
@@ -49,7 +71,7 @@ const AIInterview = () => {
   };
 
   // Selected persona & voice engine
-  const [selectedVoice, setSelectedVoice] = useState("shubh");
+  const [selectedVoice] = useState("shubh");
   const [voiceEngine, setVoiceEngineState] = useState(() => {
     if (isProduction) return "sarvam";
     return localStorage.getItem("ai_interview_voice_engine") || "sarvam";
@@ -73,16 +95,6 @@ const AIInterview = () => {
     );
   };
 
-  const handlePersonaChange = (voiceKey) => {
-    if (INTERVIEWER_VOICES[voiceKey]) {
-      setSelectedVoice(voiceKey);
-      const voiceMeta = INTERVIEWER_VOICES[voiceKey];
-      toast(`Interviewer set to ${voiceMeta.name} (${voiceMeta.gender === "male" ? "Male" : "Female"})`, {
-        icon: "🎙️",
-      });
-    }
-  };
-
   // Ref bridge for circular dependencies between speech, recording & session
   const onVoiceSubmitBridgeRef = useRef(null);
   const setInterviewPhaseBridgeRef = useRef(null);
@@ -95,7 +107,6 @@ const AIInterview = () => {
 
   // 1. Hook for Speech & TTS
   const speech = useInterviewSpeech({
-    selectedRole: "", // dynamically handled
     selectedVoice,
     voiceEngine,
     serverTtsAvailable: true,
@@ -121,7 +132,10 @@ const AIInterview = () => {
     setVoiceEngineState,
     selectedVoice,
     speakAndListen: speech.speakAndListen,
-    generateIntroduction: speech.generateIntroduction,
+    speakSegments: speech.speakSegments,
+    playFiller: speech.playFiller,
+    preloadClips: speech.preloadClips,
+    greetingClip: speech.greetingClip,
     stopLocalAudio: speech.stopLocalAudio,
     cleanupAudioStreams: recording.cleanupAudioStreams,
     isFinalizingRecordingRef: recording.isFinalizingRef,
@@ -145,16 +159,24 @@ const AIInterview = () => {
     submitRecording: recording.submitRecording,
     cancelRecording: recording.cancelRecording,
     prepareMic: recording.startMicPreview,
+    // Fill the processing gap like a real interviewer: a natural beat before
+    // the acknowledgment (never an instant reply, and the closing mic can't
+    // pick it up). Cancelled automatically if the next question is already ready.
+    onAnswerEnd: (reason) => {
+      speech.playFiller(reason === "timeout" ? "times_up" : "ack", {
+        delayMs: reason === "timeout" ? 450 : 700 + Math.round(Math.random() * 400),
+      });
+    },
     answerWindowOpenRef,
   });
 
-  const handleSkip = async () => {
-    turnFlow.pause();
-    if (!window.confirm("Skip this question? It will affect your score.")) {
-      turnFlow.resume();
-      return;
-    }
+
+  const handleSkip = () => setIsSkipDialogOpen(true);
+
+  const handleConfirmSkip = async () => {
+    setIsSkipDialogOpen(false);
     recording.cancelRecording();
+    if (session.selectedMode !== "text") speech.playFiller("skip_ack", { delayMs: 300 });
     await session.handleSkipQuestion({ skipConfirm: true });
   };
 
@@ -184,6 +206,106 @@ const AIInterview = () => {
       ? new Date(session.session.startedAt).getTime()
       : null,
   });
+
+  // 7. Screen sharing (proctored): still frames every 15 s and when the candidate leaves.
+  const isProctored = session.proctoringLevel === "proctored";
+  const isLiveInterview = session.step === "interview" && session.interviewPhase !== "completing" && session.interviewPhase !== "report-error";
+  const screenShare = useScreenShare({
+    active: isProctored && isLiveInterview,
+    sessionId: activeSessionId,
+    interviewStartTime: session.session?.startedAt ? new Date(session.session.startedAt).getTime() : null,
+    required: SCREEN_SHARE_REQUIRED,
+    logViolation: proctoring.logViolation,
+  });
+
+  // 8. Environment guard: time away, fullscreen, displays, virtual devices, tabs.
+  const environment = useEnvironmentGuard({
+    active: isLiveInterview,
+    level: session.proctoringLevel,
+    cameraStream: camera.stream,
+    getMicStream: recording.getMicStream,
+    logViolation: proctoring.logViolation,
+    onAwayStart: isProctored ? screenShare.onAwayStart : undefined,
+    takeAwayFrameId: isProctored ? screenShare.takeAwayFrameId : undefined,
+  });
+
+  // Freeze the turn countdown while a dialog is open, fullscreen was left or the share stopped.
+  const isTimerFrozen = isExitModalOpen || isSkipDialogOpen || environment.fullscreenLost || screenShare.shareLost;
+  useEffect(() => {
+    if (isTimerFrozen) turnFlow.pause();
+    else turnFlow.resume();
+  }, [isTimerFrozen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (session.step !== "setup") setIsMonitoringCheckOpen(false);
+    if (session.step === "interview") return;
+    exitInterviewFullscreen();
+    screenShare.stop();
+  }, [session.step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A window or tab was shared: ask once more for the entire screen (a new click).
+  const askForEntireScreen = (previous) => new Promise((resolve) => setPartialShare({ previous, resolve }));
+  const handleShareEntireScreen = () => {
+    const pending = partialShare;
+    if (!pending) return;
+    requestScreenShare().then((result) => {
+      setPartialShare(null);
+      if (!result.stream) return pending.resolve(pending.previous); // picker cancelled: keep the first share
+      stopScreenShare(pending.previous.stream);
+      pending.resolve(result);
+    });
+  };
+  const handleKeepPartialShare = () => {
+    const pending = partialShare;
+    if (!pending) return;
+    setPartialShare(null);
+    if (SCREEN_SHARE_REQUIRED) {
+      stopScreenShare(pending.previous.stream);
+      pending.resolve({ stream: null, status: "declined", reason: "cancelled" });
+    } else {
+      pending.resolve(pending.previous);
+    }
+  };
+
+  // Setup "Launch": validate the configuration, then open the monitoring check.
+  const handleOpenMonitoringCheck = () => {
+    const startError = session.getStartError();
+    if (startError) {
+      toast.error(startError);
+      return;
+    }
+    setIsMonitoringCheckOpen(true);
+    window.scrollTo({ top: 0 });
+  };
+
+  // Fullscreen and the screen-share picker must be requested inside the click itself (browser rule).
+  const handleStart = async () => {
+    primeVoiceActivity(); // in the click: lets Shubh's orb follow his voice
+    const startError = session.getStartError();
+    if (startError) {
+      toast.error(startError);
+      return;
+    }
+    if (!isProctored) {
+      await session.handleStartInterview();
+      return;
+    }
+    void requestInterviewFullscreen();
+    let share = await requestScreenShare();
+    if (isPartialScreenShare(share.status)) share = await askForEntireScreen(share);
+    if (SCREEN_SHARE_REQUIRED && !isFullScreenShare(share.status)) {
+      stopScreenShare(share.stream);
+      exitInterviewFullscreen();
+      toast.error("This assessment needs your entire screen shared. Use Chrome or Edge on a computer and choose \"Entire screen\".");
+      return;
+    }
+    screenShare.adopt(share);
+    const started = await session.handleStartInterview({ screenShare: { status: share.status } });
+    if (started !== true) {
+      screenShare.stop();
+      exitInterviewFullscreen();
+    }
+  };
 
   // Auto-start camera once when entering live interview
   useEffect(() => {
@@ -237,14 +359,14 @@ const AIInterview = () => {
   // Synchronize focus mode with active live interview (hides sidebar & navbar for 100% focus)
   useEffect(() => {
     if (typeof setIsFocusMode === "function") {
-      setIsFocusMode(session.step === "interview");
+      setIsFocusMode(session.step === "interview" || (session.step === "setup" && isMonitoringCheckOpen));
     }
     return () => {
       if (typeof setIsFocusMode === "function") {
         setIsFocusMode(false);
       }
     };
-  }, [session.step, setIsFocusMode]);
+  }, [session.step, isMonitoringCheckOpen, setIsFocusMode]);
 
   // Connect bridges
   onVoiceSubmitBridgeRef.current = session.handleVoiceSubmit;
@@ -334,6 +456,7 @@ const AIInterview = () => {
           interviewDuration={session.interviewDuration}
           isRecording={recording.isRecording}
           isPlayingAudio={speech.isPlayingAudio}
+          isFillerPlaying={speech.isFillerPlaying}
           answer={session.answer}
           setAnswer={session.setAnswer}
           isSubmitting={session.isSubmitting}
@@ -346,6 +469,7 @@ const AIInterview = () => {
           onSubmitAnswer={session.handleSubmitAnswer}
           interviewer={INTERVIEWER_VOICES[selectedVoice]}
           progress={session.progress}
+          questionSteps={session.questionSteps}
           turn={turnFlow}
           hasRecordingDraft={recording.hasRecordingDraft}
           onRetryReport={session.handleCompleteInterview}
@@ -362,58 +486,64 @@ const AIInterview = () => {
           selectedAudioDeviceId={recording.selectedAudioDeviceId}
           onSwitchAudioDevice={recording.switchAudioDevice}
         />
+      ) : session.step === "setup" && isMonitoringCheckOpen ? (
+        <MonitoringCheckStep
+          proctoringLevel={session.proctoringLevel}
+          screenShareRequired={SCREEN_SHARE_REQUIRED}
+          roleLabel={session.selectedRole}
+          isSubmitting={session.isSubmitting}
+          onBack={() => {
+            camera.stopCamera();
+            setIsMonitoringCheckOpen(false);
+          }}
+          onBegin={handleStart}
+          cameraVideoRef={camera.attachVideoRef}
+          isCameraActive={camera.isCameraActive}
+          cameraError={camera.cameraError}
+          isCameraInitializing={camera.isInitializing}
+          onStartCamera={camera.startCamera}
+          videoDevices={camera.videoDevices}
+          selectedDeviceId={camera.selectedDeviceId}
+          onSwitchCamera={camera.switchCamera}
+          audioDevices={recording.audioDevices}
+          selectedAudioDeviceId={recording.selectedAudioDeviceId}
+          onSwitchAudioDevice={recording.switchAudioDevice}
+          audioInputLevel={recording.audioInputLevel}
+          onStartMicPreview={recording.startMicPreview}
+        />
       ) : (
         <div className="workspace-container py-6 sm:py-8 space-y-8">
-          {/* Executive Studio Hero Banner */}
+          {/* Page header */}
           {session.step === "setup" && (
-            <div className="relative overflow-hidden mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/30 dark:from-[#111218] dark:via-[#0E1017] dark:to-[#141522] border border-blue-200/80 dark:border-white/10 shadow-sm">
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold tracking-wide uppercase">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span>Executive AI Mock Interview Studio</span>
-                  </div>
-
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                    Master Technical & Behavioral Interviews
-                  </h1>
-
-                  <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
-                    Practice realistic interviews with natural voice speech synthesis, live AI proctoring, and comprehensive diagnostic reports tailored to your target engineering roles.
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                      ⚡ Voice-to-Voice AI
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                      🛡️ Vision Proctoring Guard
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                      📊 STAR Diagnostic Report
-                    </span>
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex items-center">
-                  <Link
-                    to="/interview/history"
-                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 border border-gray-200 dark:border-white/15 text-gray-900 dark:text-white text-xs font-bold flex items-center justify-center gap-2.5 transition-all shadow-xs hover:shadow-md active:scale-95 group"
-                    id="btn-view-interview-history"
-                  >
-                    <History className="w-4 h-4 text-blue-500 group-hover:rotate-[-20deg] transition-transform" />
-                    <span>Past Interviews & Reports</span>
-                    <span className="text-gray-400 group-hover:translate-x-0.5 transition-transform">→</span>
-                  </Link>
-                </div>
+            <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-2">
+                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-blue-600 dark:text-sky-300">
+                  <AudioLines className="h-4 w-4" aria-hidden="true" />
+                  AI Interview Studio
+                </p>
+                <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+                  Practise the interview before the interview
+                </h1>
+                <ul className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <li className="flex items-center gap-1.5"><AudioLines className="h-4 w-4 text-gray-400" aria-hidden="true" /> Real voice conversation</li>
+                  <li className="flex items-center gap-1.5"><ScanFace className="h-4 w-4 text-gray-400" aria-hidden="true" /> On-device proctoring</li>
+                  <li className="flex items-center gap-1.5"><FileBarChart2 className="h-4 w-4 text-gray-400" aria-hidden="true" /> Detailed feedback report</li>
+                </ul>
               </div>
-            </div>
+              <Link
+                to="/interview/history"
+                id="btn-view-interview-history"
+                className="group inline-flex h-10 w-fit shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:border-white/20 dark:hover:text-white"
+              >
+                <History className="h-4 w-4" aria-hidden="true" />
+                Past interviews
+                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
+              </Link>
+            </header>
           )}
 
           {/* Step 1: Setup */}
-          {session.step === "setup" && (
+          {session.step === "setup" && !isMonitoringCheckOpen && (
             <SetupStep
               config={session.config}
               resumes={session.resumes}
@@ -433,33 +563,20 @@ const AIInterview = () => {
               setJobDescription={session.setJobDescription}
               interviewDuration={session.interviewDuration}
               setInterviewDuration={session.setInterviewDuration}
+              proctoringLevel={session.proctoringLevel}
+              setProctoringLevel={session.setProctoringLevel}
               voiceAvailable={session.voiceAvailable}
               ttsAvailable={session.ttsAvailable}
               voiceEngine={voiceEngine}
               setVoiceEngine={setVoiceEngine}
               voiceProviders={session.voiceProviders}
               selectedVoice={selectedVoice}
-              setSelectedVoice={handlePersonaChange}
               isProduction={isProduction}
               isSubmitting={session.isSubmitting}
               isTestingVoice={speech.isTestingVoice}
               isPlayingAudio={speech.isPlayingAudio}
               onTestVoice={speech.handleTestVoice}
-              onStart={session.handleStartInterview}
-              cameraVideoRef={camera.attachVideoRef}
-              isCameraActive={camera.isCameraActive}
-              cameraError={camera.cameraError}
-              isCameraInitializing={camera.isInitializing}
-              onStartCamera={camera.startCamera}
-              onStopCamera={camera.stopCamera}
-              videoDevices={camera.videoDevices}
-              selectedDeviceId={camera.selectedDeviceId}
-              onSwitchCamera={camera.switchCamera}
-              audioDevices={recording.audioDevices}
-              selectedAudioDeviceId={recording.selectedAudioDeviceId}
-              onSwitchAudioDevice={recording.switchAudioDevice}
-              audioInputLevel={recording.audioInputLevel}
-              onStartMicPreview={recording.startMicPreview}
+              onStart={handleOpenMonitoringCheck}
             />
           )}
 
@@ -483,17 +600,69 @@ const AIInterview = () => {
         </div>
       )}
 
-      {/* End Interview Confirmation Modal Popup */}
-      <ConfirmationModal
-        isOpen={isExitModalOpen}
-        onClose={() => setIsExitModalOpen(false)}
+      <StudioDialog
+        open={isExitModalOpen}
+        tone="danger"
+        icon={<CallEndIcon className="h-5 w-5" />}
+        title="End this interview?"
+        description="Your answers so far won't be scored and you won't get a report. You can start a new interview any time."
+        cancelLabel="Keep going"
+        confirmLabel="End interview"
+        onCancel={() => setIsExitModalOpen(false)}
         onConfirm={handleConfirmExit}
-        title="End Interview Session?"
-        message="Are you sure you want to exit? Your active live interview will be terminated and unsaved progress will be lost."
-        confirmText="Yes, End Interview"
-        cancelText="Stay in Interview"
-        type="danger"
         loading={isAbandoning}
+      />
+
+      <StudioDialog
+        open={environment.fullscreenLost && !screenShare.shareLost && !isExitModalOpen && session.step === "interview"}
+        tone="caution"
+        icon={<ShieldIcon className="h-5 w-5" />}
+        title="Return to fullscreen"
+        description="This is a proctored interview, so it runs in fullscreen. Your timer is paused, and the time spent outside fullscreen is recorded for review."
+        cancelLabel="Return to fullscreen"
+        confirmLabel="End interview"
+        onCancel={() => void environment.returnToFullscreen()}
+        onConfirm={() => setIsExitModalOpen(true)}
+      />
+
+      <StudioDialog
+        open={screenShare.shareLost && !isExitModalOpen && session.step === "interview"}
+        tone="caution"
+        icon={<ShieldIcon className="h-5 w-5" />}
+        title="Share your screen again"
+        description={SCREEN_SHARE_REQUIRED
+          ? "This assessment needs your entire screen shared. Your timer is paused, and the time without sharing is recorded for review."
+          : "Screen sharing stopped. Your timer is paused, and the time without sharing is recorded for review. You can continue without it, but the review will note it."}
+        cancelLabel="Share screen again"
+        confirmLabel={SCREEN_SHARE_REQUIRED ? "End interview" : "Continue without sharing"}
+        onCancel={() => void screenShare.reshare()}
+        onConfirm={() => (SCREEN_SHARE_REQUIRED ? setIsExitModalOpen(true) : screenShare.continueWithoutShare())}
+      />
+
+      <StudioDialog
+        open={Boolean(partialShare)}
+        tone="caution"
+        icon={<ShieldIcon className="h-5 w-5" />}
+        title="Share your entire screen"
+        description={SCREEN_SHARE_REQUIRED
+          ? "You shared a single window or tab. This assessment needs the entire screen: choose \"Entire screen\" in the next prompt."
+          : "You shared a single window or tab. Proctored interviews need the entire screen: choose \"Entire screen\" in the next prompt. If you continue with this window, the review will note it."}
+        cancelLabel="Share entire screen"
+        confirmLabel={SCREEN_SHARE_REQUIRED ? "Cancel" : "Continue with this window"}
+        onCancel={handleShareEntireScreen}
+        onConfirm={handleKeepPartialShare}
+      />
+
+      <StudioDialog
+        open={isSkipDialogOpen}
+        tone="caution"
+        icon={<SkipIcon className="h-5 w-5" />}
+        title="Skip this question?"
+        description="A skipped question scores zero and you can't come back to it. Your timer is paused while you decide."
+        cancelLabel="Keep answering"
+        confirmLabel="Skip question"
+        onCancel={() => setIsSkipDialogOpen(false)}
+        onConfirm={handleConfirmSkip}
       />
     </div>
   );

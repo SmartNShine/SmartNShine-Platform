@@ -43,9 +43,13 @@ export function useCameraStream({ autoStart = false } = {}) {
 
       try {
         const primaryConstraints = {
+          // Full HD when the camera supports it: the tile is large and cropped,
+          // so 720p looks soft. Proctoring analyses fixed small frames and the
+          // recorder bitrate is capped, so CPU and upload size don't grow.
           video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30, max: 30 },
             ...(deviceId ? { deviceId: { ideal: deviceId } } : {}),
           },
           audio: false,
@@ -59,7 +63,7 @@ export function useCameraStream({ autoStart = false } = {}) {
             constraintErr.name === "OverconstrainedError" ||
             constraintErr.name === "ConstraintNotSatisfiedError"
           ) {
-            console.warn("⚠️ OverconstrainedError with 720p constraints. Falling back to default video device...", constraintErr);
+            console.warn("OverconstrainedError with 720p constraints. Falling back to default video device...", constraintErr);
             // Universal fallback: standard unconstrained video
             mediaStream = await navigator.mediaDevices.getUserMedia({
               video: true,

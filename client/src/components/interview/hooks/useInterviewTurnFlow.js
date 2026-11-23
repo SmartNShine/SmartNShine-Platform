@@ -24,6 +24,7 @@ export function useInterviewTurnFlow({
   submitRecording,
   cancelRecording,
   prepareMic,
+  onAnswerEnd,
   answerWindowOpenRef,
 }) {
   const [stage, setStageState] = useState("idle");
@@ -40,7 +41,7 @@ export function useInterviewTurnFlow({
   // Latest callbacks/limit, read from timers and async continuations.
   const latest = useRef({});
   useLayoutEffect(() => {
-    latest.current = { answerLimitSec, startRecording, submitRecording, cancelRecording, prepareMic };
+    latest.current = { answerLimitSec, startRecording, submitRecording, cancelRecording, prepareMic, onAnswerEnd };
   });
 
   const setStage = useCallback((next) => {
@@ -87,11 +88,13 @@ export function useInterviewTurnFlow({
     startCountdown(latest.current.answerLimitSec);
   }, [setStage, startCountdown]);
 
-  const finishAnswer = useCallback(() => {
+  // reason: "timeout" (answer timer hit 0) | "done" (candidate finished early)
+  const finishAnswer = useCallback((reason = "done") => {
     if (stageRef.current !== "answering") return;
     setStage("submitting");
     setRemainingSec(0);
     latest.current.submitRecording();
+    latest.current.onAnswerEnd?.(reason);
   }, [setStage]);
 
   // Re-send a recording that failed to upload (stage "retry").
@@ -99,6 +102,7 @@ export function useInterviewTurnFlow({
     if (stageRef.current !== "retry") return;
     setStage("submitting");
     latest.current.submitRecording();
+    latest.current.onAnswerEnd?.("retry");
   }, [setStage]);
 
   // A new candidate turn begins whenever the interviewer hands over ("waiting").
@@ -146,7 +150,7 @@ export function useInterviewTurnFlow({
       setRemainingSec(Math.max(0, Math.ceil(msLeft / 1000)));
       if (msLeft > 0) return;
       if (stageRef.current === "thinking") void beginAnswer();
-      else if (stageRef.current === "answering") finishAnswer();
+      else if (stageRef.current === "answering") finishAnswer("timeout");
     };
     tick();
     const interval = setInterval(tick, 250);
@@ -173,6 +177,11 @@ export function useInterviewTurnFlow({
     setRepeatsUsed(used);
   }, [turnKey]);
 
+  const getRemainingMs = useCallback(
+    () => pausedRemainingMsRef.current ?? Math.max(0, deadlineRef.current - Date.now()),
+    []
+  );
+
   const totalSec = stage === "thinking" ? THINK_TIME_SEC : answerLimitSec;
 
   return {
@@ -181,9 +190,11 @@ export function useInterviewTurnFlow({
     totalSec,
     isPaused,
     isWarning: stage === "answering" && remainingSec <= ANSWER_WARNING_SEC,
+    // Sub-second precision for smooth timer animation.
+    getRemainingMs,
     canRepeat: stage === "thinking" && repeatsUsed < 1,
     startNow: beginAnswer,
-    finishNow: finishAnswer,
+    finishNow: () => finishAnswer("done"),
     retryMic: beginAnswer,
     submitDraft,
     pause,

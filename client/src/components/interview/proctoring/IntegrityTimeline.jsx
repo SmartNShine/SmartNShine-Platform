@@ -1,8 +1,11 @@
 import React, { useState } from "react";
-import { ShieldCheck, ShieldAlert, Smartphone, Eye, Users, AlertTriangle, Monitor, ExternalLink } from "lucide-react";
+import { ScreenFrameImage, ScreenFrameStrip } from "./ScreenFrames";
+import { ShieldCheck, ShieldAlert, Smartphone, Eye, Users, AlertTriangle, Monitor, ExternalLink, CameraOff, Clock, MonitorSmartphone, X } from "lucide-react";
 
-export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVideo }) => {
+export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVideo, sessionId }) => {
+  // Camera snapshot URL (string) or a screen frame ({ frameId, timestampSeconds }).
   const [selectedSnapshot, setSelectedSnapshot] = useState(null);
+  const [selectedScreenFrame, setSelectedScreenFrame] = useState(null);
 
   if (!proctoringAudit) return null;
 
@@ -11,6 +14,7 @@ export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVi
     flagCounts = {},
     verdict = "VERIFIED_CLEAN",
     events = [],
+    screenShare,
   } = proctoringAudit;
 
   const isClean = verdict === "VERIFIED_CLEAN";
@@ -29,7 +33,20 @@ export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVi
       case "TAB_SWITCH":
       case "WINDOW_BLUR":
       case "PASTE_ATTEMPT":
+      case "COPY_ATTEMPT":
+      case "FULLSCREEN_EXIT":
+      case "WINDOW_RESIZE":
+      case "MULTI_SESSION":
+      case "SCREEN_SHARE_UNAVAILABLE":
+      case "SCREEN_SHARE_PARTIAL":
+      case "SCREEN_SHARE_STOPPED":
         return <Monitor className="w-4 h-4 text-blue-400" />;
+      case "MULTI_SCREEN":
+        return <MonitorSmartphone className="w-4 h-4 text-amber-400" />;
+      case "VIRTUAL_DEVICE":
+        return <CameraOff className="w-4 h-4 text-rose-400" />;
+      case "TIMING_ANOMALY":
+        return <Clock className="w-4 h-4 text-amber-400" />;
       default:
         return <AlertTriangle className="w-4 h-4 text-neutral-400" />;
     }
@@ -155,8 +172,9 @@ export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVi
 
         {events.length === 0 ? (
           <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-center">
-            <p className="text-xs text-emerald-400 font-medium">
-              ✨ No proctoring infractions detected. The candidate maintained unbroken focus throughout the entire session.
+            <p className="flex items-center justify-center gap-2 text-xs text-emerald-400 font-medium">
+              <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
+              No proctoring infractions detected. The candidate maintained unbroken focus throughout the entire session.
             </p>
           </div>
         ) : (
@@ -181,6 +199,14 @@ export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVi
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {ev.meta?.screenFrameId && sessionId && (
+                    <button
+                      onClick={() => setSelectedScreenFrame({ frameId: ev.meta.screenFrameId, timestampSeconds: ev.timestampSeconds })}
+                      className="px-2 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-300 text-[10px] font-medium border border-amber-500/20 transition-colors"
+                    >
+                      View screen
+                    </button>
+                  )}
                   {ev.snapshotUrl && (
                     <button
                       onClick={() => setSelectedSnapshot(ev.snapshotUrl)}
@@ -204,6 +230,52 @@ export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVi
         )}
       </div>
 
+      {screenShare && sessionId && (
+        <ScreenFrameStrip
+          sessionId={sessionId}
+          screenShare={screenShare}
+          onSelect={(frame) => setSelectedScreenFrame({ frameId: frame.id, timestampSeconds: frame.timestampSeconds })}
+        />
+      )}
+
+      {/* Screen frame modal */}
+      {selectedScreenFrame && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSelectedScreenFrame(null)}
+        >
+          <div
+            className="max-w-4xl w-full rounded-2xl bg-neutral-900 border border-white/20 p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3 gap-3">
+              <span className="text-xs font-semibold text-white">
+                Shared screen at {formatSeconds(selectedScreenFrame.timestampSeconds || 0)}
+              </span>
+              <div className="flex items-center gap-2">
+                {videoRecordingUrl && onSeekVideo && (
+                  <button
+                    onClick={() => onSeekVideo(selectedScreenFrame.timestampSeconds)}
+                    className="px-2 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-medium border border-white/10"
+                  >
+                    Jump to {formatSeconds(selectedScreenFrame.timestampSeconds || 0)}
+                  </button>
+                )}
+                <button onClick={() => setSelectedScreenFrame(null)} className="text-neutral-400 hover:text-white text-xs">
+                  <X className="inline h-3.5 w-3.5 -mt-px" aria-hidden="true" /> Close
+                </button>
+              </div>
+            </div>
+            <ScreenFrameImage
+              eager
+              sessionId={sessionId}
+              frameId={selectedScreenFrame.frameId}
+              className="w-full aspect-video rounded-xl border border-white/10"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Snapshot Modal */}
       {selectedSnapshot && (
         <div
@@ -220,7 +292,7 @@ export const IntegrityTimeline = ({ proctoringAudit, videoRecordingUrl, onSeekVi
                 onClick={() => setSelectedSnapshot(null)}
                 className="text-neutral-400 hover:text-white text-xs"
               >
-                ✕ Close
+                <X className="inline h-3.5 w-3.5 -mt-px" aria-hidden="true" /> Close
               </button>
             </div>
             <img

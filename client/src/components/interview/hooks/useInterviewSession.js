@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import interviewAPI from "@/api/interview.api";
 import { resumeAPI } from "@/api/api";
 import { CONVERSATION_PHASES, estimateQuestionCount } from "../constants";
+import { VOICE_CLIPS } from "../voiceClips";
 
 // Never open a new question with less time than this left on the clock.
 const MIN_SECONDS_FOR_NEXT_QUESTION = 60;
@@ -14,7 +15,10 @@ export function useInterviewSession({
   setVoiceEngineState,
   selectedVoice,
   speakAndListen,
-  generateIntroduction,
+  speakSegments,
+  playFiller,
+  preloadClips,
+  greetingClip,
   stopLocalAudio,
   cleanupAudioStreams,
   isFinalizingRecordingRef,
@@ -41,6 +45,8 @@ export function useInterviewSession({
   const [selectedResume, setSelectedResume] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [interviewDuration, setInterviewDuration] = useState(10);
+  // "practice" (light-touch) or "proctored" (assessment rules); see security plan §4.
+  const [proctoringLevel, setProctoringLevel] = useState("practice");
 
   // Live session state
   const [session, setSession] = useState(null);
@@ -60,6 +66,10 @@ export function useInterviewSession({
   const [conversationPhase, setConversationPhase] = useState(CONVERSATION_PHASES.IDLE);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [questionCount, setQuestionCount] = useState(0);
+  // Progress the candidate sees: main questions only. Follow-ups continue the
+  // same step (and use up one planned slot, so the step total shrinks by one).
+  const [questionSteps, setQuestionSteps] = useState({ current: 0, followUps: 0 });
+  const lastShownNumberRef = useRef(null);
 
   // Mute state
   const [isMuted, setIsMuted] = useState(false);
@@ -188,15 +198,21 @@ export function useInterviewSession({
     });
   }, [stopLocalAudio]);
 
-  const handleStartInterview = async () => {
-    if (!selectedType) return toast.error("Please select an interview type");
-    if (!selectedRole) return toast.error("Please select a role");
-    if (selectedType === "resume-based" && !selectedResume) {
-      return toast.error("Please select a resume");
-    }
+  // Synchronous so the Start click can check it before opening the screen-share picker.
+  const getStartError = () => {
+    if (!selectedType) return "Please select an interview type";
+    if (!selectedRole) return "Please select a role";
+    if (selectedType === "resume-based" && !selectedResume) return "Please select a resume";
     if (selectedType === "job-description" && (!jobDescription || jobDescription.length < 50)) {
-      return toast.error("Please enter a job description (at least 50 characters)");
+      return "Please enter a job description (at least 50 characters)";
     }
+    return null;
+  };
+
+  /** @param {{ screenShare?: { status: string } }} [options] proctored mode: result of the share request */
+  const handleStartInterview = async ({ screenShare } = {}) => {
+    const startError = getStartError();
+    if (startError) return toast.error(startError);
 
     setIsSubmitting(true);
     try {
@@ -214,6 +230,9 @@ export function useInterviewSession({
         voiceEngineUsed: voiceEngine,
         personaUsed: selectedVoice,
         interviewLanguage: selectedLanguage,
+        proctoringLevel,
+        proctoringConsent: { accepted: true },
+        screenShare: proctoringLevel === "proctored" ? screenShare : undefined,
       });
 
       if (!createRes.success) throw new Error(createRes.error || "Failed to create session");
@@ -238,27 +257,32 @@ export function useInterviewSession({
         setConversationPhase(CONVERSATION_PHASES.INTRODUCTION);
         setInterviewPhase("greeting");
 
-        const introductionText = generateIntroduction(selectedRole);
+        preloadClips();
+        const greeting = greetingClip();
         setConversationHistory([
           {
             role: "ai",
             type: "introduction",
-            content: introductionText,
+            content: VOICE_CLIPS[greeting],
             timestamp: Date.now(),
           },
         ]);
 
-        speakAndListen(introductionText, () => {
+        speakSegments([{ clip: greeting }], () => {
           setConversationPhase(CONVERSATION_PHASES.WARM_UP);
           // Hands over to useInterviewTurnFlow: think time, then auto-recording.
           setInterviewPhase("waiting");
         });
       } else {
+        lastShownNumberRef.current = startRes.data.currentQuestion?.number ?? 1;
+        setQuestionSteps({ current: 1, followUps: 0 });
         setInterviewPhase("waiting");
       }
+      return true;
     } catch (error) {
       console.error("Failed to start interview:", error);
       toast.error(error.message || "Failed to start interview");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -284,7 +308,14 @@ export function useInterviewSession({
     }
   };
 
-  const showQuestion = (question) => {
+  // leadClip: pre-recorded line to open with when there is no AI reaction.
+  const showQuestion = (question, { leadClip } = {}) => {
+    if (question.number !== lastShownNumberRef.current) {
+      lastShownNumberRef.current = question.number;
+      setQuestionSteps((previous) => question.isFollowUp
+        ? { ...previous, followUps: previous.followUps + 1 }
+        : { ...previous, current: previous.current + 1 });
+    }
     updateCurrentQuestion(question);
     setAnswer("");
     setEvaluation(null);
@@ -292,9 +323,18 @@ export function useInterviewSession({
       setInterviewPhase("asking");
       setConversationHistory((prev) => [
         ...prev,
-        { role: "ai", type: "question", content: question.text, timestamp: Date.now() },
+        {
+          role: "ai",
+          type: question.isFollowUp ? "follow-up" : "question",
+          content: [question.leadIn, question.text].filter(Boolean).join(" "),
+          timestamp: Date.now(),
+        },
       ]);
-      void speakAndListen(question.text, () => setInterviewPhase("waiting"));
+      void speakSegments([
+        !question.leadIn && leadClip ? { clip: leadClip } : null,
+        question.leadIn ? { text: question.leadIn } : null,
+        { text: question.text },
+      ], () => setInterviewPhase("waiting"));
     } else {
       setInterviewPhase("waiting");
     }
@@ -328,7 +368,9 @@ export function useInterviewSession({
     if (!turn) return;
 
     try {
-      const response = await interviewAPI.submitAnswer(turn.sessionId, { answer: text, questionNumber: turn.question.number });
+      const response = await interviewAPI.submitAnswer(turn.sessionId, {
+        answer: text, questionNumber: turn.question.number, turnToken: turn.question.turnToken,
+      });
       if (!isCurrentTurn(turn)) return;
       if (!response.success) throw new Error(response.error || "Failed to submit answer");
       advanceInterview(response.data);
@@ -363,12 +405,27 @@ export function useInterviewSession({
         setConversationHistory((prev) => [
           ...prev, { role: "user", type: "self-introduction", content: introduction, timestamp: Date.now() },
         ]);
+
+        // The server re-plans question 1 around the introduction; on failure
+        // the original first question is still valid.
+        let firstQuestion = turn.question;
+        try {
+          const response = await interviewAPI.submitIntroduction(turn.sessionId, introduction);
+          if (response.success && response.data?.currentQuestion?.number === turn.question.number) {
+            firstQuestion = response.data.currentQuestion;
+          }
+        } catch (error) {
+          console.warn("Introduction could not be personalised:", error.message);
+        }
+        if (!isCurrentTurn(turn)) return false;
+
         setConversationPhase(CONVERSATION_PHASES.CORE_INTERVIEW);
-        showQuestion(turn.question);
+        showQuestion(firstQuestion, { leadClip: "intro_ack" });
         return true;
       }
 
       const response = await interviewAPI.submitVoiceAnswer(turn.sessionId, audioFile, turn.question.number, {
+        turnToken: turn.question.turnToken,
         voiceEngine, languageCode: selectedLanguage, clientTranscript, durationSeconds,
       });
       if (!isCurrentTurn(turn)) return false;
@@ -399,7 +456,7 @@ export function useInterviewSession({
     if (!turn) return;
 
     try {
-      const response = await interviewAPI.skipQuestion(turn.sessionId, turn.question.number);
+      const response = await interviewAPI.skipQuestion(turn.sessionId, turn.question.number, turn.question.turnToken);
       if (!isCurrentTurn(turn)) return;
       if (!response.success) throw new Error(response.error || "Failed to skip question");
       advanceInterview(response.data);
@@ -415,6 +472,7 @@ export function useInterviewSession({
     const question = currentQuestionRef.current;
     if (!question?.text || !isInterviewActiveRef.current || interviewPhase !== "waiting") return;
     setInterviewPhase("asking");
+    // Question audio is cached, so a repeat costs no TTS credits.
     void speakAndListen(question.text, () => setInterviewPhase("waiting"));
   };
 
@@ -429,6 +487,7 @@ export function useInterviewSession({
     const currentSession = sessionRef.current;
     stopLocalAudio();
     cleanupAudioStreams();
+    if (selectedMode !== "text") playFiller("closing");
 
     try {
       const response = await interviewAPI.completeSession(currentSession.id);
@@ -491,6 +550,8 @@ export function useInterviewSession({
     setIsMuted(false);
     setConversationHistory([]);
     setQuestionCount(0);
+    setQuestionSteps({ current: 0, followUps: 0 });
+    lastShownNumberRef.current = null;
     setConversationPhase(CONVERSATION_PHASES.IDLE);
   };
 
@@ -520,6 +581,8 @@ export function useInterviewSession({
     setJobDescription,
     interviewDuration,
     setInterviewDuration,
+    proctoringLevel,
+    setProctoringLevel,
     session,
     currentQuestion,
     answer,
@@ -535,6 +598,7 @@ export function useInterviewSession({
     conversationPhase,
     conversationHistory,
     questionCount,
+    questionSteps,
     isMuted,
     isMutedRef,
     isInterviewActiveRef,
@@ -542,6 +606,7 @@ export function useInterviewSession({
     currentQuestionRef,
     handleToggleMute,
     handleStartInterview,
+    getStartError,
     handleSubmitAnswer,
     handleVoiceSubmit,
     handleSkipQuestion,

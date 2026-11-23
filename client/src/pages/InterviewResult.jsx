@@ -51,6 +51,7 @@ import {
   Zap,
   Tag,
   ShieldCheck,
+  Check,
 } from "lucide-react";
 
 const typeIcons = {
@@ -727,7 +728,7 @@ ${result.overallFeedback}
                           score
                         )}`}
                       >
-                        {typeof score === "number" ? `${score}%` : hasAnswered ? "✓" : "—"}
+                        {typeof score === "number" ? `${score}%` : hasAnswered ? <Check className="h-4 w-4" aria-label="Answered" /> : "—"}
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">

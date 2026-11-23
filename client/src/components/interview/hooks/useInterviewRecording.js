@@ -285,6 +285,7 @@ export function useInterviewRecording({
   return {
     isRecording, hasRecordingDraft, micFrequencyBins, liveCandidateTranscript, isFinalizingRef,
     startRecording, submitRecording, cancelRecording, discardDraft, cleanupAudioStreams,
+    getMicStream: () => streamRef.current,
     audioDevices, selectedAudioDeviceId, switchAudioDevice, audioInputLevel, startMicPreview,
   };
 }
