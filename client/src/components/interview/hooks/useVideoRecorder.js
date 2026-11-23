@@ -132,7 +132,7 @@ export function useVideoRecorder() {
 
         rec.onstart = () => {
           setIsRecordingVideo(true);
-          console.log("🎥 Session video recording started.");
+          console.log("Session video recording started.");
         };
 
         rec.onstop = () => {

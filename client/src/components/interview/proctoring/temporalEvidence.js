@@ -1,7 +1,10 @@
-export const DETECTOR_VERSION = "temporal-vision-2";
+// v3: phone sensitivity restored (2026-11-23).
+export const DETECTOR_VERSION = "temporal-vision-3";
 
 const RULES = {
-  PHONE_DETECTED: { duration: 2000, frames: 7, ratio: 0.7, floor: 0.6 },
+  // EfficientDet-Lite0 scores a hand-held phone ~0.4–0.6 and flickers between
+  // frames, so require ~1 s of mostly-present detections at a moderate floor.
+  PHONE_DETECTED: { duration: 1000, frames: 4, ratio: 0.5, floor: 0.45 },
   MULTIPLE_FACES: { duration: 2000, frames: 8, ratio: 0.8, floor: 0.7 },
   FACE_ABSENT: { duration: 4000, frames: 16, ratio: 0.8, floor: 0.7 },
   IDENTITY_SWITCH: { duration: 3000, frames: 10, ratio: 0.85, floor: 0.7 },

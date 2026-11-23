@@ -44,20 +44,6 @@ export const getPricing = async () => {
 };
 
 /**
- * Compare all pricing plans
- * @returns {Promise<Object>} Comparison table of all tiers
- */
-export const comparePlans = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/subscription/compare`);
-    return response.data;
-  } catch (error) {
-    console.error("Error comparing plans:", error);
-    throw error.response?.data || {error: "Failed to compare plans"};
-  }
-};
-
-/**
  * Create a payment order
  * @param {string} tier - Subscription tier (one-time or pro)
  * @param {string} plan - Billing plan (monthly, yearly, etc.)
@@ -168,24 +154,6 @@ export const cancelSubscription = async (reason = "") => {
 };
 
 /**
- * Renew subscription
- * @returns {Promise<Object>} Renewal order details
- */
-export const renewSubscription = async () => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/subscription/renew`,
-      {},
-      {headers: getAuthHeader()}
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error renewing subscription:", error);
-    throw error.response?.data || {error: "Failed to renew subscription"};
-  }
-};
-
-/**
  * Get usage statistics
  * @returns {Promise<Object>} Usage stats with limits and reset dates
  */
@@ -239,13 +207,11 @@ export const updateAIPreference = async (preference) => {
 // Export all functions as default
 export default {
   getPricing,
-  comparePlans,
   createPaymentOrder,
   verifyPayment,
   getSubscriptionStatus,
   getSubscriptionHistory,
   cancelSubscription,
-  renewSubscription,
   getUsageStats,
   getAIConfig,
   updateAIPreference,

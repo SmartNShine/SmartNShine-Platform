@@ -88,10 +88,30 @@ export async function processInterviewTurn(params) {
   // If this turn completes the interview, we don't need a next question
   const isFinalQuestion = isComplete || questions.length >= session.totalQuestions;
 
-  const systemPrompt = `You are an elite Technical Lead & Staff Interviewer conducting a real-time ${session.interviewType} interview for a ${experienceLevel.toUpperCase()} ${role}.
+  // Behavioral and situational answers are judged on the story, not on technical
+  // depth. The JSON keys stay the same so stored evaluations and reports work.
+  const questionKind = ["behavioral", "situational"].includes(currentQuestion.questionType)
+    ? "people"
+    : currentQuestion.questionType === "resume-based" ? "resume" : "technical";
+  const rubricNote = {
+    people: `RUBRIC FOR THIS ANSWER: this is a ${currentQuestion.questionType.toUpperCase()} question. DO NOT grade technical knowledge or penalize missing technical detail.
+Map the score fields like this (same JSON keys):
+- technicalAccuracy → relevance and credibility of the example (a real, specific situation that answers the question)
+- depthAndTradeoffs → STAR completeness (situation, task, action, result) and the judgment shown
+- evidenceAndGrounding → personal ownership ("I" vs "we") and a concrete, ideally measurable result
+- communicationSignal → structure and clarity of the story
+Always fill "starBreakdown" (for a situational answer, describe their plan in each slot). "missingKeywords" lists missing STAR elements or competencies, not technical terms. "suggestedAnswer" is a short model STAR outline.`,
+    resume: `RUBRIC FOR THIS ANSWER: this is a RESUME question. technicalAccuracy → accuracy of technical claims about their own work; depthAndTradeoffs → why they made the decisions they describe; evidenceAndGrounding → their personal contribution and measurable results.`,
+    technical: "",
+  }[questionKind];
+  const interviewerRole = questionKind === "people"
+    ? "a senior hiring manager experienced in behavioral (STAR) interviewing"
+    : "an elite Technical Lead & Staff Interviewer";
+
+  const systemPrompt = `You are ${interviewerRole} conducting a real-time ${session.interviewType} interview for a ${experienceLevel.toUpperCase()} ${role}.
 
 YOUR DUAL OBJECTIVE IN THIS TURN:
-1. Thoroughly evaluate the candidate's answer against staff-level engineering rubrics.
+1. Thoroughly evaluate the candidate's answer against the rubric for this question type.
 2. If the interview continues, formulate the next question and an acknowledgment bridge.
 
 INTERVIEW CANDIDATE CONTEXT:
@@ -120,6 +140,8 @@ CRITICAL LANGUAGE COMPLIANCE POLICY (ENGLISH MANDATORY):
     2. Add to "weaknesses": "Answer was delivered in non-English / unauthorized language. English is mandatory for this interview."
     3. In "feedback", explicitly state: "Marks were deducted because the response was not delivered in English."
     4. In "improvementTips", include: "Practice articulating technical solutions strictly in English."
+
+${rubricNote}
 
 TURN DECISION LOGIC:
 - If candidate's answer was vague / dropped buzzwords without substance -> Ask a DIRECT targeted DRILL-DOWN follow-up probe on their claim.

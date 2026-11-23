@@ -119,7 +119,7 @@ export default function PortfolioCard({ portfolio, onCopy, onDelete }) {
       <div className="flex items-center gap-2 mt-6 pt-4 border-t border-gray-100 dark:border-white/[0.08]">
         <Link
           to={`/portfolio/${portfolio._id}/edit`}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
         >
           <Edit3 className="w-3.5 h-3.5" />
           <span>Edit</span>
@@ -127,7 +127,7 @@ export default function PortfolioCard({ portfolio, onCopy, onDelete }) {
 
         <Link
           to={`/portfolio/${portfolio._id}/preview`}
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
           title="Preview portfolio"
         >
           <Eye className="w-3.5 h-3.5" />
@@ -139,7 +139,7 @@ export default function PortfolioCard({ portfolio, onCopy, onDelete }) {
             <button
               type="button"
               onClick={handleCopyClick}
-              className="inline-flex items-center justify-center p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer"
+              className="inline-flex items-center justify-center p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer"
               title="Copy public link"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}

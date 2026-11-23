@@ -171,6 +171,14 @@ const interviewResultSchema = new mongoose.Schema(
         tabSwitch: { type: Number, default: 0 },
         identitySwitch: { type: Number, default: 0 },
         offline: { type: Number, default: 0 },
+        virtualDevice: { type: Number, default: 0 },
+        multiScreen: { type: Number, default: 0 },
+        fullscreenExit: { type: Number, default: 0 },
+        timing: { type: Number, default: 0 },
+        multiSession: { type: Number, default: 0 },
+        screenShareMissing: { type: Number, default: 0 },
+        screenSharePartial: { type: Number, default: 0 },
+        screenShareStopped: { type: Number, default: 0 },
       },
       verdict: {
         type: String,
@@ -192,6 +200,13 @@ const interviewResultSchema = new mongoose.Schema(
           details: String,
         },
       ],
+      // Proctored mode only: frame ids are served by an authenticated route.
+      screenShare: {
+        status: String,
+        required: Boolean,
+        stoppedMsTotal: Number,
+        frames: [{ _id: false, id: String, reason: String, timestampSeconds: Number }],
+      },
     },
     // Comparison & Progress
     comparisonData: {

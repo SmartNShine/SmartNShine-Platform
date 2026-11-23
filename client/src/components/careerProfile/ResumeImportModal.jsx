@@ -102,7 +102,7 @@ export default function ResumeImportModal({
           <button
             onClick={onExecuteImport}
             disabled={importing || !selectedResumeId}
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             {importing && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
             <span>{importing ? "Importing..." : "Import Selected"}</span>

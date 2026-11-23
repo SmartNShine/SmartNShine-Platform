@@ -553,10 +553,81 @@ const trackPortfolioAIUsage = async ({
   }
 };
 
+const resolveThemeSelection = (body = {}) => {
+  const themeId =
+    typeof body.themeId === "string" && body.themeId.trim()
+      ? body.themeId.trim()
+      : "smartnshine";
+  const themeAccent =
+    typeof body.themeAccent === "string" ? body.themeAccent.trim() : "";
+
+  return {themeId, themeAccent};
+};
+
+export const createBlankPortfolio = async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const {themeId, themeAccent} = resolveThemeSelection(req.body);
+    const user = await User.findById(userId).select("name email");
+    const displayName = user?.name?.trim() || "My";
+    const title =
+      typeof req.body?.title === "string" && req.body.title.trim()
+        ? req.body.title.trim()
+        : `${displayName}'s Portfolio`;
+    const slug = await createUniqueSlug(title);
+
+    const portfolio = await Portfolio.create({
+      userId,
+      resumeId: null,
+      slug,
+      title,
+      tagline: "",
+      professionalTitle: "",
+      about: "",
+      location: "",
+      themeId,
+      themeAccent,
+      contact: {
+        email: user?.email || "",
+        phone: "",
+        showEmail: Boolean(user?.email),
+        showPhone: false,
+      },
+      socialLinks: [],
+      skills: [],
+      experience: [],
+      education: [],
+      certifications: [],
+      achievements: [],
+      customSections: [],
+      seo: {
+        title,
+        description: "",
+        keywords: [displayName].filter(Boolean),
+      },
+      sectionOrder: DEFAULT_SECTION_ORDER,
+    });
+
+    res.status(201).json({
+      message: "Blank portfolio draft created successfully",
+      portfolio,
+      projects: [],
+    });
+  } catch (error) {
+    if (handleDuplicateSlug(error, res)) return;
+
+    console.error("Create blank portfolio error:", error);
+    res.status(500).json({
+      error: error.message || "Failed to create portfolio",
+    });
+  }
+};
+
 export const createPortfolioFromResume = async (req, res) => {
   try {
     const userId = getUserId(req);
     const {resumeId} = req.params;
+    const {themeId, themeAccent} = resolveThemeSelection(req.body);
 
     if (!mongoose.Types.ObjectId.isValid(resumeId)) {
       return res.status(400).json({error: "Invalid resume ID"});
@@ -582,6 +653,8 @@ export const createPortfolioFromResume = async (req, res) => {
       professionalTitle,
       about: resume.summary || "",
       location: resume.contact?.location || "",
+      themeId,
+      themeAccent,
       contact: {
         email: resume.contact?.email || "",
         phone: resume.contact?.phone || "",
@@ -747,6 +820,11 @@ export const updatePortfolio = async (req, res) => {
       }
     }
 
+    // Keep saved custom-section assets intact until the database write succeeds.
+    const previousCustomImages = (portfolio.customSections || [])
+      .flatMap((section) => (section.items || []).map((item) => item?.image))
+      .filter(Boolean);
+
     const scalarUpdates = {
       title,
       tagline,
@@ -829,6 +907,15 @@ export const updatePortfolio = async (req, res) => {
     }
 
     await portfolio.save();
+
+    const retainedImages = JSON.stringify(portfolio.toObject());
+    for (const url of new Set(previousCustomImages)) {
+      if (url.includes("cloudinary.com") && !retainedImages.includes(JSON.stringify(url))) {
+        cloudinaryService.deleteImage(url).catch((err) =>
+          console.warn("Could not delete old custom-section image:", err.message)
+        );
+      }
+    }
 
     res.json({
       message: "Portfolio updated successfully",
@@ -976,6 +1063,8 @@ export const updatePortfolioProject = async (req, res) => {
       "visible",
     ];
 
+    const previousImageUrls = (project.images || []).map((image) => image.url).filter(Boolean);
+
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         project[field] = req.body[field];
@@ -983,6 +1072,15 @@ export const updatePortfolioProject = async (req, res) => {
     });
 
     await project.save();
+
+    const retainedImages = JSON.stringify(project.toObject());
+    for (const url of new Set(previousImageUrls)) {
+      if (url.includes("cloudinary.com") && !retainedImages.includes(JSON.stringify(url))) {
+        cloudinaryService.deleteImage(url).catch((err) =>
+          console.warn("Could not delete old project image:", err.message)
+        );
+      }
+    }
 
     res.json({
       message: "Portfolio project updated successfully",

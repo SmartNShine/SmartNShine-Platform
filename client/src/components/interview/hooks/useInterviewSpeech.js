@@ -1,385 +1,293 @@
+import { connectVoiceActivity, primeVoiceActivity } from "../voiceActivity";
 import { useRef, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import interviewAPI from "@/api/interview.api";
 import { INTERVIEWER_VOICES } from "../constants";
+import { CLIP_GROUPS, VOICE_CLIPS, clipUrl, pickClip } from "../voiceClips";
 
+const TTS_CACHE_LIMIT = 12;
+const FILLER_WAIT_CAP_MS = 4000;
+// Human pacing: a breath after the acknowledgment and between reaction and question.
+const PAUSE_AFTER_FILLER_MS = 450;
+const PAUSE_BETWEEN_SEGMENTS_MS = 280;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Interviewer speech.
+ * - Fixed lines (greeting, acknowledgments, closing) play from pre-recorded clips.
+ * - Dynamic lines (reaction + question) use server TTS, fetched in parallel and
+ *   cached so "Repeat" never pays for the same audio twice.
+ * - Browser Web Speech is the last fallback.
+ * Fillers ("Okay, thank you.") play on their own channel while an answer is
+ * processed, and the next question waits for them to finish instead of cutting in.
+ */
 export function useInterviewSpeech({
-  selectedRole,
   selectedVoice,
   voiceEngine,
   serverTtsAvailable,
-  isMuted,
   isMutedRef,
   isInterviewActiveRef,
   setInterviewPhase,
 }) {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isFillerPlaying, setIsFillerPlaying] = useState(false);
   const [isTestingVoice, setIsTestingVoice] = useState(false);
-  const [aiMessage, setAiMessage] = useState("");
-  const [audioRef, setAudioRef] = useState(null);
 
   const audioElementRef = useRef(null);
-  const speechTimeoutsRef = useRef(new Set());
+  const fillerRef = useRef(null);
+  const fillerTimerRef = useRef(null);
   const speechRunRef = useRef(0);
+  const ttsCacheRef = useRef(new Map());
+  const lastAckRef = useRef(null);
 
-  const clearSpeechTimeouts = useCallback(() => {
-    speechTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
-    speechTimeoutsRef.current.clear();
+  const persona = INTERVIEWER_VOICES[selectedVoice] || INTERVIEWER_VOICES.shubh;
+  const voiceId = persona.id;
+
+  const stopFiller = useCallback(() => {
+    clearTimeout(fillerTimerRef.current);
+    fillerTimerRef.current = null;
+    const filler = fillerRef.current;
+    fillerRef.current = null;
+    if (filler) {
+      filler.audio.pause();
+      filler.audio.src = "";
+      filler.done();
+    }
+    setIsFillerPlaying(false);
   }, []);
 
-  const setManagedSpeechTimeout = useCallback((callback, delay) => {
-    const timeoutId = setTimeout(() => {
-      speechTimeoutsRef.current.delete(timeoutId);
-      callback();
-    }, delay);
-
-    speechTimeoutsRef.current.add(timeoutId);
-    return timeoutId;
+  const stopMainAudio = useCallback(() => {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.src = "";
+      audioElementRef.current = null;
+    }
+    setIsPlayingAudio(false);
   }, []);
 
   const stopLocalAudio = useCallback(
     ({ advanceToListening = false } = {}) => {
       speechRunRef.current += 1;
-      clearSpeechTimeouts();
-
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-
-      if (audioElementRef.current) {
-        audioElementRef.current.pause();
-        audioElementRef.current.currentTime = 0;
-        audioElementRef.current.src = "";
-        audioElementRef.current = null;
-      }
-
-      setAudioRef(null);
-      setIsPlayingAudio(false);
-      setIsSpeaking(false);
-
-      if (advanceToListening && isInterviewActiveRef.current) {
-        setInterviewPhase("waiting");
-        // User will manually click Record Answer when ready to speak
-      }
+      stopMainAudio();
+      stopFiller();
+      if (advanceToListening && isInterviewActiveRef.current) setInterviewPhase("waiting");
     },
-    [clearSpeechTimeouts, isInterviewActiveRef, setInterviewPhase]
+    [isInterviewActiveRef, setInterviewPhase, stopFiller, stopMainAudio]
   );
+
+  const fetchTts = useCallback(async (text) => {
+    const key = `${voiceId}:${text}`;
+    const cache = ttsCacheRef.current;
+    if (cache.has(key)) return cache.get(key);
+
+    const request = interviewAPI.synthesizeSpeech(text, {
+      engine: voiceEngine === "local" ? "local" : "sarvam",
+      speaker: voiceId,
+      language: "en-IN",
+    }).then((blob) => {
+      if (!(blob instanceof Blob) || !blob.size || blob.type?.includes("json")) {
+        throw new Error("TTS service returned no audio");
+      }
+      return blob;
+    });
+    cache.set(key, request);
+    request.catch(() => cache.delete(key));
+    if (cache.size > TTS_CACHE_LIMIT) cache.delete(cache.keys().next().value);
+    return request;
+  }, [voiceEngine, voiceId]);
+
+  const playSource = useCallback((src, isCurrent) => new Promise((resolve, reject) => {
+    if (!isCurrent()) return resolve();
+    const audio = new Audio(src);
+    audioElementRef.current = audio;
+    connectVoiceActivity(audio); // drives the interviewer orb
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+      if (audioElementRef.current === audio) audioElementRef.current = null;
+      if (error) reject(error); else resolve();
+    };
+    // Never let a stalled element block the interview.
+    const safetyTimer = setTimeout(() => finish(), 60000);
+    audio.onplay = () => {
+      if (!isCurrent()) return;
+      setIsPlayingAudio(true);
+      setInterviewPhase("asking");
+    };
+    audio.onended = () => finish();
+    audio.onerror = () => finish(new Error("Audio playback failed"));
+    audio.onpause = () => { if (!isCurrent()) finish(); };
+    audio.play().catch(finish);
+  }), [setInterviewPhase]);
+
+  const speakWithBrowser = useCallback((text, isCurrent) => new Promise((resolve) => {
+    if (!("speechSynthesis" in window) || !isCurrent()) return resolve();
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = ["Google UK English Male", "Microsoft Guy Online (Natural)", "Microsoft David", "Daniel", "Alex"];
+    utterance.voice = preferred.map((name) => voices.find((voice) => voice.name.includes(name))).find(Boolean) ||
+      voices.find((voice) => voice.lang.startsWith("en-IN")) || voices.find((voice) => voice.lang.startsWith("en")) || null;
+    utterance.rate = 0.95;
+    const words = text.split(/\s+/).length;
+    const safetyTimer = setTimeout(resolve, Math.max(4000, (words / 120) * 60000 + 2000));
+    const done = () => { clearTimeout(safetyTimer); resolve(); };
+    utterance.onstart = () => {
+      if (!isCurrent()) return;
+      setIsPlayingAudio(true);
+      setInterviewPhase("asking");
+    };
+    utterance.onend = done;
+    utterance.onerror = done;
+    window.speechSynthesis.speak(utterance);
+  }), [setInterviewPhase]);
+
+  /**
+   * Speak segments in order. Segment: { clip: clipId } | { text: string }.
+   * All server audio is requested up front so segment 2 is ready when 1 ends.
+   */
+  const speakSegments = useCallback(async (segments, onComplete) => {
+    const runId = ++speechRunRef.current;
+    const isCurrent = () => speechRunRef.current === runId;
+    stopMainAudio();
+
+    const useServerTts = voiceEngine !== "browser" && (serverTtsAvailable || voiceEngine === "sarvam" || voiceEngine === "auto");
+    const parts = segments.filter((segment) => segment && (segment.clip || segment.text?.trim()));
+    const pending = parts.map((segment) => {
+      if (segment.clip || !useServerTts) return null;
+      const request = fetchTts(segment.text.trim());
+      request.catch(() => {});
+      return request;
+    });
+
+    try {
+      if (isMutedRef.current) return;
+      // A filler still waiting for its natural pause is dropped; one already
+      // playing finishes, followed by a short breath.
+      clearTimeout(fillerTimerRef.current);
+      fillerTimerRef.current = null;
+      if (fillerRef.current) {
+        await Promise.race([fillerRef.current.ended, wait(FILLER_WAIT_CAP_MS)]);
+        if (isCurrent()) await wait(PAUSE_AFTER_FILLER_MS);
+      }
+      if (!isCurrent()) return;
+      stopFiller();
+
+      for (let index = 0; index < parts.length && isCurrent(); index++) {
+        const segment = parts[index];
+        if (index > 0) await wait(PAUSE_BETWEEN_SEGMENTS_MS);
+        if (!isCurrent()) break;
+        const fallbackText = segment.clip ? VOICE_CLIPS[segment.clip] : segment.text;
+        try {
+          if (segment.clip) {
+            await playSource(clipUrl(segment.clip, voiceId), isCurrent);
+            continue;
+          }
+          if (!pending[index]) throw new Error("Server TTS disabled");
+          const blob = await pending[index];
+          const url = URL.createObjectURL(blob);
+          try {
+            await playSource(url, isCurrent);
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        } catch (error) {
+          console.warn("Interviewer audio fell back to browser speech:", error.message);
+          await speakWithBrowser(fallbackText, isCurrent);
+        }
+      }
+    } finally {
+      if (isCurrent()) {
+        setIsPlayingAudio(false);
+        onComplete?.();
+      }
+    }
+  }, [fetchTts, isMutedRef, playSource, serverTtsAvailable, speakWithBrowser, stopFiller, stopMainAudio, voiceEngine, voiceId]);
 
   const speakAndListen = useCallback(
-    async (text, onComplete) => {
-      stopLocalAudio();
-
-      const speechRunId = speechRunRef.current + 1;
-      speechRunRef.current = speechRunId;
-
-      const isCurrentSpeech = () =>
-        speechRunRef.current === speechRunId;
-
-      const completeSpeech = () => {
-        if (speechRunRef.current !== speechRunId) return;
-        setIsPlayingAudio(false);
-        setIsSpeaking(false);
-        if (onComplete) onComplete();
-      };
-
-      const playTtsChunk = async (chunkText) => {
-        const audioBlob = await interviewAPI.synthesizeSpeech(chunkText, {
-          engine: voiceEngine === "local" ? "local" : "sarvam",
-          speaker: selectedVoice || "shubh",
-          language: "en-IN",
-        });
-
-        if (!audioBlob || !(audioBlob instanceof Blob) || audioBlob.size === 0) {
-          throw new Error("Empty audio response from TTS service");
-        }
-
-        if (audioBlob.type && audioBlob.type.includes("json")) {
-          throw new Error("TTS service returned non-audio response");
-        }
-
-        if (!isCurrentSpeech()) return;
-
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-
-        audioElementRef.current = audio;
-        setAudioRef(audio);
-
-        await new Promise((resolve, reject) => {
-          let hasResolved = false;
-          const finish = (error) => {
-            if (hasResolved) return;
-            hasResolved = true;
-            clearTimeout(safetyTimer);
-            URL.revokeObjectURL(audioUrl);
-            if (audioElementRef.current === audio) {
-              audioElementRef.current = null;
-              setAudioRef(null);
-            }
-            if (error) reject(error);
-            else resolve();
-          };
-
-          const wordCount = chunkText.split(/\s+/).filter(Boolean).length;
-          const chunkMaxDurationMs = Math.max(4000, (wordCount / 100) * 60 * 1000 + 2500);
-          const safetyTimer = setTimeout(finish, chunkMaxDurationMs);
-
-          audio.onplay = () => {
-            if (isCurrentSpeech()) {
-              setIsPlayingAudio(true);
-              setIsSpeaking(true);
-              setInterviewPhase("asking");
-            }
-          };
-
-          audio.onended = () => finish();
-          audio.onerror = () => finish(new Error("Audio playback failed"));
-          audio.play().catch(finish);
-        });
-      };
-
-      setAiMessage(text);
-
-      try {
-        if (isMutedRef.current) {
-          completeSpeech();
-          return;
-        }
-
-        try {
-          if (voiceEngine !== "browser" && (serverTtsAvailable || voiceEngine === "sarvam" || voiceEngine === "auto")) {
-            await playTtsChunk(text);
-            completeSpeech();
-            return;
-          }
-        } catch (ttsError) {
-          console.warn("⚠️ Server TTS failed, falling back to Web Speech:", ttsError.message);
-        }
-
-        if (!isCurrentSpeech()) return;
-        if ("speechSynthesis" in window) {
-          return new Promise((resolve) => {
-            try {
-              window.speechSynthesis.cancel();
-              window.speechSynthesis.resume();
-            } catch (_) {}
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            let hasCompleted = false;
-
-            const safeDone = () => {
-              if (hasCompleted) return;
-              hasCompleted = true;
-              clearTimeout(safetyTimer);
-              if (isCurrentSpeech()) {
-                completeSpeech();
-              }
-              resolve();
-            };
-
-            const wordCount = text.split(/\s+/).filter(Boolean).length;
-            const maxSpeechTimeMs = Math.max(4000, (wordCount / 120) * 60 * 1000 + 2000);
-            const safetyTimer = setTimeout(safeDone, maxSpeechTimeMs);
-
-            utterance.onstart = () => {
-              if (isCurrentSpeech()) {
-                setIsPlayingAudio(true);
-                setIsSpeaking(true);
-                setInterviewPhase("asking");
-              }
-            };
-
-            const voices = window.speechSynthesis.getVoices();
-            const personaMeta = INTERVIEWER_VOICES[selectedVoice] || INTERVIEWER_VOICES.shubh;
-            const isMale = personaMeta?.gender === "male";
-            const preferredVoices = isMale
-              ? ["Google UK English Male", "Google US English Male", "Microsoft Guy Online (Natural)", "Microsoft David", "Daniel", "Alex"]
-              : ["Google UK English Female", "Google US English Female", "Microsoft Aria Online (Natural)", "Microsoft Zira", "Samantha", "Victoria"];
-
-            let matchedVoice = null;
-            for (const pref of preferredVoices) {
-              matchedVoice = voices.find((v) => v.name === pref || v.name.includes(pref));
-              if (matchedVoice) break;
-            }
-            if (!matchedVoice) {
-              matchedVoice = voices.find((v) => v.lang.startsWith("en-IN")) || voices.find((v) => v.lang.startsWith("en"));
-            }
-
-            if (matchedVoice) utterance.voice = matchedVoice;
-            utterance.rate = isMale ? 0.95 : 0.98;
-            utterance.pitch = isMale ? 0.95 : 1.05;
-            utterance.volume = 1.0;
-
-            utterance.onend = safeDone;
-            utterance.onerror = safeDone;
-
-            window.speechSynthesis.speak(utterance);
-          });
-        }
-
-        completeSpeech();
-      } catch (error) {
-        console.error("Could not play interview speech:", error);
-        completeSpeech();
-      }
-    },
-    [isMutedRef, selectedVoice, serverTtsAvailable, setInterviewPhase, stopLocalAudio, voiceEngine]
+    (text, onComplete, { leadIn = "" } = {}) =>
+      speakSegments([leadIn ? { text: leadIn } : null, { text }], onComplete),
+    [speakSegments]
   );
 
-  const handleTestVoice = async (preset = "greeting") => {
-    if (isTestingVoice || isPlayingAudio) return;
+  const startFillerAudio = useCallback((clipId) => {
+    const audio = new Audio(clipUrl(clipId, voiceId));
+    connectVoiceActivity(audio);
+    let done;
+    const ended = new Promise((resolve) => { done = resolve; });
+    const filler = { audio, ended, done };
+    fillerRef.current = filler;
+    const finish = () => {
+      done();
+      if (fillerRef.current === filler) {
+        fillerRef.current = null;
+        setIsFillerPlaying(false);
+      }
+    };
+    audio.onended = finish;
+    audio.onerror = finish;
+    setIsFillerPlaying(true);
+    audio.play().catch(finish);
+  }, [voiceId]);
 
+  /**
+   * Short pre-recorded line that never takes the interview phase.
+   * delayMs: natural pause before speaking; cancelled if the next line arrives first.
+   */
+  const playFiller = useCallback((clipOrGroup, { delayMs = 0 } = {}) => {
+    if (isMutedRef.current) return;
+    const clipId = CLIP_GROUPS[clipOrGroup] ? pickClip(clipOrGroup, lastAckRef.current) : clipOrGroup;
+    if (!VOICE_CLIPS[clipId]) return;
+    lastAckRef.current = clipId;
+    stopFiller();
+    if (delayMs > 0) {
+      fillerTimerRef.current = setTimeout(() => {
+        fillerTimerRef.current = null;
+        startFillerAudio(clipId);
+      }, delayMs);
+      return;
+    }
+    startFillerAudio(clipId);
+  }, [isMutedRef, stopFiller, startFillerAudio]);
+
+  const preloadClips = useCallback(() => {
+    Object.keys(VOICE_CLIPS).forEach((clipId) => {
+      const audio = new Audio();
+      audio.preload = "auto";
+      audio.src = clipUrl(clipId, voiceId);
+    });
+  }, [voiceId]);
+
+  /** Opening line: a pre-recorded greeting that already asks for an introduction. */
+  const greetingClip = useCallback(() => pickClip("greeting"), []);
+
+  const handleTestVoice = async () => {
+    if (isTestingVoice || isPlayingAudio) return;
+    primeVoiceActivity(); // inside the click: allows the orb to follow the voice
     setIsTestingVoice(true);
     try {
-      const samplePhrases = {
-        greeting:
-          "Hello! I'm your AI interviewer. I'm excited to learn more about your background and experience today.",
-        question:
-          "Can you tell me about a challenging project you worked on recently and how you approached solving the problems you encountered?",
-        acknowledgment:
-          "That's a great answer! I really appreciate the detail you provided. It gives me excellent insight into your problem-solving approach.",
-        closing:
-          "Thank you so much for your time today. You've shared some really valuable insights. We'll be in touch soon with next steps.",
-      };
-
-      const testText = samplePhrases[preset] || samplePhrases.greeting;
-
-      try {
-        const audioBlob = await interviewAPI.synthesizeSpeech(testText, {
-          engine: voiceEngine === "local" ? "local" : "sarvam",
-          speaker: selectedVoice || "shubh",
-          language: "en-IN",
-        });
-
-        if (audioBlob && audioBlob instanceof Blob && audioBlob.size > 0) {
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-
-          audioElementRef.current = audio;
-          setAudioRef(audio);
-          setIsPlayingAudio(true);
-
-          audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            if (audioElementRef.current === audio) {
-              audioElementRef.current = null;
-              setAudioRef(null);
-            }
-            setIsPlayingAudio(false);
-            setIsTestingVoice(false);
-            toast.success(`Voice test completed (${INTERVIEWER_VOICES[selectedVoice]?.name || "AI Voice"})!`);
-          };
-
-          audio.onerror = () => {
-            URL.revokeObjectURL(audioUrl);
-            if (audioElementRef.current === audio) {
-              audioElementRef.current = null;
-              setAudioRef(null);
-            }
-            setIsPlayingAudio(false);
-            setIsTestingVoice(false);
-            toast.error("Voice synthesis test failed");
-          };
-
-          await audio.play();
-          toast.success(`Testing ${preset} with ${INTERVIEWER_VOICES[selectedVoice]?.name || "AI"} (Sarvam Bulbul v3)...`);
-          return;
-        }
-      } catch (serverTtsError) {
-        console.warn("⚠️ Server TTS test failed, falling back to browser TTS:", serverTtsError.message);
-      }
-
-      if (!window.speechSynthesis) {
-        throw new Error("Browser TTS not supported");
-      }
-
-      const voices = window.speechSynthesis.getVoices();
-      const personaMeta = INTERVIEWER_VOICES[selectedVoice] || INTERVIEWER_VOICES.shubh;
-      const isMale = personaMeta?.gender === "male";
-      const preferredVoices = isMale
-        ? ["Google UK English Male", "Google US English Male", "Microsoft Guy Online (Natural)", "Microsoft David", "Daniel", "Alex"]
-        : ["Google UK English Female", "Google US English Female", "Microsoft Aria Online (Natural)", "Microsoft Zira", "Samantha", "Victoria"];
-
-      let matchedBrowserVoice = null;
-      for (const preferredName of preferredVoices) {
-        matchedBrowserVoice = voices.find((v) => v.name === preferredName);
-        if (matchedBrowserVoice) break;
-      }
-      if (!matchedBrowserVoice) {
-        matchedBrowserVoice = voices.find((v) => v.lang.startsWith("en-IN")) || voices.find((v) => v.lang.startsWith("en"));
-      }
-
-      const utterance = new SpeechSynthesisUtterance(testText);
-      if (matchedBrowserVoice) utterance.voice = matchedBrowserVoice;
-      utterance.rate = isMale ? 0.92 : 0.96;
-      utterance.pitch = isMale ? 0.9 : 1.05;
-      utterance.volume = 1.0;
-
-      setIsPlayingAudio(true);
-      utterance.onend = () => {
-        setIsPlayingAudio(false);
-        setIsTestingVoice(false);
-        toast.success(`Voice test completed (${personaMeta.name})!`);
-      };
-      utterance.onerror = (e) => {
-        setIsPlayingAudio(false);
-        setIsTestingVoice(false);
-        toast.error("Voice test failed: " + e.error);
-      };
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-      toast.success(`Testing ${preset} voice with ${personaMeta.name}...`);
+      await speakSegments([{ clip: "voice_sample" }]);
     } catch (error) {
-      console.error("❌ Voice test failed:", error);
       toast.error(error.message || "Failed to test voice");
+    } finally {
       setIsTestingVoice(false);
-      setIsPlayingAudio(false);
     }
   };
 
-  const generateIntroduction = useCallback((roleOverride = "") => {
-    const role = roleOverride || selectedRole || "your target role";
-    const quickIntros = [
-      `Hi, welcome! To start, could you give a brief introduction about yourself and your experience in ${role}?`,
-      `Hello! Great to meet you. Let's begin with a quick introduction about your background in ${role}.`,
-      `Hi there! Welcome to your interview. Tell me a bit about yourself and what you've been working on.`,
-    ];
-    return quickIntros[Math.floor(Math.random() * quickIntros.length)];
-  }, [selectedRole]);
-
-  const generateAcknowledgment = useCallback(() => {
-    const neutralTransitions = [
-      "Got it. Next up,",
-      "Understood. Moving on to the next question,",
-      "Noted. Let's look at another area,",
-      "Thanks for explaining. Let's shift gears slightly,",
-      "Got it. Moving forward to the next scenario,",
-      "Understood. For the next question,",
-      "Noted. Let's dive into the next topic,",
-      "Okay, moving forward,",
-    ];
-    return neutralTransitions[Math.floor(Math.random() * neutralTransitions.length)];
-  }, []);
-
   return {
     isPlayingAudio,
-    setIsPlayingAudio,
-    isSpeaking,
-    setIsSpeaking,
+    isFillerPlaying,
     isTestingVoice,
-    aiMessage,
-    setAiMessage,
-    audioRef,
-    setAudioRef,
-    audioElementRef,
-    clearSpeechTimeouts,
-    setManagedSpeechTimeout,
     stopLocalAudio,
     speakAndListen,
+    speakSegments,
+    playFiller,
+    preloadClips,
+    greetingClip,
     handleTestVoice,
-    generateIntroduction,
-    generateAcknowledgment,
   };
 }

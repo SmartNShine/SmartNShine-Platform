@@ -133,7 +133,11 @@ export async function textToSpeech(text, options = {}) {
 
     const languageCode =
       options.target_language_code || options.language || "en-IN";
-    const pace = options.pace ?? 1.0;
+    // Interviewer delivery: slightly calmer than default with a little more
+    // expressiveness (temperature is bulbul:v3 only). Clips and live questions
+    // share these so Shubh sounds the same throughout.
+    const pace = options.pace ?? Number(process.env.SARVAM_TTS_PACE || 0.95);
+    const temperature = options.temperature ?? Number(process.env.SARVAM_TTS_TEMPERATURE || 0.72);
     const model = options.model || "bulbul:v3";
     const sampleRate = options.speech_sample_rate || options.sampleRate || 22050;
 
@@ -148,6 +152,7 @@ export async function textToSpeech(text, options = {}) {
       speaker: speaker,
       model: model,
       pace: pace,
+      ...(model === "bulbul:v3" ? { temperature } : {}),
       speech_sample_rate: sampleRate,
     });
 

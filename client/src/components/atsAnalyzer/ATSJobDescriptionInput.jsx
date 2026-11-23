@@ -1,4 +1,4 @@
-import { FileText, CheckCircle2, Sparkles } from "lucide-react";
+import { FileText, CheckCircle2, WandSparkles } from "lucide-react";
 
 const SAMPLE_JOB_DESCRIPTIONS = [
   {
@@ -20,33 +20,33 @@ export default function ATSJobDescriptionInput({
   setJobDescription,
 }) {
   return (
-    <div className="bg-white dark:bg-zinc-900/90 rounded-3xl p-6 sm:p-7 border border-gray-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div className="bg-white dark:bg-zinc-950 rounded-3xl p-6 sm:p-7 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <FileText className="w-5 h-5" />
+          <div className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+            <FileText className="w-5 h-5" aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-              Target Job Description
+              Job description
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
-              Paste requirements or choose a sample to analyze fit
+              Paste the role you're applying for
             </p>
           </div>
         </div>
 
         {/* Quick sample chips */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 sm:pt-0">
-          <span className="text-[11px] font-bold text-gray-400 dark:text-zinc-500 mr-1 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-amber-500" /> Sample:
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mr-1 inline-flex items-center gap-1.5">
+            <WandSparkles className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" /> Try a sample:
           </span>
           {SAMPLE_JOB_DESCRIPTIONS.map((sample, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setJobDescription(sample.text)}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 transition-all border border-gray-200/60 dark:border-white/5 cursor-pointer active:scale-95"
+              className="text-xs font-medium px-2.5 py-1 rounded-full border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
             >
               {sample.role}
             </button>
@@ -60,15 +60,15 @@ export default function ATSJobDescriptionInput({
           onChange={(e) => setJobDescription(e.target.value)}
           placeholder="Paste the complete job description here...&#10;&#10;Include:&#10;• Required skills and technologies&#10;• Qualifications and years of experience&#10;• Core job responsibilities&#10;• Preferred / nice-to-have tools"
           rows={9}
-          className="w-full p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-y text-sm sm:text-base font-normal leading-relaxed"
+          className="w-full p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-y text-sm sm:text-base font-normal leading-relaxed"
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
+      <div className="flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-zinc-400">
         <span>{jobDescription.length.toLocaleString()} characters</span>
         {jobDescription.length > 100 && (
           <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-4 h-4" /> Good length for deep ATS parsing
+            <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Good length
           </span>
         )}
       </div>

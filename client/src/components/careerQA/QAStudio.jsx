@@ -84,7 +84,7 @@ export default function QAStudio({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-950/90 rounded-3xl p-6 sm:p-8 border border-gray-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-2xl space-y-6">
+    <div className="bg-white dark:bg-zinc-950/90 rounded-3xl p-6 sm:p-8 border border-gray-200/80 dark:border-white/[0.08] shadow-xs space-y-6">
       {/* Active Question Header Card */}
       <div className="space-y-4 pb-6 border-b border-gray-100 dark:border-white/[0.08]">
         <div className="flex items-center justify-between gap-4">

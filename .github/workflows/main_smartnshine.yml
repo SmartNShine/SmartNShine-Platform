@@ -26,7 +26,10 @@ jobs:
       - name: Install server dependencies
         run: |
           cd server
+          export PUPPETEER_CACHE_DIR="$PWD/.cache/puppeteer"
           npm install --omit=dev
+          # Bundle Chromium inside the deploy package (Azure has no system Chrome).
+          npx puppeteer browsers install chrome || true
 
       - name: Create deployment zip package
         run: |

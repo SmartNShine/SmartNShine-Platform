@@ -10,19 +10,19 @@ export default function EmptyPortfolioState() {
 
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold mb-3">
         <Sparkles className="w-3.5 h-3.5" />
-        <span>Instant 1-Click Generator</span>
+        <span>Theme → Source → Publish</span>
       </div>
 
       <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-2">
         No Portfolios Created Yet
       </h2>
       <p className="text-sm text-gray-600 dark:text-zinc-400 max-w-md mx-auto mb-8 leading-relaxed">
-        Select one of your existing resumes to instantly publish a personalized, interactive developer portfolio website.
+        Pick a theme, import a resume or start blank, then refine and publish your live portfolio site.
       </p>
 
       <Link
         to="/portfolio/new"
-        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all duration-200 active:scale-95 cursor-pointer"
+        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-sm shadow-xs transition-all duration-200 active:scale-95 cursor-pointer"
       >
         <Rocket className="w-4 h-4" />
         <span>Create Your First Portfolio</span>

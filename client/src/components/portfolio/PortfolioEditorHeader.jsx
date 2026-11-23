@@ -22,6 +22,7 @@ export default function PortfolioEditorHeader({
   syncingResume,
   onPublishToggle,
   isPublished,
+  canPublish = true,
   publicUrl,
   slug,
 }) {
@@ -126,12 +127,19 @@ export default function PortfolioEditorHeader({
         <button
           type="button"
           onClick={onPublishToggle}
-          className={`inline-flex items-center gap-1.5 px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0 ${
+          disabled={!isPublished && !canPublish}
+          className={`inline-flex items-center gap-1.5 px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
             isPublished
               ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/20"
               : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/20"
           }`}
-          title={isPublished ? "Unpublish portfolio" : "Publish portfolio"}
+          title={
+            isPublished
+              ? "Unpublish portfolio"
+              : canPublish
+                ? "Save and publish portfolio"
+                : "Complete the publish checklist first"
+          }
         >
           {isPublished ? (
             <>

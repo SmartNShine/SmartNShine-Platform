@@ -52,6 +52,23 @@ export const sendProctoringHeartbeat = async (sessionId, payload, signal) => {
   return response.data;
 };
 
+// Screen sharing (proctored mode, security plan S1.5)
+export const uploadScreenFrame = async (sessionId, payload) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/screen-frame`, payload, { timeout: 10000, quietErrors: true });
+  return response.data;
+};
+
+export const updateScreenShareStatus = async (sessionId, payload) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/proctoring/screen-share`, payload, { timeout: 8000, quietErrors: true });
+  return response.data;
+};
+
+/** Screen frames are private: fetched with the auth header and shown as a blob URL. */
+export const fetchScreenFrame = async (sessionId, frameId) => {
+  const response = await api.get(`/interview/sessions/${sessionId}/screen-frames/${frameId}`, { responseType: "blob", quietErrors: true });
+  return URL.createObjectURL(response.data);
+};
+
 /**
  * Submit text answer
  * @param {string} sessionId - Session ID
@@ -60,10 +77,11 @@ export const sendProctoringHeartbeat = async (sessionId, payload, signal) => {
  * @param {number} params.questionNumber - Question number
  * @returns {Promise<Object>} Evaluation and next question
  */
-export const submitAnswer = async (sessionId, {answer, questionNumber}) => {
+export const submitAnswer = async (sessionId, {answer, questionNumber, turnToken}) => {
   const response = await api.post(`/interview/sessions/${sessionId}/answer`, {
     answer,
     questionNumber,
+    turnToken,
     answerMode: "text",
   }, { quietErrors: true });
   return response.data;
@@ -99,8 +117,11 @@ export const submitVoiceAnswer = async (
   if (typeof options === "object" && Number.isFinite(options?.durationSeconds)) {
     formData.append("durationSeconds", String(options.durationSeconds));
   }
+  if (typeof options === "object" && options?.turnToken) {
+    formData.append("turnToken", options.turnToken);
+  }
 
-  console.log("📤 Submitting voice answer:", {
+  console.log("Submitting voice answer:", {
     sessionId,
     fileName: audioFile.name,
     size: audioFile.size,
@@ -139,10 +160,24 @@ export const submitVoiceAnswer = async (
  * @param {number} questionNumber - Question number to skip
  * @returns {Promise<Object>} Next question info
  */
-export const skipQuestion = async (sessionId, questionNumber) => {
+export const skipQuestion = async (sessionId, questionNumber, turnToken) => {
   const response = await api.post(`/interview/sessions/${sessionId}/skip`, {
     questionNumber,
+    turnToken,
   }, { quietErrors: true });
+  return response.data;
+};
+
+/**
+ * Send the transcribed self-introduction; the server re-plans question 1 from it.
+ * @param {string} sessionId - Session ID
+ * @param {string} introduction - Transcribed introduction
+ * @returns {Promise<Object>} { currentQuestion, adapted }
+ */
+export const submitIntroduction = async (sessionId, introduction) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/introduction`, {
+    introduction,
+  }, { quietErrors: true, timeout: 15000 });
   return response.data;
 };
 
@@ -236,7 +271,7 @@ export const transcribeAudioOnly = async (audioFile, options = {}) => {
     formData.append("durationSeconds", String(options.durationSeconds));
   }
 
-  console.log("📤 Transcribing audio (no evaluation):", audioFile.name, audioFile.size, "bytes");
+  console.log("Transcribing audio (no evaluation):", audioFile.name, audioFile.size, "bytes");
 
   const response = await api.post("/voice/transcribe", formData, {
     quietErrors: true,
@@ -282,21 +317,6 @@ export const synthesizeSpeech = async (text, optionsOrVoiceId = {}, preset) => {
 };
 
 /**
- * Synthesize text to speech - returns base64 JSON (legacy fallback)
- * @param {string} text - Text to convert to speech
- * @param {string} [voiceId] - Optional voice ID
- * @returns {Promise<Object>} { audioBase64, contentType, estimatedDuration }
- */
-export const synthesizeSpeechBase64 = async (text, voiceId, preset) => {
-  const response = await api.post("/voice/tts/synthesize-json", {
-    text,
-    voiceId,
-    preset,
-  });
-  return response.data;
-};
-
-/**
  * Get available TTS voices
  * @returns {Promise<Array>} List of available voices
  */
@@ -326,9 +346,13 @@ export default {
   startSession,
   recordProctoringEvent,
   sendProctoringHeartbeat,
+  uploadScreenFrame,
+  updateScreenShareStatus,
+  fetchScreenFrame,
   submitAnswer,
   submitVoiceAnswer,
   skipQuestion,
+  submitIntroduction,
   completeSession,
   abandonSession,
   getSession,
@@ -339,7 +363,6 @@ export default {
   transcribeAudioOnly,
   checkTTSAvailability,
   synthesizeSpeech,
-  synthesizeSpeechBase64,
   getTTSVoices,
   testVoice,
 };

@@ -151,7 +151,7 @@ function buildInterviewerSystemPrompt(config) {
   const complexity =
     EXPERIENCE_COMPLEXITY[experienceLevel] || EXPERIENCE_COMPLEXITY.mid;
 
-  return `You are an experienced technical interviewer conducting a ${interviewType} interview for a ${role} position.
+  return `You are an experienced interviewer conducting a ${config.interviewFormat || interviewType} interview for a ${role} position.
 
 INTERVIEWER PERSONA:
 - You are professional, friendly, and encouraging
@@ -299,7 +299,11 @@ Respond with valid JSON in this exact format:
 function buildQuestionPrompt(config) {
   const {
     interviewType,
+    interviewFormat = interviewType,
+    questionType = interviewType,
+    objective,
     role,
+    experienceLevel,
     resumeText,
     jobDescription,
     previousQuestions,
@@ -310,69 +314,50 @@ function buildQuestionPrompt(config) {
     targetCategory,
   } = config;
 
-  let contextPrompt = "";
+  // Context the candidate brought (always useful), then instructions for this
+  // question's type, then the format-wide rule that keeps the interview on-format.
+  const context = [
+    resumeText && ["resume-based", "mixed"].includes(interviewFormat)
+      ? `RESUME CONTENT:\n${resumeText.substring(0, interviewFormat === "resume-based" ? 3000 : 1500)}`
+      : null,
+    jobDescription && interviewFormat === "job-description"
+      ? `JOB DESCRIPTION:\n${jobDescription.substring(0, 2000)}`
+      : null,
+  ].filter(Boolean).join("\n\n");
 
-  switch (interviewType) {
-    case "resume-based":
-      contextPrompt = `
-RESUME CONTENT:
-${resumeText?.substring(0, 3000) || "No resume provided"}
+  const isEarlyCareer = experienceLevel === "fresher" || experienceLevel === "junior";
+  const typeInstructions = {
+    technical: (() => {
+      const topics = ROLE_TOPICS[role?.toLowerCase().replace(/\s+/g, "")] || ROLE_TOPICS.fullstack;
+      return `Ask ONE practical technical question that tests real-world problem-solving.
+Relevant topics for this role: ${topics.join(", ")}
+${targetSkills?.length ? `Priority skills: ${targetSkills.join(", ")}` : ""}
+Prefer a concrete scenario over a textbook definition.`;
+    })(),
+    behavioral: `Ask ONE behavioral question about a real past experience, expecting a STAR answer.
+Start with "Tell me about a time when…" or "Describe a situation where…".
+${isEarlyCareer ? "The candidate is early-career: examples from college projects, internships, hackathons or team activities are fine — say so naturally." : ""}
+Do NOT ask anything technical, coding-related or about system design.`,
+    situational: `Ask ONE hypothetical workplace scenario: "What would you do if…" / "Imagine that…".
+Keep it realistic for a ${role} and focused on judgment, communication and priorities.
+Do NOT ask for code or technical design.`,
+    "resume-based": `Ask ONE question anchored to something specific on the candidate's resume (name the project, role or skill).
+Verify their personal contribution, decisions and results — not generic theory.`,
+  };
 
-Ask a question that explores the candidate's experience mentioned in their resume.
-Focus on specific projects, skills, or achievements they've listed.`;
-      break;
+  const formatRules = {
+    technical: "INTERVIEW FORMAT: Technical. Never ask behavioral \"tell me about a time\" questions.",
+    behavioral: "INTERVIEW FORMAT: Behavioral. Never ask technical, coding or system-design questions.",
+    "resume-based": "INTERVIEW FORMAT: Resume-based. Every question must connect to the candidate's resume.",
+    "job-description": "INTERVIEW FORMAT: Job-description based. Every question must connect to a requirement or responsibility in the job description.",
+    mixed: "INTERVIEW FORMAT: Mixed technical and behavioral. Follow the question type requested below.",
+  };
 
-    case "job-description":
-      contextPrompt = `
-JOB DESCRIPTION:
-${jobDescription?.substring(0, 2000) || "No job description provided"}
+  const contextPrompt = `${context ? `${context}\n\n` : ""}${formatRules[interviewFormat] || ""}
 
-Ask a question that tests skills and requirements mentioned in this job description.
-Focus on practical scenarios the candidate might face in this role.`;
-      break;
-
-    case "technical":
-      const topics =
-        ROLE_TOPICS[role.toLowerCase().replace(/\s+/g, "")] ||
-        ROLE_TOPICS.fullstack;
-      contextPrompt = `
-TECHNICAL TOPICS TO COVER: ${topics.join(", ")}
-${targetSkills?.length ? `PRIORITY SKILLS: ${targetSkills.join(", ")}` : ""}
-
-Ask a practical technical question that tests real-world problem-solving.
-Avoid purely theoretical questions - prefer scenario-based ones.`;
-      break;
-
-    case "behavioral":
-      contextPrompt = `
-BEHAVIORAL COMPETENCIES TO ASSESS:
-- Leadership and initiative
-- Teamwork and collaboration
-- Problem-solving under pressure
-- Communication and conflict resolution
-- Adaptability and learning
-
-Ask a behavioral question using the STAR format expectation.
-Start with phrases like "Tell me about a time when..." or "Describe a situation where..."`;
-      break;
-
-    case "mixed":
-      contextPrompt = `
-This is a mixed interview covering both technical and behavioral aspects.
-${
-  resumeText
-    ? `Consider the candidate's resume: ${resumeText.substring(0, 1500)}`
-    : ""
-}
-${
-  jobDescription
-    ? `And the job requirements: ${jobDescription.substring(0, 1000)}`
-    : ""
-}
-
-Alternate between technical and behavioral questions for a balanced assessment.`;
-      break;
-  }
+QUESTION TYPE: ${questionType}
+${typeInstructions[questionType] || typeInstructions.technical}
+${objective ? `OBJECTIVE FOR THIS QUESTION: ${objective}` : ""}`;
 
   // Add previous context for adaptive questioning - include ALL previous questions to avoid repetition
   let previousContext = "";
@@ -505,7 +490,13 @@ export async function generateQuestion(config, user) {
     let fallbackText = `Can you tell me about a significant project you worked on as a ${config.role || "professional"}, and the key challenges you overcame?`;
     let category = "General";
 
-    if (role.includes("frontend") || role.includes("react") || role.includes("web")) {
+    const fallbackType = config.questionType || config.interviewType;
+    if (fallbackType === "behavioral" || fallbackType === "situational" || config.interviewFormat === "behavioral") {
+      fallbackText = fallbackType === "situational"
+        ? "Imagine a teammate keeps missing deadlines that block your work. What would you do, and how would you raise it?"
+        : "Tell me about a time when you had to manage tight deadlines with ambiguous requirements. How did you prioritize your work?";
+      category = config.targetCategory || "Behavioral";
+    } else if (role.includes("frontend") || role.includes("react") || role.includes("web")) {
       fallbackText = "Could you explain how you handle state management and optimize rendering performance in complex web applications?";
       category = "Frontend Architecture";
     } else if (role.includes("backend") || role.includes("node") || role.includes("python") || role.includes("api")) {
@@ -514,14 +505,11 @@ export async function generateQuestion(config, user) {
     } else if (role.includes("data") || role.includes("machine") || role.includes("ai")) {
       fallbackText = "Can you walk me through your end-to-end data processing or model pipeline, and how you ensure data quality and integrity?";
       category = "Data Engineering";
-    } else if (config.interviewType === "behavioral") {
-      fallbackText = "Tell me about a time when you had to manage tight deadlines with ambiguous requirements. How did you prioritize your deliverables?";
-      category = "Behavioral";
     }
 
     return {
       question: fallbackText,
-      questionType: config.interviewType || "technical",
+      questionType: config.questionType || config.interviewType || "technical",
       category,
       difficulty: config.currentDifficulty || "medium",
       expectedKeywords: [],

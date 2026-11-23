@@ -762,7 +762,7 @@ export default function Templates() {
                 return (
                   <div
                     key={idx}
-                    className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-xs transition-all"
+                    className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-xs transition-all"
                   >
                     <button
                       type="button"

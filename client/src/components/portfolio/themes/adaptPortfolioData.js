@@ -259,19 +259,26 @@ const normalizeProject = (project = {}) => {
     liveUrl,
     githubUrl,
     caseStudyUrl,
-    image:
-      resolveImageUrl(
-        project.images?.[0]?.url || project.image || project.thumbnail || ""
-      ) ||
-      (liveUrl
+    image: (() => {
+      const coverFromImages = Array.isArray(project.images)
+        ? project.images.find((img) => img?.isCover && img?.url)?.url ||
+          project.images.find((img) => img?.url)?.url
+        : "";
+      const uploaded = resolveImageUrl(
+        coverFromImages || project.image || project.thumbnail || ""
+      );
+      if (uploaded) return uploaded;
+      // Only fall back to live-site screenshot when no cover image exists.
+      return liveUrl
         ? `https://s0.wp.com/mshots/v1/${encodeURIComponent(liveUrl)}?w=1280`
-        : ""),
+        : "";
+    })(),
     websitePreviewUrl: liveUrl
       ? `https://s0.wp.com/mshots/v1/${encodeURIComponent(liveUrl)}?w=1280`
       : "",
     images: (project.images || []).map((img) =>
       typeof img === "string"
-        ? { url: resolveImageUrl(img), alt: "" }
+        ? { url: resolveImageUrl(img), alt: "", isCover: false }
         : { ...img, url: resolveImageUrl(img.url) }
     ),
   };
@@ -418,7 +425,57 @@ export const adaptPortfolioData = ({
     customSections: pickArray(
       portfolio.customSections,
       resume?.customSections
-    ),
+    ).map((section, sectionIndex) => {
+      const items = Array.isArray(section?.items)
+        ? section.items.map((item, itemIndex) => {
+            if (typeof item === "string") {
+              return {
+                id: `custom-item-${sectionIndex}-${itemIndex}`,
+                title: item,
+                subtitle: "",
+                date: "",
+                link: "",
+                description: "",
+                image: "",
+                bullets: [],
+              };
+            }
+
+            if (!item || typeof item !== "object") return item;
+
+            return {
+              ...item,
+              id: item.id || `custom-item-${sectionIndex}-${itemIndex}`,
+              title: item.title || item.name || "",
+              subtitle:
+                item.subtitle ||
+                item.organization ||
+                item.issuer ||
+                item.publisher ||
+                "",
+              date: item.date || "",
+              link: item.link || item.url || "",
+              description: item.description || "",
+              image: resolveImageUrl(
+                item.image || item.imageUrl || item.thumbnail || ""
+              ),
+              bullets: Array.isArray(item.bullets)
+                ? item.bullets
+                    .map((b) => (typeof b === "string" ? b : b?.text || ""))
+                    .filter(Boolean)
+                : [],
+            };
+          })
+        : [];
+
+      return {
+        ...section,
+        id: section?.id || `custom-${sectionIndex}`,
+        title: section?.title || "",
+        content: section?.content || "",
+        items,
+      };
+    }),
     actions: {
       onContactClick,
       onProjectClick,

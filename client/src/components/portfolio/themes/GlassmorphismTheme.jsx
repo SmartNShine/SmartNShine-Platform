@@ -999,11 +999,20 @@ export default function GlassmorphismTheme({
                     const date = isObj ? item.date || "" : "";
                     const link = isObj ? item.link || item.url || "" : "";
                     const desc = isObj ? item.description || "" : "";
+                    const image = isObj ? item.image || item.imageUrl || item.thumbnail || "" : "";
                     const bullets = isObj && Array.isArray(item.bullets) ? item.bullets.filter(Boolean) : [];
 
                     return (
                       <GlassTiltCard key={isObj ? item.id || iIdx : iIdx} className="p-5">
                         <div className="space-y-1.5">
+                          {image && (
+                            <img
+                              src={image}
+                              alt={title || "Entry"}
+                              className="w-full h-32 object-cover rounded-xl border border-white/20 mb-2"
+                              loading="lazy"
+                            />
+                          )}
                           <div className="flex justify-between items-baseline gap-2 flex-wrap">
                             <div className="flex items-center gap-2 flex-wrap">
                               {title && (

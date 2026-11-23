@@ -52,11 +52,13 @@ function createSessionTrafficLimiter(max, error) {
 
 export const interviewTurnLimiter = createSessionTrafficLimiter(120, "Interview request limit reached. Please wait before trying again.");
 export const interviewProctoringLimiter = createSessionTrafficLimiter(360, "Camera monitoring request limit reached.");
+// Screen frames (15 s cadence + away frames) get their own budget so they never starve events.
+export const interviewScreenFrameLimiter = createSessionTrafficLimiter(300, "Screen monitoring request limit reached.");
 
 // These authenticated routes have their own per-user budgets in the routers.
 export function hasInterviewTrafficLimiter(req) {
   return req.method === "POST" && (
-    /^\/interview\/sessions\/[^/]+\/(start|answer|voice-answer|skip|complete|proctoring\/(event|heartbeat))\/?$/i.test(req.path) ||
+    /^\/interview\/sessions\/[^/]+\/(start|answer|voice-answer|skip|complete|proctoring\/(event|heartbeat|screen-frame|screen-share))\/?$/i.test(req.path) ||
     /^\/voice\/(transcribe|tts\/synthesize)\/?$/i.test(req.path)
   );
 }

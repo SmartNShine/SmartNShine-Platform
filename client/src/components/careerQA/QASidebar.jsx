@@ -40,7 +40,7 @@ export default function QASidebar({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-950/90 rounded-3xl p-5 sm:p-6 border border-gray-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-2xl space-y-5">
+    <div className="bg-white dark:bg-zinc-950/90 rounded-3xl p-5 sm:p-6 border border-gray-200/80 dark:border-white/[0.08] shadow-xs space-y-5">
       {/* Category Pills Grid / Wrap (No horizontal scroll) */}
       <div className="flex flex-wrap items-center gap-1.5 pb-1">
         {categories.map((cat) => {

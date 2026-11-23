@@ -19,8 +19,6 @@ import {
   Briefcase,
   GraduationCap,
   Trophy,
-  Layers,
-  Award,
   Palette,
   Sliders,
   Search,
@@ -35,6 +33,8 @@ import {
   Image as ImageIcon,
   X,
   LayoutTemplate,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { portfolioAPI } from "@/api/portfolio.api";
 import { portfolioThemeList } from "@/components/portfolio/themes/themeRegistry";
@@ -43,6 +43,15 @@ import { useNavigationBlocker } from "@/context/NavigationBlockerContext";
 import PortfolioEditorHeader from "@/components/portfolio/PortfolioEditorHeader";
 import PortfolioPanel from "@/components/portfolio/PortfolioPanel";
 import PortfolioTemplateSelectorModal from "@/components/portfolio/PortfolioTemplateSelectorModal";
+import LivePreviewPane from "@/components/portfolio/editor/LivePreviewPane";
+import CertificationsPanel from "@/components/portfolio/editor/CertificationsPanel";
+import PublishChecklist from "@/components/portfolio/editor/PublishChecklist";
+import ProjectCoverImageField from "@/components/portfolio/editor/ProjectCoverImageField";
+import CustomSectionsPanel from "@/components/portfolio/editor/CustomSectionsPanel";
+import {
+  EDITOR_STEPS,
+  isPublishReady,
+} from "@/components/portfolio/editor/editorSteps";
 import { resolveImageUrl } from "@/utils/imageUrlResolver";
 
 const blankProject = {
@@ -289,6 +298,7 @@ export default function PortfolioEditor() {
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [showFaviconUrlInput, setShowFaviconUrlInput] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [activeStep, setActiveStep] = useState("profile");
   const [panelControl, setPanelControl] = useState({
     version: 0,
     open: null,
@@ -354,13 +364,6 @@ export default function PortfolioEditor() {
       unblockNavigation();
       navigate(to);
     }
-  };
-
-  const setAllPanelsOpen = (open) => {
-    setPanelControl((current) => ({
-      version: current.version + 1,
-      open,
-    }));
   };
 
   const fetchPortfolio = async () => {
@@ -671,11 +674,30 @@ export default function PortfolioEditor() {
 
   const handlePublishToggle = async () => {
     try {
-      const response =
-        portfolio.status === "published"
-          ? await portfolioAPI.unpublish(id)
-          : await portfolioAPI.publish(id);
+      if (portfolio.status === "published") {
+        const response = await portfolioAPI.unpublish(id);
+        setPortfolio(response.data.portfolio);
+        setForm(response.data.portfolio);
+        setSavedSnapshot(
+          getEditorSnapshot({
+            form: response.data.portfolio,
+            projects,
+          })
+        );
+        toast.success("Portfolio unpublished");
+        return;
+      }
 
+      if (!isPublishReady(form)) {
+        setActiveStep("publish");
+        toast.error("Complete the publish checklist before going live");
+        return;
+      }
+
+      const saved = await handleSave({ silent: true });
+      if (!saved) return;
+
+      const response = await portfolioAPI.publish(id);
       setPortfolio(response.data.portfolio);
       setForm(response.data.portfolio);
       setSavedSnapshot(
@@ -684,11 +706,7 @@ export default function PortfolioEditor() {
           projects,
         })
       );
-      toast.success(
-        response.data.portfolio.status === "published"
-          ? "🎉 Portfolio published live!"
-          : "Portfolio unpublished"
-      );
+      toast.success("Portfolio published live!");
     } catch (error) {
       toast.error(error.response?.data?.error || "Publish action failed");
       console.error(error);
@@ -794,7 +812,10 @@ export default function PortfolioEditor() {
         ...newProject,
         technologies: commaToArray(newProject.technologiesText),
         highlights: linesToArray(newProject.highlightsText),
-        images: imageLinesToArray(newProject.imagesText),
+        images:
+          Array.isArray(newProject.images) && newProject.images.length > 0
+            ? newProject.images
+            : imageLinesToArray(newProject.imagesText),
       };
       delete payload.technologiesText;
       delete payload.highlightsText;
@@ -992,26 +1013,21 @@ export default function PortfolioEditor() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-const EDITOR_NAV_ITEMS = [
-  { id: "section-profile", label: "Profile", icon: User },
-  { id: "section-contact", label: "Contact", icon: Phone },
-  { id: "section-projects", label: "Projects", icon: Rocket },
-  { id: "section-experience", label: "Experience", icon: Briefcase },
-  { id: "section-education", label: "Education", icon: GraduationCap },
-  { id: "section-skills", label: "Skills", icon: Sparkles },
-  { id: "section-achievements", label: "Honors", icon: Trophy },
-  { id: "section-custom", label: "Custom", icon: Layers },
-  { id: "section-theme", label: "Theme", icon: Palette },
-  { id: "section-order", label: "Ordering", icon: Sliders },
-  { id: "section-seo", label: "SEO", icon: Search },
-  { id: "section-publish", label: "Publish", icon: Globe2 },
-];
+  const activeStepIndex = EDITOR_STEPS.findIndex((step) => step.id === activeStep);
+  const activeStepMeta = EDITOR_STEPS[Math.max(activeStepIndex, 0)] || EDITOR_STEPS[0];
 
-  const scrollToSection = (sectionId) => {
-    const el = document.getElementById(sectionId);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+  const goToStep = (stepId) => {
+    setActiveStep(stepId);
+    setPanelControl((current) => ({
+      version: current.version + 1,
+      open: true,
+    }));
+  };
+
+  const goToAdjacentStep = (direction) => {
+    const nextIndex = activeStepIndex + direction;
+    if (nextIndex < 0 || nextIndex >= EDITOR_STEPS.length) return;
+    goToStep(EDITOR_STEPS[nextIndex].id);
   };
 
   if (loading || !form) {
@@ -1048,26 +1064,32 @@ const EDITOR_NAV_ITEMS = [
         onSave={() => handleSave()}
         onPreview={handlePreview}
         onShowTemplateSelector={() => setShowTemplateSelector(true)}
-        onSyncResume={handleSyncResume}
+        onSyncResume={portfolio?.resumeId ? handleSyncResume : null}
         syncingResume={syncingResume}
         onPublishToggle={handlePublishToggle}
         isPublished={isPublished}
+        canPublish={isPublishReady(form)}
         publicUrl={publicUrl}
         slug={portfolio.slug}
       />
 
       {/* Main Workspace Body */}
       <main className="flex-1 px-3 xs:px-4 sm:px-6 lg:px-10 py-4 sm:py-8 max-w-[1600px] w-full mx-auto space-y-5 sm:space-y-8">
-        {/* Quick Jump Section Navigation Bar (Mobile & Desktop Friendly) */}
+        {/* Stepped section navigation */}
         <div className="sticky top-[49px] xs:top-[53px] sm:top-[57px] z-30 -mx-3 xs:-mx-4 sm:mx-0 px-3 xs:px-4 sm:px-0 py-2 bg-gray-50/90 dark:bg-[#09090b]/90 backdrop-blur-md overflow-x-auto scrollbar-none flex items-center gap-1.5 sm:gap-2 border-b sm:border-b-0 border-gray-200/80 dark:border-white/[0.06]">
-          {EDITOR_NAV_ITEMS.map((item) => {
+          {EDITOR_STEPS.map((item) => {
             const Icon = item.icon;
+            const isActive = activeStep === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => scrollToSection(item.id)}
-                className="inline-flex items-center gap-1.5 px-2.5 xs:px-3 py-1.5 rounded-xl border border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-zinc-900/90 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-200 text-xs font-semibold whitespace-nowrap shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
+                onClick={() => goToStep(item.id)}
+                className={`inline-flex items-center gap-1.5 px-2.5 xs:px-3 py-1.5 rounded-xl border text-xs font-semibold whitespace-nowrap shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ${
+                  isActive
+                    ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200"
+                    : "border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-zinc-900/90 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-200"
+                }`}
               >
                 <Icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>{item.label}</span>
@@ -1141,40 +1163,43 @@ const EDITOR_NAV_ITEMS = [
 
         {/* Global Toolbar & Panel Grid */}
         <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 items-start">
-          {/* Left Column: Content Panels (8 cols) */}
+          {/* Left Column: Active step panel (8 cols) */}
           <div className="lg:col-span-8 space-y-5 sm:space-y-6">
-            {/* Quick Expand / Collapse Bar */}
+            {/* Active step controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-gray-200/90 dark:border-white/[0.1] bg-white dark:bg-zinc-950 px-4 sm:px-6 py-3.5 sm:py-4 shadow-xs">
               <div>
                 <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-300">
-                  Content Sections
+                  Step {activeStepIndex + 1} of {EDITOR_STEPS.length}: {activeStepMeta.label}
                 </h2>
                 <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
-                  Click any card to expand or edit fields.
+                  Edit one section at a time. Live preview updates on the right.
                 </p>
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setAllPanelsOpen(true)}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                  onClick={() => goToAdjacentStep(-1)}
+                  disabled={activeStepIndex <= 0}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40"
                 >
-                  <ArrowDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span>Expand All</span>
+                  <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span>Previous</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAllPanelsOpen(false)}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                  onClick={() => goToAdjacentStep(1)}
+                  disabled={activeStepIndex >= EDITOR_STEPS.length - 1}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40"
                 >
-                  <ArrowUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span>Collapse All</span>
+                  <span>Next</span>
+                  <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </div>
             </div>
 
             {/* Profile Panel */}
-            <PortfolioPanel
+            {activeStep === "profile" && (
+              <PortfolioPanel
               id="section-profile"
               title="Profile & Bio"
               description="Portfolio title, role headline, slug, and bio narrative."
@@ -1508,9 +1533,11 @@ const EDITOR_NAV_ITEMS = [
                 />
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Contact Panel */}
-            <PortfolioPanel
+            {activeStep === "contact" && (
+              <PortfolioPanel
               id="section-contact"
               title="Contact & Social Links"
               description="Public contact details and social media profiles."
@@ -1619,12 +1646,14 @@ const EDITOR_NAV_ITEMS = [
                 </div>
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Projects Panel */}
-            <PortfolioPanel
+            {activeStep === "projects" && (
+              <PortfolioPanel
               id="section-projects"
               title="Projects"
-              description="Detailed project cards, live demos, and case studies."
+              description="Cards with cover images, demos, and case studies — images work even when a project is not deployed."
               icon={Rocket}
               badge={`${projects.length} items`}
               forceState={panelControl.open}
@@ -1735,6 +1764,7 @@ const EDITOR_NAV_ITEMS = [
                       <div>
                         <label className="text-xs sm:text-sm font-bold text-gray-800 dark:text-zinc-200 mb-1.5 block">
                           Live URL
+                          <span className="ml-1 font-medium text-gray-400">(optional)</span>
                         </label>
                         <input
                           value={project.links?.live || ""}
@@ -1743,6 +1773,7 @@ const EDITOR_NAV_ITEMS = [
                               links: { ...(cur.links || {}), live: e.target.value },
                             }))
                           }
+                          placeholder="Leave empty if not deployed"
                           className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 text-xs sm:text-sm font-mono"
                         />
                       </div>
@@ -1776,6 +1807,19 @@ const EDITOR_NAV_ITEMS = [
                           className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 text-xs sm:text-sm font-mono"
                         />
                       </div>
+
+                      <ProjectCoverImageField
+                        images={project.images || []}
+                        onChange={(nextImages) => {
+                          const nextProject = {
+                            ...project,
+                            images: nextImages,
+                          };
+                          updateProjectDraft(project._id, { images: nextImages });
+                          // Persist immediately so cover shows on public page without a second Save click.
+                          handleSaveProject(nextProject);
+                        }}
+                      />
 
                       <div className="md:col-span-2 flex flex-wrap items-center gap-4 sm:gap-6 pt-2">
                         <label className="flex items-center gap-2 text-xs sm:text-sm font-bold cursor-pointer">
@@ -1848,6 +1892,13 @@ const EDITOR_NAV_ITEMS = [
                   rows={2}
                   className="w-full p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-sm sm:text-base leading-relaxed"
                 />
+                <ProjectCoverImageField
+                  images={newProject.images || []}
+                  onChange={(nextImages) =>
+                    setNewProject((cur) => ({ ...cur, images: nextImages }))
+                  }
+                  hint="Add a screenshot if this project is not deployed yet."
+                />
                 <button
                   type="button"
                   onClick={handleCreateProject}
@@ -1858,9 +1909,11 @@ const EDITOR_NAV_ITEMS = [
                 </button>
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Experience Panel */}
-            <PortfolioPanel
+            {activeStep === "experience" && (
+              <PortfolioPanel
               id="section-experience"
               title="Experience"
               description="Portfolio copy of your career work experience."
@@ -1977,9 +2030,11 @@ const EDITOR_NAV_ITEMS = [
                 ))}
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Education Panel */}
-            <PortfolioPanel
+            {activeStep === "education" && (
+              <PortfolioPanel
               id="section-education"
               title="Education"
               description="Degrees, universities, and graduation credentials."
@@ -2097,9 +2152,11 @@ const EDITOR_NAV_ITEMS = [
                 ))}
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Skills Panel */}
-            <PortfolioPanel
+            {activeStep === "skills" && (
+              <PortfolioPanel
               id="section-skills"
               title="Skills"
               description="Categorized skills groups shown on your portfolio."
@@ -2148,9 +2205,27 @@ const EDITOR_NAV_ITEMS = [
                 ))}
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Achievements Panel */}
-            <PortfolioPanel
+            
+            {activeStep === "certifications" && (
+              <CertificationsPanel
+                certifications={form.certifications || []}
+                onAdd={(item) => addPortfolioArrayItem("certifications", item)}
+                onUpdate={(index, updates) =>
+                  updatePortfolioArrayItem("certifications", index, updates)
+                }
+                onRemove={(index) =>
+                  removePortfolioArrayItem("certifications", index)
+                }
+                forceState={panelControl.open}
+                forceVersion={panelControl.version}
+              />
+            )}
+
+{activeStep === "achievements" && (
+              <PortfolioPanel
               id="section-achievements"
               title="Achievements & Honors"
               description="Competition wins, rankings, and awards (1 per line)."
@@ -2166,83 +2241,29 @@ const EDITOR_NAV_ITEMS = [
                 placeholder="• Winner - Smart India Hackathon 2025&#10;• AWS Certified Solutions Architect"
               />
             </PortfolioPanel>
+            )}
 
             {/* Custom Sections */}
-            <PortfolioPanel
-              id="section-custom"
-              title="Custom Sections"
-              description="Unique custom sections for open-source, hackathons, publications."
-              icon={Layers}
-              badge={`${(form.customSections || []).length} custom`}
-              forceState={panelControl.open}
-              forceVersion={panelControl.version}
-              actions={
-                <button
-                  type="button"
-                  onClick={() =>
-                    addPortfolioArrayItem("customSections", {
-                      id: `custom-${Date.now()}`,
-                      title: "",
-                      items: [],
-                    })
-                  }
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-blue-600 text-white text-xs sm:text-sm font-bold cursor-pointer shrink-0"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Section</span>
-                </button>
-              }
-            >
-              <div className="space-y-4 sm:space-y-5">
-                {(form.customSections || []).map((item, index) => (
-                  <div
-                    key={item.id || `custom-section-${index}`}
-                    className="rounded-2xl sm:rounded-3xl border border-gray-200/90 dark:border-white/[0.1] p-4 sm:p-6 bg-white dark:bg-zinc-950 space-y-3.5 sm:space-y-4 shadow-xs"
-                  >
-                    <input
-                      value={item.title || ""}
-                      onChange={(e) => updatePortfolioArrayItem("customSections", index, { title: e.target.value })}
-                      placeholder="Section Title (e.g. Open Source Contributions)"
-                      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 text-sm sm:text-base font-bold"
-                    />
-                    <div>
-                      <label className="text-xs sm:text-sm font-bold text-gray-800 dark:text-zinc-200 mb-1.5 block">
-                        Items (1 per line)
-                      </label>
-                      <textarea
-                        value={(item.items || [])
-                          .map((it) => {
-                            if (typeof it === "string") return it;
-                            if (it && typeof it === "object") {
-                              const parts = [it.title || it.name, it.subtitle, it.description].filter(Boolean);
-                              return parts.join(" - ") || it.title || it.name || "";
-                            }
-                            return "";
-                          })
-                          .join("\n")}
-                        onChange={(e) => updatePortfolioArrayItem("customSections", index, { items: linesToArray(e.target.value) })}
-                        rows={4}
-                        className="w-full p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 text-sm sm:text-base leading-relaxed"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removePortfolioArrayItem("customSections", index)}
-                      className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-red-500 hover:text-red-600 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Remove Section</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </PortfolioPanel>
-          </div>
+            {activeStep === "custom" && (
+              <CustomSectionsPanel
+                sections={form.customSections || []}
+                onAddSection={(section) =>
+                  addPortfolioArrayItem("customSections", section)
+                }
+                onUpdateSection={(index, updates) =>
+                  updatePortfolioArrayItem("customSections", index, updates)
+                }
+                onRemoveSection={(index) =>
+                  removePortfolioArrayItem("customSections", index)
+                }
+                forceState={panelControl.open}
+                forceVersion={panelControl.version}
+              />
+            )}
 
-          {/* Right Column: Settings & Customization Sidebar (4 cols) */}
-          <aside className="lg:col-span-4 space-y-5 sm:space-y-6 lg:sticky lg:top-20">
             {/* Theme Customizer Panel */}
-            <PortfolioPanel
+            {activeStep === "theme" && (
+              <PortfolioPanel
               id="section-theme"
               title="Theme Design"
               description="Choose aesthetic style & accent colors."
@@ -2373,9 +2394,11 @@ const EDITOR_NAV_ITEMS = [
                 );
               })()}
             </PortfolioPanel>
+            )}
 
             {/* Sections Visibility & Ordering Panel */}
-            <PortfolioPanel
+            {activeStep === "order" && (
+              <PortfolioPanel
               id="section-order"
               title="Sections Ordering"
               description="Toggle visibility and rearrange sections."
@@ -2424,9 +2447,11 @@ const EDITOR_NAV_ITEMS = [
                 })}
               </div>
             </PortfolioPanel>
+            )}
 
             {/* SEO Panel */}
-            <PortfolioPanel
+            {activeStep === "seo" && (
+              <PortfolioPanel
               id="section-seo"
               title="SEO Metadata"
               description="Search engine and social preview tags."
@@ -2466,6 +2491,26 @@ const EDITOR_NAV_ITEMS = [
                     rows={3}
                     className="w-full p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-sm leading-relaxed"
                   />
+                </div>
+                <div>
+                  <label className="text-xs sm:text-sm font-bold text-gray-800 dark:text-zinc-200 mb-1.5 block">
+                    Keywords
+                  </label>
+                  <input
+                    value={(form.seo?.keywords || []).join(", ")}
+                    onChange={(e) =>
+                      updateNestedField(
+                        "seo",
+                        "keywords",
+                        commaToArray(e.target.value)
+                      )
+                    }
+                    placeholder="react, full stack, portfolio, your name"
+                    className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-sm sm:text-base"
+                  />
+                  <p className="mt-1.5 text-[11px] text-gray-500 dark:text-zinc-400">
+                    Comma-separated. AI SEO can generate these, or edit them manually.
+                  </p>
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
@@ -2693,17 +2738,21 @@ const EDITOR_NAV_ITEMS = [
                 </div>
               </div>
             </PortfolioPanel>
+            )}
 
             {/* Publish Settings Panel */}
-            <PortfolioPanel
+            {activeStep === "publish" && (
+              <PortfolioPanel
               id="section-publish"
               title="Publish Settings"
               description="Control recruiter downloads and indexing."
               icon={Globe2}
+              defaultOpen={true}
               forceState={panelControl.open}
               forceVersion={panelControl.version}
             >
               <div className="space-y-3 sm:space-y-3.5">
+                <PublishChecklist form={form} />
                 <label className="flex items-start gap-3 text-xs sm:text-sm font-bold cursor-pointer">
                   <input
                     type="checkbox"
@@ -2733,6 +2782,17 @@ const EDITOR_NAV_ITEMS = [
                 </label>
               </div>
             </PortfolioPanel>
+            )}
+
+          </div>
+
+          {/* Right Column: Live preview */}
+          <aside className="hidden lg:block lg:col-span-4 space-y-5 sm:space-y-6 lg:sticky lg:top-20">
+            <LivePreviewPane
+              form={form}
+              resume={portfolio?.resumeSnapshot}
+              projects={projects}
+            />
           </aside>
         </div>
       </main>

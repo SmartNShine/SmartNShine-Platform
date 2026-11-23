@@ -35,6 +35,10 @@ build/
 server/uploads/*
 !server/uploads/.gitkeep
 
+# Local backups / logs
+server/backups/
+server/logs/
+
 # Testing
 coverage/
 .nyc_output

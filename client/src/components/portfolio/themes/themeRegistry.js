@@ -199,7 +199,12 @@ export const portfolioThemes = {
 };
 
 export const getPortfolioTheme = (themeId) => {
-  return portfolioThemes[themeId] || portfolioThemes.glassmorphism || portfolioThemes.minimalDeveloper;
+  return (
+    portfolioThemes[themeId] ||
+    portfolioThemes.smartnshine ||
+    portfolioThemes.glassmorphism ||
+    portfolioThemes.minimalDeveloper
+  );
 };
 
 export const portfolioThemeList = Object.values(portfolioThemes);

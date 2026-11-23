@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { resumeAPI } from "@/api/api";
 import { parseValidationErrors } from "@/utils/errorHandler";
 import SEO from "@/components/common/SEO";
+import PageLoader from "@/components/common/PageLoader";
 import {
   FileText,
   Trash2,
@@ -195,17 +196,9 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="relative w-16 h-16 mx-auto">
-            <div className="absolute inset-0 border-3 border-gray-200 dark:border-zinc-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
-            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400 font-bold tracking-wide uppercase">
-            Loading your resumes...
-          </p>
-        </div>
-      </div>
+      <>
+        <PageLoader label="Loading your resumes" stats={3} />
+      </>
     );
   }
 

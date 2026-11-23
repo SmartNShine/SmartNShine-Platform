@@ -47,6 +47,11 @@ const subscriptionSchema = new mongoose.Schema(
       enum: ["razorpay", "stripe", "paypal", "manual"],
       default: "razorpay",
     },
+    isManualGrant: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     receiptId: {
       type: String,
       unique: true,
@@ -212,6 +217,8 @@ subscriptionSchema.statics.getRevenueSummary = async function (
     {
       $match: {
         status: {$in: ["active", "cancelled", "expired"]},
+        paymentMethod: {$ne: "manual"},
+        isManualGrant: {$ne: true},
         createdAt: {
           $gte: startDate,
           $lte: endDate,

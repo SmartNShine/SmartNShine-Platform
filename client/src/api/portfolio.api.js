@@ -2,8 +2,9 @@ import api from "./api";
 
 export const portfolioAPI = {
   list: () => api.get("/portfolio"),
-  createFromResume: (resumeId) =>
-    api.post(`/portfolio/from-resume/${resumeId}`),
+  createBlank: (data = {}) => api.post("/portfolio", data),
+  createFromResume: (resumeId, data = {}) =>
+    api.post(`/portfolio/from-resume/${resumeId}`, data),
   getById: (id) => api.get(`/portfolio/${id}`),
   update: (id, data) => api.put(`/portfolio/${id}`, data),
   delete: (id) => api.delete(`/portfolio/${id}`),

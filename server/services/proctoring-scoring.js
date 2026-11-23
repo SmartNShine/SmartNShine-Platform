@@ -1,8 +1,6 @@
-export const EVENT_WEIGHTS = {
-  PHONE_DETECTED: 15, MULTIPLE_FACES: 15, FACE_ABSENT: 8,
-  GAZE_DEVIATION: 3, TAB_SWITCH: 5, WINDOW_BLUR: 4, PASTE_ATTEMPT: 5,
-  IDENTITY_SWITCH: 18, PROCTORING_OFFLINE: 10,
-};
+import { EVENT_WEIGHTS, sanitizeEventMeta } from "./proctoring-events.js";
+
+export { EVENT_WEIGHTS };
 
 export const nonNegative = (value, fallback = 0) =>
   Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : fallback;
@@ -17,18 +15,36 @@ export function normalizeProctoringEvent(payload, now = new Date()) {
     evidenceCount: Math.floor(nonNegative(payload.evidenceCount)),
     faceCount: payload.faceCount == null ? null : Math.floor(nonNegative(payload.faceCount)),
     detectorVersion: typeof payload.detectorVersion === "string" ? payload.detectorVersion.slice(0, 100) : "unknown",
-    meta: payload.meta && typeof payload.meta === "object" && !Array.isArray(payload.meta) ? payload.meta : {},
-    details: typeof payload.details === "string" ? payload.details : "",
+    meta: sanitizeEventMeta(payload.meta),
+    details: typeof payload.details === "string" ? payload.details.slice(0, 300) : "",
     snapshotUrl: payload.snapshotUrl || null,
     createdAt: now,
   };
 }
 
-export function scoreProctoringEvents(events) {
-  const flagCounts = { phone: 0, gaze: 0, multipleFaces: 0, absent: 0, tabSwitch: 0, identitySwitch: 0, offline: 0 };
-  const countKey = { PHONE_DETECTED: "phone", MULTIPLE_FACES: "multipleFaces", FACE_ABSENT: "absent", GAZE_DEVIATION: "gaze", TAB_SWITCH: "tabSwitch", IDENTITY_SWITCH: "identitySwitch", PROCTORING_OFFLINE: "offline" };
+export const FLAG_COUNT_KEYS = {
+  PHONE_DETECTED: "phone", MULTIPLE_FACES: "multipleFaces", FACE_ABSENT: "absent", GAZE_DEVIATION: "gaze",
+  TAB_SWITCH: "tabSwitch", IDENTITY_SWITCH: "identitySwitch", PROCTORING_OFFLINE: "offline",
+  VIRTUAL_DEVICE: "virtualDevice", MULTI_SCREEN: "multiScreen", FULLSCREEN_EXIT: "fullscreenExit",
+  TIMING_ANOMALY: "timing", MULTI_SESSION: "multiSession",
+  SCREEN_SHARE_UNAVAILABLE: "screenShareMissing", SCREEN_SHARE_PARTIAL: "screenSharePartial",
+  SCREEN_SHARE_STOPPED: "screenShareStopped",
+};
+
+// Screen sharing (proctored): total time the share was off before review is recommended.
+export const SCREEN_SHARE_OFF_REVIEW_MS = 60000;
+
+/**
+ * @param {Array} events
+ * @param {{ level?: "practice" | "proctored" }} [options] proctored mode treats a
+ *   virtual camera/mic as hard evidence; practice mode only recommends review.
+ */
+export function scoreProctoringEvents(events, { level = "practice" } = {}) {
+  const flagCounts = Object.fromEntries(Object.values(FLAG_COUNT_KEYS).map((key) => [key, 0]));
+  const countKey = FLAG_COUNT_KEYS;
   let penaltyPoints = 0;
   let sustainedMultipleFaces = false;
+  let screenShareOffMs = 0;
   for (const event of events) {
     if (countKey[event.eventType]) flagCounts[countKey[event.eventType]] += 1;
     const confidence = Math.min(1.4, Math.max(0.6, nonNegative(event.confidence ?? 1, 1) * 1.4));
@@ -36,13 +52,22 @@ export function scoreProctoringEvents(events) {
     // Legacy events without duration retain their original duration weight.
     const durationMultiplier = duration === 0 ? 1 : duration < 3000 ? 0.75 : duration < 8000 ? 1 : 1.5;
     penaltyPoints += (EVENT_WEIGHTS[event.eventType] || 0) * confidence * durationMultiplier;
+    if (event.eventType === "SCREEN_SHARE_STOPPED") screenShareOffMs += duration;
     if (event.eventType === "MULTIPLE_FACES" && duration >= 2000 && (event.confidence ?? 1) >= 0.7) sustainedMultipleFaces = true;
   }
   const integrityScore = Math.max(0, Math.round(100 - penaltyPoints));
   let verdict = "VERIFIED_CLEAN";
-  if (integrityScore < 70 || sustainedMultipleFaces || flagCounts.phone >= 2 || flagCounts.multipleFaces >= 2 || flagCounts.identitySwitch >= 3) {
+  const proctored = level === "proctored";
+  const virtualDeviceIsHard = proctored && flagCounts.virtualDevice > 0;
+  const screenShareNeedsReview = proctored && (flagCounts.screenShareMissing > 0 || flagCounts.screenSharePartial > 0 ||
+    flagCounts.screenShareStopped >= 3 || screenShareOffMs > SCREEN_SHARE_OFF_REVIEW_MS);
+  if (integrityScore < 70 || sustainedMultipleFaces || flagCounts.phone >= 2 || flagCounts.multipleFaces >= 2 ||
+      flagCounts.identitySwitch >= 3 || virtualDeviceIsHard) {
     verdict = "FLAGGED_SUSPICIOUS";
-  } else if (integrityScore < 85 || flagCounts.tabSwitch >= 2 || flagCounts.absent >= 2 || flagCounts.identitySwitch >= 2 || flagCounts.offline > 0) {
+  } else if (integrityScore < 85 || flagCounts.tabSwitch >= 2 || flagCounts.absent >= 2 || flagCounts.identitySwitch >= 2 ||
+      flagCounts.offline > 0 || flagCounts.virtualDevice > 0 || flagCounts.multiScreen > 0 ||
+      flagCounts.fullscreenExit >= 3 || flagCounts.timing >= 2 || flagCounts.multiSession > 0 ||
+      screenShareNeedsReview) {
     verdict = "REVIEW_RECOMMENDED";
   }
   return { integrityScore, flagCounts, verdict };

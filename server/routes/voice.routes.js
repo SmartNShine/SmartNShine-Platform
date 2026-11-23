@@ -2,7 +2,7 @@ import express from "express";
 import {authenticateToken} from "../middleware/auth.middleware.js";
 import {interviewTurnLimiter} from "../middleware/interview.middleware.js";
 import {audioUpload} from "../config/multer.config.js";
-// ElevenLabs DISABLED - using Sarvam AI (Production) + Chatterbox TTS (Local) + Browser TTS (Fallback)
+// TTS: Sarvam AI (prod) → Chatterbox (local) → browser Web Speech fallback
 import * as sarvamService from "../services/sarvam.service.js";
 import * as chatterboxService from "../services/chatterbox.service.js";
 import {transcribeAudioWithAI} from "../services/openai.service.js";
@@ -529,37 +529,6 @@ router.post("/tts/synthesize", authenticateToken, interviewTurnLimiter, async (r
       error: "Internal server error",
     });
   }
-});
-
-/**
- * @route   POST /api/voice/tts/synthesize-json
- * @desc    DISABLED - Convert text to speech (base64 JSON)
- * @access  Private
- */
-router.post("/tts/synthesize-json", authenticateToken, async (req, res) => {
-  console.log("⚠️ synthesize-json endpoint called but ElevenLabs is disabled");
-
-  return res.status(503).json({
-    success: false,
-    error: "Endpoint unavailable",
-    message:
-      "ElevenLabs is disabled. Use /api/voice/tts/synthesize instead (returns 503 for browser TTS fallback).",
-  });
-});
-
-/**
- * @route   POST /api/voice/tts/stream
- * @desc    DISABLED - Stream text-to-speech audio (ElevenLabs)
- * @access  Private
- */
-router.post("/tts/stream", authenticateToken, async (req, res) => {
-  console.log("⚠️ stream endpoint called but ElevenLabs is disabled");
-
-  return res.status(503).json({
-    success: false,
-    error: "Endpoint unavailable",
-    message: "ElevenLabs is disabled. Use browser TTS instead.",
-  });
 });
 
 /**

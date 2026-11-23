@@ -464,7 +464,7 @@ export default function QAVoicePractice({ answerText = "", questionText = "" }) 
                   setSelectedVoiceURI(e.target.value);
                   if (isPlaying) stopTTS();
                 }}
-                className="py-1 px-2.5 rounded-lg bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 border border-gray-200 dark:border-zinc-800 text-[11px] font-medium focus:outline-none max-w-[230px] shadow-2xs cursor-pointer"
+                className="py-1 px-2.5 rounded-lg bg-white dark:bg-zinc-950 text-gray-800 dark:text-zinc-200 border border-gray-200 dark:border-zinc-800 text-[11px] font-medium focus:outline-none max-w-[230px] shadow-2xs cursor-pointer"
               >
                 {naturalVoices.map((v) => (
                   <option key={v.voiceURI} value={v.voiceURI}>
@@ -476,7 +476,7 @@ export default function QAVoicePractice({ answerText = "", questionText = "" }) 
           )}
 
           {/* Speed Buttons */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-zinc-900 p-0.5 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-2xs">
+          <div className="flex items-center gap-0.5 bg-white dark:bg-zinc-950 p-0.5 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-2xs">
             {[0.85, 0.96, 1.15].map((rate) => (
               <button
                 key={rate}
@@ -630,7 +630,7 @@ export default function QAVoicePractice({ answerText = "", questionText = "" }) 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 space-y-3.5"
+            className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 space-y-3.5"
           >
             <div className="flex items-center justify-between pb-2 border-b border-gray-200/80 dark:border-zinc-800">
               <div className="flex items-center gap-2">

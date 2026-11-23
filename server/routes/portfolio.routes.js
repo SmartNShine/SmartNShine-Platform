@@ -11,6 +11,7 @@ import {
 import {checkAIQuota} from "../middleware/aiUsageTracker.middleware.js";
 import multer from "multer";
 import {
+  createBlankPortfolio,
   createPortfolioFromResume,
   createPortfolioProject,
   deletePortfolio,
@@ -80,6 +81,7 @@ router.post(
   checkSubscription,
   createPortfolioFromResume
 );
+router.post("/", authenticateToken, checkSubscription, createBlankPortfolio);
 router.get("/", authenticateToken, checkSubscription, getPortfolios);
 router.get("/:id", authenticateToken, checkSubscription, getPortfolioById);
 router.put("/:id", authenticateToken, checkSubscription, updatePortfolio);
