@@ -1,6 +1,7 @@
 import {useState, useEffect} from "react";
 import {useToggle} from "@/hooks";
 import EditableSection from "./EditableSection";
+import SocialLinksFields from "./SocialLinksFields";
 import {ScoreCard} from "@/components/common/cards";
 import {RecommendationsPanel} from "@/components/editor/panels";
 import {resumeAPI} from "@/api/api";
@@ -99,6 +100,7 @@ export const PersonalInfoSection = ({
         autoComplete="url"
       />
     </div>
+    <SocialLinksFields contact={resumeData.contact} updateContact={updateContact} />
   </div>
 );
 

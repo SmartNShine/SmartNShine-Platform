@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
@@ -321,6 +322,7 @@ const ClassicTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
       label: contact.website.replace(/^https?:\/\/(www\.)?/i, ""),
       href: contact.website.startsWith("http") ? contact.website : `https://${contact.website}`,
     },
+    ...getResumeSocialLinks(contact),
   ].filter(Boolean);
 
   // ── GitHub-style Topic Pill ───────────────────────────────────────────────

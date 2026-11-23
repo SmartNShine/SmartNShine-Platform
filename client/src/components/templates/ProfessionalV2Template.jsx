@@ -1,4 +1,5 @@
 import {forwardRef, useRef, useEffect, useMemo} from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {isDescriptionDuplicatedInBullets, formatEducationDegreeAndField} from "./templateUtils";
 import {Mail, Phone, MapPin, Linkedin, Github, Globe} from "lucide-react";
 
@@ -898,6 +899,14 @@ const ProfessionalV2Template = forwardRef(
                   </a>
                 </div>
               )}
+              {getResumeSocialLinks(data.contact || contactInfo).map(({ href, label, icon: Icon }) => (
+                <div key={href} className="contact-item">
+                  <Icon size={12} className="contact-icon" aria-hidden="true" />
+                  <a href={href} target="_blank" rel="noopener noreferrer">
+                    {label}
+                  </a>
+                </div>
+              ))}
             </div>
 
             {/* Languages inline if available */}

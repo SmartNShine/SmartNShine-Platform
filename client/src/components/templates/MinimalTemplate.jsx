@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import { isDescriptionDuplicatedInBullets, formatEducationDegreeAndField, cleanBulletText } from "./templateUtils";
 import {
   Mail,
@@ -1203,6 +1204,19 @@ const MinimalTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref)
               </a>
             </span>
           )}
+          {getResumeSocialLinks(resumeData.contact).map(({ href, label, icon: Icon }) => (
+            <span key={href} style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+              <Icon size={11} style={{ color: selectedTheme.primary, flexShrink: 0 }} aria-hidden="true" />
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: selectedTheme.primary, textDecoration: "none", fontWeight: 500 }}
+              >
+                {label}
+              </a>
+            </span>
+          ))}
         </div>
       </header>
 

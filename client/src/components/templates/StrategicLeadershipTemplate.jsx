@@ -1,4 +1,5 @@
 import {forwardRef, useEffect, useMemo, useRef} from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {formatEducationDegreeAndField} from "./templateUtils";
 
 /**
@@ -754,6 +755,18 @@ const StrategicLeadershipTemplate = forwardRef(
               {(resumeData?.contact?.portfolio || resumeData?.contact?.website) && (
                 <div style={{wordBreak: "break-word"}}>{resumeData.contact.portfolio || resumeData.contact.website}</div>
               )}
+              {getResumeSocialLinks(resumeData?.contact).map(({ href, label, icon: Icon }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "2px", overflowWrap: "anywhere", color: "inherit" }}
+                >
+                  <Icon size={11} style={{ flexShrink: 0 }} aria-hidden="true" />
+                  <span>{label}</span>
+                </a>
+              ))}
             </div>
           </div>
 

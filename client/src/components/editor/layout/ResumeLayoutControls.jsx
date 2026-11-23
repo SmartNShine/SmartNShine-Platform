@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   SlidersHorizontal,
   RotateCcw,
@@ -12,6 +12,7 @@ import {
 import { LAYOUT_DEFAULTS } from "../constants/editorConstants";
 import { TEMPLATE_COLOR_THEMES } from "../templateConfig";
 import { mergeDensityLayoutSettings } from "../utils/resumeLayoutUtils";
+import "./ResumeLayoutControls.css";
 
 const PREVIEW_DENSITIES = [
   { id: "compact", label: "Smart 1-Page" },
@@ -43,8 +44,67 @@ const FONT_MAP = {
   techMono: '"JetBrains Mono", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
 };
 
+const controlCardClass = "min-w-0 rounded-lg border border-slate-200/90 bg-slate-50/70 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/60";
+
+function LayoutSlider({ label, min, max, step, unit, value, onChange }) {
+  const id = useId();
+  const [numberDraft, setNumberDraft] = useState(null);
+  const unitName = unit === "%" ? "percent" : "inches";
+  const progress = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+
+  return (
+    <div className={controlCardClass}>
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor={id} className="text-xs font-semibold text-slate-700 dark:text-zinc-200">
+          {label}
+        </label>
+        <div className="flex h-6 shrink-0 items-center rounded-md border border-slate-200 bg-white pl-1 pr-1.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:focus-within:border-blue-400">
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={numberDraft ?? value}
+            aria-label={`${label} (${unitName})`}
+            className="resume-layout-slider-value w-9 bg-transparent text-center text-xs font-semibold tabular-nums text-slate-900 outline-none dark:text-zinc-100"
+            onChange={(event) => {
+              const { value: nextValue, valueAsNumber } = event.currentTarget;
+              setNumberDraft(nextValue);
+              if (valueAsNumber >= min && valueAsNumber <= max) onChange(nextValue);
+            }}
+            onBlur={(event) => {
+              const { value: nextValue, valueAsNumber } = event.currentTarget;
+              if (valueAsNumber < min || valueAsNumber > max) onChange(nextValue);
+              setNumberDraft(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+          <span className="min-w-3 text-center text-[10px] font-medium text-slate-500 dark:text-zinc-400" aria-hidden="true">
+            {unit}
+          </span>
+        </div>
+      </div>
+      <input
+        id={id}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        aria-valuetext={`${value} ${unitName}`}
+        className="resume-layout-slider"
+        style={{ "--slider-progress": `${progress}%` }}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
+    </div>
+  );
+}
+
 const ResumeLayoutControls = ({ resumeData = {}, template = "classic", updateField, onChange }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const advancedId = useId();
   const settings = { ...LAYOUT_DEFAULTS, ...(resumeData.layoutSettings || {}) };
 
   const activeDensity = resumeData.density || "medium";
@@ -251,78 +311,58 @@ const ResumeLayoutControls = ({ resumeData = {}, template = "classic", updateFie
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center justify-between w-full text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer"
+          aria-expanded={showAdvanced}
+          aria-controls={showAdvanced ? advancedId : undefined}
+          className="flex w-full cursor-pointer items-center justify-between rounded-md py-1 text-xs font-semibold text-gray-600 transition-colors hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <span>Fine-tune margins & spacing</span>
-          {showAdvanced ? (
-            <ChevronUp className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronDown className="w-3.5 h-3.5" />
-          )}
+          {showAdvanced ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
         </button>
 
         {showAdvanced && (
-          <div className="mt-2.5 grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <label className="min-w-0 text-xs font-medium text-gray-700 dark:text-gray-300">
-              <span className="flex min-w-0 items-center justify-between gap-1.5">
-                <span className="truncate">Text size</span>
-                <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                  <input
-                    type="number"
-                    min="50"
-                    max="150"
-                    step="1"
-                    value={settings.fontScale ?? 100}
-                    onChange={(e) => updateTextSize(e.target.value)}
-                    className="h-6 w-14 rounded border border-gray-200 dark:border-zinc-700 bg-white px-1 text-right text-xs text-gray-900 outline-none focus:border-blue-500 dark:bg-zinc-900 dark:text-gray-100"
-                  />{" "}
-                  %
-                </span>
-              </span>
-              <input
-                type="range"
-                min="50"
-                max="150"
-                step="1"
-                value={settings.fontScale ?? 100}
-                onChange={(e) => updateTextSize(e.target.value)}
-                className="mt-1.5 h-1.5 w-full cursor-pointer accent-blue-600 dark:accent-blue-400"
-              />
-            </label>
+          <div id={advancedId} className="resume-layout-slider-grid mt-2 grid gap-2">
+            <LayoutSlider
+              label="Text size"
+              min={50}
+              max={150}
+              step={1}
+              unit="%"
+              value={settings.fontScale ?? 100}
+              onChange={updateTextSize}
+            />
+            <LayoutSlider
+              label="Section spacing"
+              min={0}
+              max={200}
+              step={1}
+              unit="%"
+              value={settings.sectionSpacing ?? 100}
+              onChange={updateSectionSpacing}
+            />
 
-            <label className="min-w-0 text-xs font-medium text-gray-700 dark:text-gray-300">
-              <span className="flex min-w-0 items-center justify-between gap-1.5">
-                <span className="truncate">Section spacing</span>
-                <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                  <input
-                    type="number"
-                    min="0"
-                    max="200"
-                    step="1"
-                    value={settings.sectionSpacing ?? 100}
-                    onChange={(e) => updateSectionSpacing(e.target.value)}
-                    className="h-6 w-14 rounded border border-gray-200 dark:border-zinc-700 bg-white px-1 text-right text-xs text-gray-900 outline-none focus:border-blue-500 dark:bg-zinc-900 dark:text-gray-100"
-                  />{" "}
-                  %
-                </span>
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="200"
-                step="1"
-                value={settings.sectionSpacing ?? 100}
-                onChange={(e) => updateSectionSpacing(e.target.value)}
-                className="mt-1.5 h-1.5 w-full cursor-pointer accent-blue-600 dark:accent-blue-400"
+            {[
+              ["pagePadding", "Side margins"],
+              ["pagePaddingTop", "Top margin"],
+              ["pagePaddingBottom", "Bottom margin"],
+            ].map(([field, label]) => (
+              <LayoutSlider
+                key={field}
+                label={label}
+                min={0}
+                max={1.2}
+                step={0.01}
+                unit="in"
+                value={marginValue(settings[field])}
+                onChange={(value) => updateMargin(field, value)}
               />
-            </label>
+            ))}
 
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <label className={`${controlCardClass} block text-xs font-semibold text-slate-700 dark:text-zinc-200`}>
               Contact alignment
               <select
                 value={settings.contactLayout || "left-inline"}
                 onChange={(e) => update("contactLayout", e.target.value)}
-                className="mt-1 h-8 w-full rounded-md border border-gray-200 dark:border-zinc-700 bg-white px-2.5 text-xs text-gray-900 outline-none transition focus:border-blue-500 dark:bg-zinc-900 dark:text-gray-100"
+                className="mt-1 h-7 w-full rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-blue-400"
               >
                 {contactOptions.map(([value, label]) => (
                   <option key={value} value={value}>
@@ -331,42 +371,6 @@ const ResumeLayoutControls = ({ resumeData = {}, template = "classic", updateFie
                 ))}
               </select>
             </label>
-
-            {[
-              ["pagePadding", "Side margins"],
-              ["pagePaddingTop", "Top margin"],
-              ["pagePaddingBottom", "Bottom margin"],
-            ].map(([field, label]) => (
-              <label
-                key={field}
-                className="min-w-0 text-xs font-medium text-gray-700 dark:text-gray-300"
-              >
-                <span className="flex min-w-0 items-center justify-between gap-1.5">
-                  <span className="truncate">{label}</span>
-                  <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                    <input
-                      type="number"
-                      min="0.00"
-                      max="1.20"
-                      step="0.01"
-                      value={marginValue(settings[field])}
-                      onChange={(e) => updateMargin(field, e.target.value)}
-                      className="h-6 w-14 rounded border border-gray-200 dark:border-zinc-700 bg-white px-1 text-right text-xs text-gray-900 outline-none focus:border-blue-500 dark:bg-zinc-900 dark:text-gray-100"
-                    />{" "}
-                    in
-                  </span>
-                </span>
-                <input
-                  type="range"
-                  min="0.00"
-                  max="1.20"
-                  step="0.01"
-                  value={marginValue(settings[field])}
-                  onChange={(e) => updateMargin(field, e.target.value)}
-                  className="mt-1.5 h-1.5 w-full cursor-pointer accent-blue-600 dark:accent-blue-400"
-                />
-              </label>
-            ))}
           </div>
         )}
       </div>

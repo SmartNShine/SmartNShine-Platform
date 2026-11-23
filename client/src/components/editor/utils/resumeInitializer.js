@@ -28,6 +28,7 @@ export function normalizeResumeData(rawData) {
       linkedin: "",
       github: "",
       portfolio: "",
+      socialLinks: [],
     };
   } else {
     data.contact = {
@@ -37,6 +38,9 @@ export function normalizeResumeData(rawData) {
       linkedin: data.contact.linkedin || "",
       github: data.contact.github || "",
       portfolio: data.contact.portfolio || "",
+      socialLinks: Array.isArray(data.contact.socialLinks)
+        ? data.contact.socialLinks.filter((link) => typeof link === "string")
+        : [],
     };
   }
 

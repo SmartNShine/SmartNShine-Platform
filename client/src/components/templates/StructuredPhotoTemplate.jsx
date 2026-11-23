@@ -1,4 +1,5 @@
 import {forwardRef, useEffect, useMemo, useRef} from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {formatEducationDegreeAndField} from "./templateUtils";
 import {
   Mail,
@@ -167,6 +168,7 @@ const StructuredPhotoTemplate = forwardRef(({resumeData, onPageUsageChange}, ref
           : `https://${contact.instagram}`
         : null,
     },
+    ...getResumeSocialLinks(contact).map((link) => ({ ...link, key: link.href })),
   ].filter((item) => item.label);
 
   const renderBullets = (items) => {
