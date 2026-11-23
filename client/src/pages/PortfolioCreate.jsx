@@ -363,6 +363,7 @@ export default function PortfolioCreate() {
                     </p>
                     <Link
                       to="/editor"
+                      state={{ resumeData: { name: "" } }}
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold"
                     >
                       Go to Resume Builder

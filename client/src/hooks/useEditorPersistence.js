@@ -70,7 +70,6 @@ export const useEditorPersistence = ({
                 usr: {
                   ...(window.history.state?.usr || {}),
                   resumeData: savedResume,
-                  isNewResume: false,
                 },
               },
               ""
@@ -140,8 +139,6 @@ export const useEditorPersistence = ({
           navigateFn("/upload");
         } else if (locationState?.fromATS) {
           navigateFn("/ats-analyzer");
-        } else if (locationState?.fromCareerProfile) {
-          navigateFn("/career-profile");
         } else if (window.history.length > 1 && window.history.state && window.history.state.idx > 0) {
           navigateFn(-1);
         } else {

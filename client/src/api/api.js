@@ -320,8 +320,9 @@ export const resumeAPI = {
    * @param {FormData} formData - Form data containing resume file
    * @returns {Promise} Axios response with ATS score and analysis
    */
-  analyzeResume: (formData) => {
+  analyzeResume: (formData, { signal } = {}) => {
     return api.post("/ats/analyze-resume", formData, {
+      signal,
       headers: {
         "Content-Type": "multipart/form-data",
       },

@@ -1,11 +1,10 @@
-import { Sparkles, Upload, FileText, TrendingUp, MessageSquare } from "lucide-react";
+import { Sparkles, Upload, TrendingUp, MessageSquare } from "lucide-react";
 
 export default function ProfileBanner({
   completeness,
   sections,
   onOpenAIModal,
   onOpenImportModal,
-  onExportToResumeBuilder,
 }) {
   return (
     <div className="space-y-6">
@@ -51,14 +50,6 @@ export default function ProfileBanner({
             >
               <Upload className="w-3.5 h-3.5 text-blue-500" />
               <span>Import from Resume</span>
-            </button>
-
-            <button
-              onClick={onExportToResumeBuilder}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs font-semibold transition-all shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Use in Resume Builder</span>
             </button>
 
             <a

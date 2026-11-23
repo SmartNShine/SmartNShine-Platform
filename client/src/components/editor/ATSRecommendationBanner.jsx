@@ -76,7 +76,6 @@ export default function ATSRecommendationBanner({
   onOpenAIAnalysis,
   onBackToATS,
   saving = false,
-  isWizardMode = false,
 }) {
   const [applied, setApplied] = useState(false);
   const [applyingKeywords, setApplyingKeywords] = useState(false);

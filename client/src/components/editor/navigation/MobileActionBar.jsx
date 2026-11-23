@@ -3,7 +3,6 @@ import {
   X,
   List,
   Eye,
-  EyeOff,
   Download,
   Loader2,
   Check,
@@ -25,7 +24,6 @@ const MobileActionBar = memo(
     hasUnsavedChanges,
     onExport,
     isExportLocked,
-    isWizardMode,
     completedSectionsCount,
     totalTrackableSections,
     completionPercentage,
@@ -101,27 +99,25 @@ const MobileActionBar = memo(
         </button>
       </div>
 
-      {!isWizardMode && (
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-9 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-              {completedSectionsCount}/{totalTrackableSections} complete
-            </span>
-            <span className="ml-auto text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              {completionPercentage}%
-            </span>
-          </div>
-          <button
-            onClick={onJumpToFirstIncomplete}
-            className="h-9 px-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-          >
-            Next
-          </button>
+      <div className="mt-2 flex items-center gap-2">
+        <div className="flex-1 h-9 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+            {completedSectionsCount}/{totalTrackableSections} complete
+          </span>
+          <span className="ml-auto text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            {completionPercentage}%
+          </span>
         </div>
-      )}
+        <button
+          onClick={onJumpToFirstIncomplete}
+          className="h-9 px-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+        >
+          Next
+        </button>
+      </div>
 
-      {showFloatingNav && !isWizardMode && (
+      {showFloatingNav && (
         <div className="mt-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-2 shadow-lg">
           <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1 pb-1">
             <span>Section Outline</span>

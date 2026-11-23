@@ -117,7 +117,6 @@ export const useResumeSaveActions = ({
                   usr: {
                     ...(window.history.state?.usr || {}),
                     resumeData: savedResume,
-                    isNewResume: false,
                   },
                 },
                 ""

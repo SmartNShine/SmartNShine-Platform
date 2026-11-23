@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from "react";
 import {useLocalStorage} from "./useLocalStorage";
 
-export const useFloatingSectionNav = ({isWizardMode}) => {
+export const useFloatingSectionNav = () => {
   const [showFloatingNav, setShowFloatingNav] = useState(false);
   const [floatingNavOffset, setFloatingNavOffset] = useLocalStorage(
     "floatingNavOffset",
@@ -77,8 +77,6 @@ export const useFloatingSectionNav = ({isWizardMode}) => {
   }, [isDraggingFloatingNav, clampFloatingNavOffset, setFloatingNavOffset]);
 
   const clampCurrentFloatingNavOffset = useCallback(() => {
-    if (isWizardMode) return;
-
     const currentX = floatingNavOffset?.x || 0;
     const currentY = floatingNavOffset?.y || 0;
     const clamped = clampFloatingNavOffset(currentX, currentY);
@@ -86,20 +84,18 @@ export const useFloatingSectionNav = ({isWizardMode}) => {
     if (clamped.x !== currentX || clamped.y !== currentY) {
       setFloatingNavOffset(clamped);
     }
-  }, [isWizardMode, floatingNavOffset, clampFloatingNavOffset, setFloatingNavOffset]);
+  }, [floatingNavOffset, clampFloatingNavOffset, setFloatingNavOffset]);
 
   useEffect(() => {
     clampCurrentFloatingNavOffset();
   }, [clampCurrentFloatingNavOffset, showFloatingNav]);
 
   useEffect(() => {
-    if (isWizardMode) return;
-
     window.addEventListener("resize", clampCurrentFloatingNavOffset);
     return () => {
       window.removeEventListener("resize", clampCurrentFloatingNavOffset);
     };
-  }, [isWizardMode, clampCurrentFloatingNavOffset]);
+  }, [clampCurrentFloatingNavOffset]);
 
   const handleFloatingNavDragStart = useCallback(
     (e) => {

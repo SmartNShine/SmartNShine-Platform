@@ -1,6 +1,5 @@
 import {
   Upload,
-  BriefcaseBusiness,
   FileUser,
   CheckCircle2,
   AlertCircle,
@@ -10,8 +9,6 @@ import {
 } from "lucide-react";
 
 export default function ATSResumeSelector({
-  useCareerProfile,
-  setUseCareerProfile,
   userResumes,
   loadingResumes,
   selectedResume,
@@ -25,7 +22,7 @@ export default function ATSResumeSelector({
 }) {
   const canAnalyze =
     jobDescription.trim().length > 0 &&
-    (useCareerProfile || selectedResume || uploadedFile);
+    (selectedResume || uploadedFile);
 
   return (
     <div className="bg-white dark:bg-zinc-950 rounded-3xl p-6 sm:p-7 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-5">
@@ -43,57 +40,7 @@ export default function ATSResumeSelector({
         </div>
       </div>
 
-      {/* Option 1: Master Career Profile */}
-      <button
-        type="button"
-        onClick={() => {
-          setUseCareerProfile(!useCareerProfile);
-          if (!useCareerProfile) {
-            setSelectedResume(null);
-            setUploadedFile(null);
-          }
-        }}
-        className={`w-full p-4 rounded-2xl border text-left transition-colors flex items-center justify-between gap-3 cursor-pointer ${
-          useCareerProfile
-            ? "bg-blue-50/80 dark:bg-blue-950/40 border-blue-400 dark:border-blue-600/80"
-            : "border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/[0.04]"
-        }`}
-      >
-        <div className="flex min-w-0 items-center gap-3.5">
-          <div
-            className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
-              useCareerProfile
-                ? "bg-blue-600 text-white"
-                : "bg-zinc-100 dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300"
-            }`}
-          >
-            <BriefcaseBusiness className="w-5 h-5" aria-hidden="true" />
-          </div>
-          <div>
-            <div className="text-sm font-bold text-gray-900 dark:text-white flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span>Master Career Profile</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                Recommended
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-              Analyze all verified experience, skills, and projects in your master hub
-            </div>
-          </div>
-        </div>
-
-        {useCareerProfile ? (
-          <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 border border-blue-300 dark:border-blue-800 px-2.5 py-1 rounded-full">
-            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> Selected
-          </span>
-        ) : (
-          <span className="shrink-0 text-xs font-medium text-gray-400 dark:text-zinc-500">
-            Use
-          </span>
-        )}
-      </button>
-
-      {/* Option 2: Saved Resume Dropdown */}
+      {/* Saved Resume Dropdown */}
       <div className="space-y-1.5">
         <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300">
           Saved resumes
@@ -110,10 +57,7 @@ export default function ATSResumeSelector({
             value={selectedResume || ""}
             onChange={(e) => {
               setSelectedResume(e.target.value);
-              setUseCareerProfile(false);
-              setUploadedFile(null);
             }}
-            disabled={useCareerProfile}
             className="w-full h-12 px-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <option value="">Choose a saved resume</option>
@@ -143,18 +87,13 @@ export default function ATSResumeSelector({
         </div>
       </div>
 
-      {/* Option 3: File Upload Dropzone */}
-      <label
-        className={`cursor-pointer block transition-all ${
-          useCareerProfile ? "opacity-40 pointer-events-none" : ""
-        }`}
-      >
+      {/* File Upload Dropzone */}
+      <label className="block cursor-pointer">
         <input
           type="file"
           accept=".pdf,.docx"
           onChange={handleFileUpload}
           className="hidden"
-          disabled={useCareerProfile}
         />
         <div className="border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-blue-500 dark:hover:border-blue-500/60 hover:bg-blue-500/5 rounded-2xl p-6 text-center transition-colors">
           {uploadedFile ? (

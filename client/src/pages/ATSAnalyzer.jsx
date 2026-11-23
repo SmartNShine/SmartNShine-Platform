@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import SEO from "@/components/common/SEO";
 import { resumeAPI } from "@/api/api";
 import { useAuth } from "@/context/AuthContext";
 import { useToggle } from "@/hooks";
+import { useATSScanSession } from "@/hooks/useATSScanSession";
 import { handleApiError } from "@/utils/errorHandler";
 import { Sparkles } from "lucide-react";
 import {
@@ -18,40 +19,63 @@ import {
 } from "@/components/atsAnalyzer";
 
 export default function ATSAnalyzer() {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [jobDescription, setJobDescription] = useState("");
-  const [selectedResume, setSelectedResume] = useState(null);
-  const [useCareerProfile, setUseCareerProfile] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const owner = user ? `account:${user._id || user.id || user.email}` : "guest";
+  return <ATSScanner key={owner} user={user} owner={owner} />;
+}
+
+function ATSScanner({ user, owner }) {
+  const navigate = useNavigate();
+  const { state, update, setSource, uploadedFile, missingAttachment } = useATSScanSession(owner);
+  const { jobDescription, selectedResume, completedScan, showInputs, showAllImprovements, expandedSections } = state;
+  const analysisResult = completedScan?.result;
   const [analyzing, , setAnalyzingTrue, setAnalyzingFalse] = useToggle(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
   const [userResumes, setUserResumes] = useState([]);
   const [loadingResumes, , , setLoadingResumesFalse] = useToggle(true);
-  const [showAllImprovements, setShowAllImprovements] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({
-    recommendations: true,
-    strengths: true,
-    keywords: true,
-  });
+  const activeScan = useRef(null);
+
+  const setJobDescription = (value) => update({ jobDescription: value });
+  const setSelectedResume = (id) => setSource(id || null);
+  const setUploadedFile = (file) => setSource(null, file);
+  const setShowAllImprovements = (change) => update((current) => ({
+    showAllImprovements: change(current.showAllImprovements),
+  }));
+
+  useEffect(() => () => activeScan.current?.abort(), []);
 
   // Load user's resumes on mount
   useEffect(() => {
+    if (owner === "guest") {
+      setLoadingResumesFalse();
+      return;
+    }
+
+    let active = true;
     const loadResumes = async () => {
       try {
         const response = await resumeAPI.list();
-        setUserResumes(response.data?.resumes || []);
+        if (!active) return;
+        const resumes = response.data?.resumes || [];
+        setUserResumes(resumes);
+        update((current) => ({
+          selectedResume: resumes.some((resume) => resume._id === current.selectedResume)
+            ? current.selectedResume
+            : null,
+        }));
       } catch (error) {
         console.error("Failed to load resumes:", error);
       } finally {
-        setLoadingResumesFalse();
+        if (active) setLoadingResumesFalse();
       }
     };
     loadResumes();
-  }, [setLoadingResumesFalse]);
+    return () => { active = false; };
+  }, [owner, setLoadingResumesFalse, update]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
     if (
       file &&
       (file.type === "application/pdf" ||
@@ -59,8 +83,6 @@ export default function ATSAnalyzer() {
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     ) {
       setUploadedFile(file);
-      setSelectedResume(null);
-      setUseCareerProfile(false);
       toast.success(`Attached ${file.name}`);
     } else {
       toast.error("Please upload a PDF or DOCX file", {
@@ -71,6 +93,7 @@ export default function ATSAnalyzer() {
   };
 
   const handleAnalyze = async () => {
+    if (activeScan.current) return;
     if (!user) {
       toast("Please create a free account to run your AI ATS analysis", {
         icon: "✨",
@@ -93,65 +116,59 @@ export default function ATSAnalyzer() {
       return;
     }
 
-    if (!useCareerProfile && !selectedResume && !uploadedFile) {
-      toast.error("Please select a resume, use Career Profile, or upload a file", {
+    if (!selectedResume && !uploadedFile) {
+      toast.error("Please select a saved resume or upload a file", {
         icon: "📁",
         duration: 3000,
       });
       return;
     }
 
+    const controller = new AbortController();
+    activeScan.current = controller;
     setAnalyzingTrue();
-    setAnalysisResult(null);
-    setShowAllImprovements(false);
-    setExpandedSections({
-      recommendations: true,
-      strengths: false,
-      keywords: false,
-    });
 
     try {
       const formData = new FormData();
       formData.append("jobDescription", jobDescription);
 
-      if (useCareerProfile) {
-        formData.append("useCareerProfile", "true");
-      } else if (uploadedFile) {
+      if (uploadedFile) {
         formData.append("resumeFile", uploadedFile);
       } else if (selectedResume) {
         formData.append("resumeId", selectedResume);
       }
 
-      const response = await resumeAPI.analyzeResume(formData);
-      setAnalysisResult(response.data);
+      const response = await resumeAPI.analyzeResume(formData, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      update({
+        completedScan: { result: response.data, resumeId: selectedResume, jobDescription },
+        showInputs: false,
+        showAllImprovements: false,
+        expandedSections: { recommendations: true, strengths: false, keywords: false },
+      });
       toast.success("Analysis completed successfully!", {
         icon: "✅",
         duration: 2500,
       });
     } catch (error) {
-      handleApiError(error, "Failed to analyze resume", toast);
+      if (!controller.signal.aborted) handleApiError(error, "Failed to analyze resume", toast);
     } finally {
-      setAnalyzingFalse();
+      activeScan.current = null;
+      if (!controller.signal.aborted) setAnalyzingFalse();
     }
   };
 
   const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
+    update((current) => ({
+      expandedSections: {
+        ...current.expandedSections,
+        [section]: !current.expandedSections[section],
+      },
     }));
   };
 
   const handleEditRecommendation = (recommendation) => {
-    let targetResumeId = selectedResume;
-
-    if (!targetResumeId && userResumes && userResumes.length > 0) {
-      targetResumeId = userResumes[0]._id;
-    }
-
-    if (targetResumeId) {
-      localStorage.setItem("currentResumeId", targetResumeId);
-    }
+    const targetResumeId = completedScan?.resumeId || userResumes[0]?._id;
 
     toast.success("Opening Resume Editor with recommendation...", {
       icon: "🎯",
@@ -162,12 +179,11 @@ export default function ATSAnalyzer() {
       state: {
         atsRecommendation: recommendation,
         fromATS: true,
-        jobDescription: jobDescription,
+        resumeId: targetResumeId,
+        jobDescription: completedScan?.jobDescription,
       },
     });
   };
-
-  const [showInputs, setShowInputs] = useState(false);
 
   return (
     <div className="min-h-screen dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 transition-colors duration-200">
@@ -199,6 +215,11 @@ export default function ATSAnalyzer() {
       <div className="workspace-container py-6 sm:py-8 space-y-6">
         {/* Banner */}
         <ATSAnalyzerBanner />
+        {missingAttachment && (
+          <p role="status" className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">
+            Reattach {state.attachment.name} to scan it again.
+          </p>
+        )}
 
         {/* Guest Conversion Card */}
         {!user && (
@@ -233,8 +254,6 @@ export default function ATSAnalyzer() {
               />
 
               <ATSResumeSelector
-                useCareerProfile={useCareerProfile}
-                setUseCareerProfile={setUseCareerProfile}
                 userResumes={userResumes}
                 loadingResumes={loadingResumes}
                 selectedResume={selectedResume}
@@ -261,14 +280,15 @@ export default function ATSAnalyzer() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowInputs(!showInputs)}
+                  onClick={() => update({ showInputs: !showInputs })}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-zinc-200 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-white/[0.06] text-zinc-800 dark:text-zinc-100 transition-colors cursor-pointer"
                 >
                   {showInputs ? "Hide Input Settings" : "Modify Job Description / Resume"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAnalysisResult(null)}
+                  onClick={() => update({ completedScan: null, showInputs: false })}
+                  disabled={analyzing}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer"
                 >
                   Start New Analysis
@@ -278,7 +298,7 @@ export default function ATSAnalyzer() {
               <button
                 type="button"
                 onClick={handleAnalyze}
-                disabled={analyzing}
+                disabled={analyzing || !jobDescription.trim() || (!selectedResume && !uploadedFile)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 {analyzing ? "Re-analyzing..." : "Re-run Deep ATS Analysis"}
@@ -296,8 +316,6 @@ export default function ATSAnalyzer() {
                 </div>
                 <div className="lg:col-span-6">
                   <ATSResumeSelector
-                    useCareerProfile={useCareerProfile}
-                    setUseCareerProfile={setUseCareerProfile}
                     userResumes={userResumes}
                     loadingResumes={loadingResumes}
                     selectedResume={selectedResume}

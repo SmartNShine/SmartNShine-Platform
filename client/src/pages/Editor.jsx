@@ -12,7 +12,6 @@ import {
   useResumeSaveActions,
 } from "@/hooks";
 import { resumeAPI } from "@/api/api";
-import { careerAPI } from "@/api";
 import { parseValidationErrors } from "@/utils/errorHandler";
 import logger from "@/utils/logger";
 import toast from "react-hot-toast";
@@ -26,7 +25,6 @@ import {
 } from "lucide-react";
 import {
   ResumePreview,
-  ResumeWizard,
   TemplateSelectorModal,
   EditorHeader,
   ATSRecommendationBanner,
@@ -77,8 +75,7 @@ const Editor = () => {
   const [aiAddedMessage, setAiAddedMessage] = useState("");
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [originalResumeData, setOriginalResumeData] = useState(null);
-  const [showPreview, togglePreview, setShowPreviewTrue, setShowPreviewFalse] =
-    useToggle(true);
+  const [showPreview, togglePreview] = useToggle(true);
   const isMobile = useMediaQuery("(max-width: 1023px)");
   const [selectedTemplate, setSelectedTemplate] = useLocalStorage(
     "selectedTemplate",
@@ -86,7 +83,7 @@ const Editor = () => {
   );
   const [
     showTemplateSelector,
-    toggleTemplateSelector,
+    ,
     showTemplateSelectorTrue,
     showTemplateSelectorFalse,
   ] = useToggle(false);
@@ -109,12 +106,6 @@ const Editor = () => {
   const [activeSectionId, setActiveSectionId] = useState(
     DEFAULT_SECTION_ORDER[0]
   );
-  const [
-    isWizardMode,
-    toggleWizardMode,
-    setIsWizardModeTrue,
-    setIsWizardModeFalse,
-  ] = useToggle(false);
   const {
     showFloatingNav,
     floatingNavOffset,
@@ -122,7 +113,7 @@ const Editor = () => {
     toggleFloatingNav,
     closeFloatingNav,
     handleFloatingNavDragStart,
-  } = useFloatingSectionNav({ isWizardMode });
+  } = useFloatingSectionNav();
   const [draggedSection, setDraggedSection] = useState(null);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -290,27 +281,17 @@ const Editor = () => {
 
   // Load resume data on mount
   useEffect(() => {
-    // Only load data if we are currently on the editor page
-    if (location.pathname !== "/editor") return;
-
     let isMounted = true;
 
     const loadResumeData = async () => {
       const stateData = location.state?.resumeData;
-      const isNewResume = location.state?.isNewResume || false;
-      const templateSelected =
-        location.state?.templateSelected ||
-        Boolean(location.state?.selectedTemplate) ||
-        Boolean(sessionStorage.getItem("templatePreSelected"));
+      const pendingTemplate = sessionStorage.getItem("templatePreSelected");
+      const entryTemplate = location.state?.selectedTemplate || (!location.state && pendingTemplate);
 
-      if (location.state?.selectedTemplate) {
-        setSelectedTemplate(location.state.selectedTemplate);
-        localStorage.setItem("selectedTemplate", location.state.selectedTemplate);
-      }
-      sessionStorage.removeItem("templatePreSelected");
-
-      // A draft has no saved ID; use the cached ID only when navigation supplies no resume data.
-      const resumeIdToFetch = stateData ? stateData._id : localStorage.getItem("currentResumeId");
+      // A draft passed in navigation state or restored after sign-in takes precedence over the last open resume.
+      const isExplicitEntry = stateData || entryTemplate || location.state?.fromATS;
+      const resumeIdToFetch = location.state?.resumeId || stateData?._id ||
+        (!isExplicitEntry && localStorage.getItem("currentResumeId"));
 
       // Case 1: The resume already exists in the database (has an _id or saved in localStorage).
       // ALWAYS fetch the latest saved version from MongoDB so that reloads/updates never show stale data!
@@ -322,7 +303,6 @@ const Editor = () => {
           const loadedData = response.data;
           console.log("✅ [EDITOR LOAD] MongoDB resume fetched successfully! Custom sections:", loadedData?.customSections);
 
-          setIsWizardModeFalse();
           initializeResumeData(loadedData);
           localStorage.setItem("currentResumeId", loadedData._id);
           return;
@@ -335,34 +315,15 @@ const Editor = () => {
             return;
           }
           localStorage.removeItem("currentResumeId");
-          navigate("/upload");
-          return;
         }
       }
 
-      // Case 2: Brand new unsaved resume draft without an _id yet
-      if (stateData) {
-        if (!isMounted) return;
-        if (isNewResume) {
-          setIsWizardModeTrue();
-          // Only show template selector modal if a template was not already chosen
-          if (!templateSelected) {
-            showTemplateSelectorTrue();
-          }
-        } else {
-          setIsWizardModeFalse();
-        }
-
-        if (isNewResume && !isMobile) {
-          setShowPreviewTrue();
-        }
-
-        initializeResumeData(stateData);
-        return;
-      }
-
-      if (isMounted && location.pathname === "/editor") {
-        navigate("/upload");
+      if (!isMounted) return;
+      if (entryTemplate) setSelectedTemplate(entryTemplate);
+      initializeResumeData(stateData || { name: "" });
+      if (pendingTemplate) {
+        sessionStorage.removeItem("templatePreSelected");
+        localStorage.removeItem("selectedColorTheme");
       }
     };
 
@@ -373,12 +334,14 @@ const Editor = () => {
       setOriginalResumeData(JSON.parse(JSON.stringify(normalized)));
     };
 
-    loadResumeData();
+    queueMicrotask(() => {
+      if (isMounted) loadResumeData();
+    });
 
     return () => {
       isMounted = false;
     };
-  }, [location.pathname, location.state, userId]);
+  }, [location.state, userId, setSelectedTemplate]);
 
   const resumeAccess = isAdmin ? {} : resumeData?.access || {};
   const isPaidActionLocked = Boolean(
@@ -487,13 +450,6 @@ const Editor = () => {
 
   const handleCancelNavigation = () => {
     cancelPendingNavigation();
-  };
-
-  const handleWizardComplete = () => {
-    setIsWizardModeFalse();
-    toast.success("Resume setup complete! You can now edit all sections.", {
-      duration: 3000,
-    });
   };
 
   // AI suggestions application handler
@@ -635,39 +591,10 @@ const Editor = () => {
     }
   };
 
-  // Import from Career Profile master data
-  const handleImportFromCareerProfile = async () => {
-    try {
-      const toastId = toast.loading("Fetching Career Profile data...");
-      const res = await careerAPI.getExportResumeFormat();
-      if (!res.data?.resumeData) {
-        toast.dismiss(toastId);
-        toast.error("No Career Profile data found. Please set up your Career Profile first.");
-        return;
-      }
-      const imported = res.data.resumeData;
-      setResumeData((prev) => ({
-        ...prev,
-        name: imported.name || prev?.name,
-        contact: { ...prev?.contact, ...imported.contact },
-        summary: imported.summary || prev?.summary,
-        skills: imported.skills?.length > 0 ? imported.skills : prev?.skills,
-        experience: imported.experience?.length > 0 ? imported.experience : prev?.experience,
-        education: imported.education?.length > 0 ? imported.education : prev?.education,
-        projects: imported.projects?.length > 0 ? imported.projects : prev?.projects,
-        certifications: imported.certifications?.length > 0 ? imported.certifications : prev?.certifications,
-        achievements: imported.achievements?.length > 0 ? imported.achievements : prev?.achievements,
-      }));
-      toast.dismiss(toastId);
-      toast.success("Resume populated from your master Career Profile! ✨");
-    } catch (err) {
-      toast.error("Failed to load Career Profile data");
-    }
-  };
+  const isResumeLoaded = Boolean(resumeData);
 
   useEffect(() => {
-    if (isWizardMode) return;
-
+    if (!isResumeLoaded) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -692,7 +619,7 @@ const Editor = () => {
     });
 
     return () => observer.disconnect();
-  }, [isWizardMode, sectionOrder]);
+  }, [isResumeLoaded, sectionOrder]);
 
   const isTrackableSection = useCallback(
     (sectionId) => sectionId !== "layout" && Boolean(SECTION_META[sectionId]),
@@ -720,7 +647,7 @@ const Editor = () => {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
 
-      if (isTypingTarget || isWizardMode) return;
+      if (isTypingTarget) return;
 
       const hasLegacyChord = event.altKey && event.shiftKey;
       const hasMacChord = event.metaKey && event.shiftKey;
@@ -765,7 +692,7 @@ const Editor = () => {
 
     window.addEventListener("keydown", handleSectionShortcuts);
     return () => window.removeEventListener("keydown", handleSectionShortcuts);
-  }, [isWizardMode, resumeData, sectionOrder, closeFloatingNav]);
+  }, [resumeData, sectionOrder, closeFloatingNav]);
 
   const handleApplyTemplate = (templateId) => {
     setSelectedTemplate(templateId);
@@ -889,9 +816,6 @@ const Editor = () => {
     }
 
     setHighlightedSection("skills");
-    if (isWizardMode) {
-      setIsWizardModeFalse();
-    }
     setTimeout(() => {
       scrollToSection("skills");
     }, 100);
@@ -901,9 +825,6 @@ const Editor = () => {
   };
 
   const handleJumpToSectionFromAts = (targetSection) => {
-    if (isWizardMode) {
-      setIsWizardModeFalse();
-    }
     setForceSectionExpand(true);
     setHighlightedSection(targetSection);
     setTimeout(() => {
@@ -933,8 +854,6 @@ const Editor = () => {
       navigate("/upload");
     } else if (location.state?.fromATS) {
       navigate("/ats-analyzer");
-    } else if (location.state?.fromCareerProfile) {
-      navigate("/career-profile");
     } else if (window.history.length > 1 && window.history.state && window.history.state.idx > 0) {
       navigate(-1);
     } else {
@@ -979,10 +898,6 @@ const Editor = () => {
     [availableColorThemes]
   );
 
-  if (location.pathname !== "/editor") {
-    return null;
-  }
-
   if (!resumeData) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-100 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900">
@@ -1007,9 +922,6 @@ const Editor = () => {
         hasUnsavedChanges={hasUnsavedChanges}
         saving={saving}
         autoSaving={autoSaving}
-        isWizardMode={isWizardMode}
-        onSwitchToFullEditor={handleWizardComplete}
-        onImportCareerProfile={handleImportFromCareerProfile}
         onResetOrder={handleResetOrder}
         onShowTemplateSelector={showTemplateSelectorTrue}
         availableColorThemes={availableColorThemes}
@@ -1035,7 +947,6 @@ const Editor = () => {
           hasUnsavedChanges={hasUnsavedChanges}
           onExport={handleDownloadPDF}
           isExportLocked={isExportLocked}
-          isWizardMode={isWizardMode}
           completedSectionsCount={completedSectionsCount}
           totalTrackableSections={trackableSectionIds.length}
           completionPercentage={completionPercentage}
@@ -1063,24 +974,22 @@ const Editor = () => {
         />
 
         {/* Floating Section Navigation - Desktop */}
-        {!isWizardMode && (
-          <DesktopFloatingSectionNav
-            floatingNavContainerRef={floatingNavContainerRef}
-            floatingNavOffset={floatingNavOffset}
-            showFloatingNav={showFloatingNav}
-            onDragStart={handleFloatingNavDragStart}
-            onToggleFloatingNav={toggleFloatingNav}
-            completionPercentage={completionPercentage}
-            onJumpToFirstIncomplete={jumpToFirstIncompleteSection}
-            onExpandAll={expandAllSections}
-            onCollapseAll={collapseAllSections}
-            trackableSectionIds={trackableSectionIds}
-            activeSectionId={activeSectionId}
-            sectionCompletionMap={sectionCompletionMap}
-            onSelectSection={scrollToSection}
-            onMoveSection={handleMoveSection}
-          />
-        )}
+        <DesktopFloatingSectionNav
+          floatingNavContainerRef={floatingNavContainerRef}
+          floatingNavOffset={floatingNavOffset}
+          showFloatingNav={showFloatingNav}
+          onDragStart={handleFloatingNavDragStart}
+          onToggleFloatingNav={toggleFloatingNav}
+          completionPercentage={completionPercentage}
+          onJumpToFirstIncomplete={jumpToFirstIncompleteSection}
+          onExpandAll={expandAllSections}
+          onCollapseAll={collapseAllSections}
+          trackableSectionIds={trackableSectionIds}
+          activeSectionId={activeSectionId}
+          sectionCompletionMap={sectionCompletionMap}
+          onSelectSection={scrollToSection}
+          onMoveSection={handleMoveSection}
+        />
 
         {/* ATS Recommendation Action Banner */}
         {atsRecommendation && (
@@ -1094,7 +1003,6 @@ const Editor = () => {
               onOpenAIAnalysis={() => setIsAnalysisOpen(true)}
               onBackToATS={handleBackToATS}
               saving={saving}
-              isWizardMode={isWizardMode}
             />
           </div>
         )}
@@ -1119,314 +1027,169 @@ const Editor = () => {
           </div>
         )}
 
-        {/* Conditional: Wizard vs Normal Editor */}
-        {isWizardMode ? (
+        <div
+          ref={containerRef}
+          className={`relative flex min-h-[300px] min-w-0 max-w-full flex-1 flex-col gap-0 overflow-hidden lg:min-h-0 lg:flex-row ${
+            isDraggingSplitter ? "select-none cursor-col-resize" : ""
+          }`}
+        >
+          {/* Editor Panel — full width on mobile, % width on desktop */}
           <div
-            ref={containerRef}
-            className={`relative flex min-h-[300px] min-w-0 max-w-full flex-1 flex-col gap-0 overflow-hidden lg:min-h-0 lg:flex-row ${
-              isDraggingSplitter ? "select-none cursor-col-resize" : ""
-            }`}
+            className={`
+              min-h-0 min-w-0 w-full space-y-3 pb-6 scrollbar-hide
+              lg:h-full lg:max-h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-10 lg:[scrollbar-gutter:stable]
+              ${isReadOnlyResume ? "pointer-events-none opacity-75" : ""}
+            `}
+            style={typeof window !== "undefined" && window.innerWidth >= 1024 && showPreview
+              ? { width: `${splitRatio}%`, flexShrink: 0, flexGrow: 0 }
+              : { width: "100%" }}
           >
-            {/* Left Panel: Guided Resume Wizard
-                Mobile: full width, scrollable; hidden when preview is open
-                Desktop: percentage width set by splitter
-            */}
+            {sectionOrder.map((sectionId) => (
+              <div
+                key={sectionId}
+                data-section-id={sectionId}
+                ref={(el) => {
+                  if (el) sectionElementRefs.current[sectionId] = el;
+                }}
+                className={`relative scroll-mt-28 transition-all duration-500 ${
+                  highlightedSection === sectionId
+                    ? "ring-4 ring-blue-500/80 dark:ring-blue-400/80 rounded-2xl shadow-xl scale-[1.01] bg-blue-50/10 dark:bg-blue-950/20"
+                    : ""
+                } ${
+                  aiUpdatedSection === sectionId ? "animate-ai-section-added" : ""
+                }`}
+              >
+                {aiUpdatedSection === sectionId && (
+                  <div className="ai-added-float" role="status">
+                    <CheckCircle2 className="w-4 h-4" /> {aiAddedMessage}
+                  </div>
+                )}
+                <EditorSectionRenderer
+                  sectionId={sectionId}
+                  resumeData={resumeData}
+                  template={selectedTemplate}
+                  setResumeData={setResumeData}
+                  updateField={updateField}
+                  updateContact={updateContact}
+                  addArrayItem={addArrayItem}
+                  updateArrayItem={updateArrayItem}
+                  removeArrayItem={removeArrayItem}
+                  moveItem={moveItem}
+                  draggedSection={draggedSection}
+                  handleDragStart={handleDragStart}
+                  handleDragEnd={handleDragEnd}
+                  handleDragOver={handleDragOver}
+                  handleDrop={handleDrop}
+                  forceSectionExpand={forceSectionExpand}
+                  handleApplyAiSuggestion={handleApplyAiSuggestion}
+                  aiSuggestions={aiSuggestions}
+                  setAiSuggestions={setAiSuggestions}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Resizable divider — desktop only */}
+          {showPreview && (
             <div
-              className="min-h-0 min-w-0 w-full pb-6 scrollbar-hide lg:h-full lg:max-h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-10 lg:[scrollbar-gutter:stable]"
-              style={typeof window !== "undefined" && window.innerWidth >= 1024 && showPreview
-                ? { width: `${splitRatio}%`, flexShrink: 0, flexGrow: 0 }
-                : { width: "100%" }}
-              ref={(el) => {
-                // Apply desktop split width only on lg+
-                if (!el) return;
-                const applyWidth = () => {
-                  if (window.innerWidth >= 1024 && showPreview) {
-                    el.style.width = `${splitRatio}%`;
-                  } else {
-                    el.style.width = "100%";
-                  }
-                };
-                applyWidth();
-                window.addEventListener("resize", applyWidth);
-              }}
+              onMouseDown={handleSplitterMouseDown}
+              onTouchStart={handleSplitterTouchStart}
+              onDoubleClick={handleResetSplitRatio}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sections"
+              title="Drag to resize · Double-click to reset 50/50"
+              className="hidden lg:flex items-center justify-center w-4 relative z-30 cursor-col-resize select-none shrink-0 group touch-none"
             >
-              <ResumeWizard
-                resumeData={resumeData}
-                updateField={updateField}
-                updateContact={updateContact}
-                addArrayItem={addArrayItem}
-                updateArrayItem={updateArrayItem}
-                removeArrayItem={removeArrayItem}
-                moveItem={moveItem}
-                onComplete={handleWizardComplete}
-                onSwitchToFullEditor={handleWizardComplete}
-                onGoBack={handleGoBack}
+              <div className="absolute inset-y-0 -left-3 -right-3 cursor-col-resize" />
+              <div
+                className={`w-[2px] h-full absolute left-1/2 -translate-x-1/2 transition-colors duration-150 ${
+                  isDraggingSplitter
+                    ? "bg-blue-500 dark:bg-blue-400"
+                    : "bg-gray-200/80 dark:bg-zinc-700/80 group-hover:bg-blue-400/70 dark:group-hover:bg-blue-500/70"
+                }`}
               />
-            </div>
-
-            {/* Resizable divider — desktop only */}
-            {showPreview && (
               <div
-                onMouseDown={handleSplitterMouseDown}
-                onTouchStart={handleSplitterTouchStart}
-                onDoubleClick={handleResetSplitRatio}
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="Resize sections"
-                title="Drag to resize · Double-click to reset 50/50"
-                className="hidden lg:flex items-center justify-center w-4 relative z-30 cursor-col-resize select-none shrink-0 group touch-none"
+                className={`relative z-10 flex flex-col items-center justify-center gap-[3px] px-1 py-2.5 rounded-lg transition-all duration-150 ${
+                  isDraggingSplitter
+                    ? "bg-blue-500 shadow-md shadow-blue-500/30 scale-105"
+                    : "bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-600 shadow-sm group-hover:border-blue-400 dark:group-hover:border-blue-500 group-hover:shadow-md group-hover:scale-105"
+                }`}
               >
-                <div className="absolute inset-y-0 -left-3 -right-3 cursor-col-resize" />
-                <div
-                  className={`w-[2px] h-full absolute left-1/2 -translate-x-1/2 transition-colors duration-150 ${
-                    isDraggingSplitter
-                      ? "bg-blue-500 dark:bg-blue-400"
-                      : "bg-gray-200/80 dark:bg-zinc-700/80 group-hover:bg-blue-400/70 dark:group-hover:bg-blue-500/70"
-                  }`}
-                />
-                <div
-                  className={`relative z-10 flex flex-col items-center justify-center gap-[3px] px-1 py-2.5 rounded-lg transition-all duration-150 ${
-                    isDraggingSplitter
-                      ? "bg-blue-500 shadow-md shadow-blue-500/30 scale-105"
-                      : "bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-600 shadow-sm group-hover:border-blue-400 dark:group-hover:border-blue-500 group-hover:shadow-md group-hover:scale-105"
-                  }`}
-                >
-                  {[0, 1, 2].map((row) => (
-                    <div key={row} className="flex gap-[3px]">
-                      {[0, 1].map((col) => (
-                        <div
-                          key={col}
-                          className={`w-[3px] h-[3px] rounded-full transition-colors ${
-                            isDraggingSplitter
-                              ? "bg-white"
-                              : "bg-gray-400 dark:bg-zinc-400 group-hover:bg-blue-500 dark:group-hover:bg-blue-400"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Right Panel: Resume Preview
-                Mobile: rendered directly inline at the ending below wizard
-                Desktop: percentage width column side-by-side with splitter
-            */}
-            {showPreview && (
-              <div
-                ref={previewSectionRef}
-                id="resume-preview-section"
-                className="
-                  min-h-0 w-full mt-8 pb-32 scrollbar-hide
-                  lg:mt-0 lg:pb-8 lg:static lg:z-auto lg:flex lg:h-full lg:max-h-full lg:flex-none lg:flex-col lg:min-w-0
-                  lg:overflow-y-auto lg:overscroll-contain lg:pl-1 lg:[scrollbar-gutter:stable]
-                "
-                style={{ ...(typeof window !== "undefined" && window.innerWidth >= 1024 ? { width: `${100 - splitRatio}%` } : { width: "100%" }) }}
-              >
-                {/* Mobile section header banner for preview at ending */}
-                <div className="lg:hidden mb-3 p-3.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                      <Eye className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <span>Live Resume Preview</span>
-                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
-                          Live
-                        </span>
-                      </h3>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">
-                        Updates in real-time · Directly edit styling below
-                      </p>
-                    </div>
+                {[0, 1, 2].map((row) => (
+                  <div key={row} className="flex gap-[3px]">
+                    {[0, 1].map((col) => (
+                      <div
+                        key={col}
+                        className={`w-[3px] h-[3px] rounded-full transition-colors ${
+                          isDraggingSplitter
+                            ? "bg-white"
+                            : "bg-gray-400 dark:bg-zinc-400 group-hover:bg-blue-500 dark:group-hover:bg-blue-400"
+                        }`}
+                      />
+                    ))}
                   </div>
-                  <button
-                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 text-[11px] font-semibold text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer active:scale-95"
-                  >
-                    <span>↑ Top</span>
-                  </button>
-                </div>
-
-                <div className="w-full bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-zinc-800 p-2 sm:p-3.5 shadow-xs flex flex-col">
-                  <ResumePreview
-                    ref={resumePreviewRef}
-                    resumeData={resumeData}
-                    template={selectedTemplate}
-                    onDownload={handleDownloadPDF}
-                    onUpdateField={updateField}
-                  />
-                </div>
+                ))}
               </div>
-            )}
-          </div>
-        ) : (
-          <div
-            ref={containerRef}
-            className={`relative flex min-h-[300px] min-w-0 max-w-full flex-1 flex-col gap-0 overflow-hidden lg:min-h-0 lg:flex-row ${
-              isDraggingSplitter ? "select-none cursor-col-resize" : ""
-            }`}
-          >
-            {/* Editor Panel — full width on mobile, % width on desktop */}
+            </div>
+          )}
+
+          {/* Preview Panel
+              Mobile  : inline preview at ending below sections
+              Desktop : side-by-side % column
+          */}
+          {showPreview && (
             <div
-              className={`
-                min-h-0 min-w-0 w-full space-y-3 pb-6 scrollbar-hide
-                lg:h-full lg:max-h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-10 lg:[scrollbar-gutter:stable]
-                ${isReadOnlyResume ? "pointer-events-none opacity-75" : ""}
-              `}
-              style={typeof window !== "undefined" && window.innerWidth >= 1024 && showPreview
-                ? { width: `${splitRatio}%`, flexShrink: 0, flexGrow: 0 }
+              ref={previewSectionRef}
+              id="resume-preview-section-full"
+              className="
+                min-h-0 w-full mt-8 pb-32 scrollbar-hide
+                lg:mt-0 lg:pb-8 lg:static lg:z-auto lg:flex lg:h-full lg:max-h-full lg:flex-none lg:flex-col lg:min-w-0
+                lg:overflow-y-auto lg:overscroll-contain lg:pl-1 lg:[scrollbar-gutter:stable]
+              "
+              style={typeof window !== "undefined" && window.innerWidth >= 1024
+                ? { width: `${100 - splitRatio}%`, flexShrink: 0, flexGrow: 0 }
                 : { width: "100%" }}
             >
-              {sectionOrder.map((sectionId) => (
-                <div
-                  key={sectionId}
-                  data-section-id={sectionId}
-                  ref={(el) => {
-                    if (el) sectionElementRefs.current[sectionId] = el;
-                  }}
-                  className={`relative scroll-mt-28 transition-all duration-500 ${
-                    highlightedSection === sectionId
-                      ? "ring-4 ring-blue-500/80 dark:ring-blue-400/80 rounded-2xl shadow-xl scale-[1.01] bg-blue-50/10 dark:bg-blue-950/20"
-                      : ""
-                  } ${
-                    aiUpdatedSection === sectionId ? "animate-ai-section-added" : ""
-                  }`}
-                >
-                  {aiUpdatedSection === sectionId && (
-                    <div className="ai-added-float" role="status">
-                      <CheckCircle2 className="w-4 h-4" /> {aiAddedMessage}
-                    </div>
-                  )}
-                  <EditorSectionRenderer
-                    sectionId={sectionId}
-                    resumeData={resumeData}
-                    template={selectedTemplate}
-                    setResumeData={setResumeData}
-                    updateField={updateField}
-                    updateContact={updateContact}
-                    addArrayItem={addArrayItem}
-                    updateArrayItem={updateArrayItem}
-                    removeArrayItem={removeArrayItem}
-                    moveItem={moveItem}
-                    draggedSection={draggedSection}
-                    handleDragStart={handleDragStart}
-                    handleDragEnd={handleDragEnd}
-                    handleDragOver={handleDragOver}
-                    handleDrop={handleDrop}
-                    forceSectionExpand={forceSectionExpand}
-                    handleApplyAiSuggestion={handleApplyAiSuggestion}
-                    aiSuggestions={aiSuggestions}
-                    setAiSuggestions={setAiSuggestions}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Resizable divider — desktop only */}
-            {showPreview && (
-              <div
-                onMouseDown={handleSplitterMouseDown}
-                onTouchStart={handleSplitterTouchStart}
-                onDoubleClick={handleResetSplitRatio}
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="Resize sections"
-                title="Drag to resize · Double-click to reset 50/50"
-                className="hidden lg:flex items-center justify-center w-4 relative z-30 cursor-col-resize select-none shrink-0 group touch-none"
-              >
-                <div className="absolute inset-y-0 -left-3 -right-3 cursor-col-resize" />
-                <div
-                  className={`w-[2px] h-full absolute left-1/2 -translate-x-1/2 transition-colors duration-150 ${
-                    isDraggingSplitter
-                      ? "bg-blue-500 dark:bg-blue-400"
-                      : "bg-gray-200/80 dark:bg-zinc-700/80 group-hover:bg-blue-400/70 dark:group-hover:bg-blue-500/70"
-                  }`}
-                />
-                <div
-                  className={`relative z-10 flex flex-col items-center justify-center gap-[3px] px-1 py-2.5 rounded-lg transition-all duration-150 ${
-                    isDraggingSplitter
-                      ? "bg-blue-500 shadow-md shadow-blue-500/30 scale-105"
-                      : "bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-600 shadow-sm group-hover:border-blue-400 dark:group-hover:border-blue-500 group-hover:shadow-md group-hover:scale-105"
-                  }`}
-                >
-                  {[0, 1, 2].map((row) => (
-                    <div key={row} className="flex gap-[3px]">
-                      {[0, 1].map((col) => (
-                        <div
-                          key={col}
-                          className={`w-[3px] h-[3px] rounded-full transition-colors ${
-                            isDraggingSplitter
-                              ? "bg-white"
-                              : "bg-gray-400 dark:bg-zinc-400 group-hover:bg-blue-500 dark:group-hover:bg-blue-400"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Preview Panel
-                Mobile  : inline preview at ending below sections
-                Desktop : side-by-side % column
-            */}
-            {showPreview && (
-              <div
-                ref={isWizardMode ? undefined : previewSectionRef}
-                id="resume-preview-section-full"
-                className="
-                  min-h-0 w-full mt-8 pb-32 scrollbar-hide
-                  lg:mt-0 lg:pb-8 lg:static lg:z-auto lg:flex lg:h-full lg:max-h-full lg:flex-none lg:flex-col lg:min-w-0
-                  lg:overflow-y-auto lg:overscroll-contain lg:pl-1 lg:[scrollbar-gutter:stable]
-                "
-                style={typeof window !== "undefined" && window.innerWidth >= 1024
-                  ? { width: `${100 - splitRatio}%`, flexShrink: 0, flexGrow: 0 }
-                  : { width: "100%" }}
-              >
-                {/* Mobile preview top bar */}
-                <div className="lg:hidden mb-3 p-3.5 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-2xl flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                      <Eye className="w-4 h-4 text-blue-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <span>Live Resume Preview</span>
-                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
-                          Live
-                        </span>
-                      </h3>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">
-                        Updates in real-time · Directly edit styling below
-                      </p>
-                    </div>
+              {/* Mobile preview top bar */}
+              <div className="lg:hidden mb-3 p-3.5 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-2xl flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <Eye className="w-4 h-4 text-blue-500" />
                   </div>
-                  <button
-                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 text-[11px] font-semibold text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer active:scale-95"
-                  >
-                    <span>↑ Top</span>
-                  </button>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <span>Live Resume Preview</span>
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
+                        Live
+                      </span>
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-zinc-400">
+                      Updates in real-time · Directly edit styling below
+                    </p>
+                  </div>
                 </div>
-
-                {/* Preview content */}
-                <div className="w-full bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-zinc-800 p-2 sm:p-3.5 shadow-xs flex flex-col">
-                  <ResumePreview
-                    ref={resumePreviewRef}
-                    resumeData={resumeData}
-                    template={selectedTemplate}
-                    onDownload={handleDownloadPDF}
-                    onUpdateField={updateField}
-                  />
-                </div>
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800 text-[11px] font-semibold text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer active:scale-95"
+                >
+                  <span>↑ Top</span>
+                </button>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Preview content */}
+              <div className="w-full bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-zinc-800 p-2 sm:p-3.5 shadow-xs flex flex-col">
+                <ResumePreview
+                  ref={resumePreviewRef}
+                  resumeData={resumeData}
+                  template={selectedTemplate}
+                  onDownload={handleDownloadPDF}
+                  onUpdateField={updateField}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <TemplateSelectorModal
