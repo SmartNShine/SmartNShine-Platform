@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useState, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {
   isDescriptionDuplicatedInBullets,
   formatEducationDegreeAndField,
@@ -1509,6 +1510,18 @@ const Professional2Template = forwardRef((props, ref) => {
                     </a>
                   </span>
                 )}
+                {getResumeSocialLinks(resumeData.contact).map(({ href, label, icon: Icon }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: selectedTheme.linkColor }}
+                  >
+                    <Icon size={11} style={{ flexShrink: 0 }} aria-hidden="true" />
+                    {label}
+                  </a>
+                ))}
               </div>
             )}
           </header>

@@ -154,6 +154,17 @@ export const validateChangePassword = [
 // RESUME VALIDATION RULES
 // ============================================================================
 
+const validateSocialLinks = [
+  body("contact.socialLinks").optional().isArray().withMessage("Social links must be an array"),
+  body("contact.socialLinks.*")
+    .isString()
+    .withMessage("Each social link must be a URL string")
+    .bail()
+    .trim()
+    .isLength({max: 500})
+    .withMessage("Social link URLs must not exceed 500 characters"),
+];
+
 /**
  * Validation rules for resume creation
  */
@@ -228,6 +239,8 @@ export const validateResumeCreate = [
     .trim()
     .isLength({ max: 500 })
     .withMessage("GitHub URL must not exceed 500 characters"),
+
+  ...validateSocialLinks,
 
   body("summary")
     .optional({ values: "falsy" })
@@ -365,6 +378,8 @@ export const validateResumeUpdate = [
     .trim()
     .isLength({ max: 500 })
     .withMessage("GitHub URL must not exceed 500 characters"),
+
+  ...validateSocialLinks,
 
   body("summary")
     .optional({ values: "falsy" })

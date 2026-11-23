@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
@@ -315,6 +316,7 @@ const ExecutiveTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, re
       label: contact.github.replace(/^https?:\/\/(www\.)?github\.com\//i, "github.com/"),
       href: contact.github.startsWith("http") ? contact.github : `https://${contact.github}`,
     },
+    ...getResumeSocialLinks(contact),
   ].filter(Boolean);
 
   // ── Oxford Double-Rule Section Header ─────────────────────────────────────
@@ -440,8 +442,12 @@ const ExecutiveTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, re
                       style={{
                         color: selectedTheme.textLight,
                         textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
                       }}
                     >
+                      {item.icon && <item.icon size={11} style={{ flexShrink: 0 }} aria-hidden="true" />}
                       {item.label}
                     </a>
                   ) : (

@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
@@ -424,6 +425,12 @@ const SiliconValleyTemplate = forwardRef(
         href: contact.website.startsWith("http") ? contact.website : `https://${contact.website}`,
         icon: <Globe size={11} strokeWidth={2.2} />,
       },
+      ...getResumeSocialLinks(contact).map(({ href, label, icon: Icon }) => ({
+        id: href,
+        label,
+        href,
+        icon: <Icon size={11} aria-hidden="true" />,
+      })),
     ].filter(Boolean);
 
     // Section title mapping
@@ -607,16 +614,18 @@ const SiliconValleyTemplate = forwardRef(
                     >
                       {exp.position || exp.title}
                     </h3>
-                    <span
-                      style={{
-                        fontFamily: fontBody,
-                        fontSize: dynamicStyles.bodySize,
-                        fontWeight: 600,
-                        color: selectedTheme.primary,
-                      }}
-                    >
-                      @ {exp.company}
-                    </span>
+                    {exp.company?.trim() && (
+                      <span
+                        style={{
+                          fontFamily: fontBody,
+                          fontSize: dynamicStyles.bodySize,
+                          fontWeight: 600,
+                          color: selectedTheme.primary,
+                        }}
+                      >
+                        @ {exp.company.trim()}
+                      </span>
+                    )}
                     {exp.location && (
                       <span
                         style={{
@@ -853,26 +862,24 @@ const SiliconValleyTemplate = forwardRef(
           style={{ marginBottom: dynamicStyles.sectionMarginBottom }}
         >
           {renderSectionHeading(getSectionTitle("skills"), "skills")}
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "fit-content(35%) minmax(0, 1fr)",
+              alignItems: "baseline",
+              gap: "4px 12px",
+            }}
+          >
             {resumeData.skills.map((skillGroup, index) => {
-              const isGrouped = typeof skillGroup === "object" && skillGroup.category;
-              const category = isGrouped ? skillGroup.category : null;
-              const items = isGrouped
+              const category = skillGroup?.category;
+              const items = category
                 ? Array.isArray(skillGroup.items)
                   ? skillGroup.items
                   : [skillGroup.items]
                 : [skillGroup];
 
               return (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    flexWrap: "wrap",
-                    gap: "4px 8px",
-                  }}
-                >
+                <React.Fragment key={index}>
                   {category && (
                     <span
                       style={{
@@ -880,7 +887,8 @@ const SiliconValleyTemplate = forwardRef(
                         fontSize: dynamicStyles.pillFontSize,
                         fontWeight: 700,
                         color: selectedTheme.text,
-                        minWidth: "120px",
+                        gridColumn: 1,
+                        overflowWrap: "anywhere",
                         letterSpacing: "-0.01em",
                       }}
                     >
@@ -892,13 +900,14 @@ const SiliconValleyTemplate = forwardRef(
                       fontFamily: fontBody,
                       fontSize: dynamicStyles.bodySize,
                       color: selectedTheme.textLight,
-                      flex: 1,
+                      gridColumn: category ? 2 : "1 / -1",
+                      overflowWrap: "anywhere",
                       lineHeight: dynamicStyles.bodyLineHeight,
                     }}
                   >
                     {items.join(" • ")}
                   </span>
-                </div>
+                </React.Fragment>
               );
             })}
           </div>

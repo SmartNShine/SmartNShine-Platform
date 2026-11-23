@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
@@ -549,6 +550,7 @@ const TechTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref) =>
         ? contact.website || contact.portfolio
         : `https://${contact.website || contact.portfolio}`,
     },
+    ...getResumeSocialLinks(contact),
   ].filter(Boolean);
 
   // Section Header Renderer
@@ -822,16 +824,18 @@ const TechTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref) =>
                           >
                             {exp.position || "Software Engineer"}
                           </span>
-                          <span
-                            style={{
-                              color: selectedTheme.primary,
-                              fontWeight: 600,
-                              fontSize: styles.bodySize,
-                              marginLeft: "5px",
-                            }}
-                          >
-                            @ {exp.company}
-                          </span>
+                          {exp.company?.trim() && (
+                            <span
+                              style={{
+                                color: selectedTheme.primary,
+                                fontWeight: 600,
+                                fontSize: styles.bodySize,
+                                marginLeft: "5px",
+                              }}
+                            >
+                              @ {exp.company.trim()}
+                            </span>
+                          )}
                           {exp.location && (
                             <span
                               style={{

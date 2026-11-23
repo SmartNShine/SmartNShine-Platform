@@ -1,4 +1,5 @@
 import {forwardRef, useRef, useEffect, useMemo} from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import {
   isDescriptionDuplicatedInBullets,
   cleanBulletText,
@@ -782,28 +783,23 @@ const GitHubStyleTemplate = forwardRef(
       return null;
     };
 
-    const formatContactItem = (icon, label, value) => {
+    const formatContactItem = (Icon, label, value, linkHref) => {
       if (!value) return null;
 
-      let href = null;
+      let href = linkHref;
       let displayValue = value;
 
-      if (value.includes("@")) {
-        href = `mailto:${value}`;
-      } else if (value.startsWith("http")) {
-        href = value;
-        displayValue = value.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
-      } else if (
-        label === "LinkedIn" ||
-        label === "GitHub" ||
-        label === "Website" ||
-        label === "Portfolio"
-      ) {
-        href = value.startsWith("www.") ? `https://${value}` : `https://${value}`;
-        displayValue = value.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
+      if (!linkHref) {
+        if (value.includes("@")) {
+          href = `mailto:${value}`;
+        } else if (value.startsWith("http")) {
+          href = value;
+          displayValue = value.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
+        } else if (["LinkedIn", "GitHub", "Website", "Portfolio"].includes(label)) {
+          href = `https://${value}`;
+          displayValue = value.replace(/\/$/, "");
+        }
       }
-
-      const IconComponent = icon;
 
       return (
         <div
@@ -815,8 +811,8 @@ const GitHubStyleTemplate = forwardRef(
             color: selectedTheme.textLight,
           }}
         >
-          {IconComponent && (
-            <IconComponent size={12} style={{ color: selectedTheme.accent, flexShrink: 0 }} />
+          {Icon && (
+            <Icon size={12} style={{ color: selectedTheme.accent, flexShrink: 0 }} aria-hidden="true" />
           )}
           {href ? (
             <a
@@ -851,7 +847,10 @@ const GitHubStyleTemplate = forwardRef(
         if (!item) return null;
         return <span key={`${label}-${value}`}>{item}</span>;
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .concat(getResumeSocialLinks(resumeData?.contact).map(({ href, label, icon }) => (
+        <span key={href}>{formatContactItem(icon, label, label, href)}</span>
+      )));
 
     return (
       <div

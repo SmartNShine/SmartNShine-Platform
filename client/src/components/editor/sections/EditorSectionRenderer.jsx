@@ -17,6 +17,7 @@ import ResumeLayoutControls from "../layout/ResumeLayoutControls";
 import { ScoreCard } from "@/components/common/cards";
 import JobSpecificScoreCard from "@/components/common/cards/JobSpecificScoreCard";
 import EditableSection from "./EditableSection";
+import SocialLinksFields from "./SocialLinksFields";
 import { RecommendationsPanel } from "@/components/editor/panels";
 import {
   SkillsSection,
@@ -189,6 +190,7 @@ export default function EditorSectionRenderer({
               placeholder="Portfolio / Website URL (e.g. https://yourportfolio.com)"
               className="input-field"
             />
+            <SocialLinksFields contact={resumeData.contact} updateContact={updateContact} />
           </div>
         </CollapsibleSection>
       );

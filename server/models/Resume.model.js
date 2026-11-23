@@ -24,6 +24,7 @@ const resumeSchema = new mongoose.Schema(
       email: { type: String, default: "" },
       linkedin: { type: String, default: "" },
       github: { type: String, default: "" },
+      socialLinks: [{ type: String, trim: true, maxlength: 500 }],
       portfolio: { type: String, default: "" },
       location: { type: String, default: "" },
     },

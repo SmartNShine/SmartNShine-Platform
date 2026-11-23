@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import { isDescriptionDuplicatedInBullets, formatEducationDegreeAndField, cleanBulletText } from "./templateUtils";
 import {
   Mail,
@@ -452,6 +453,7 @@ const ModernTemplate = forwardRef(({ resumeData = {}, onPageUsageChange }, ref) 
       label: contact.website.replace(/^https?:\/\/(www\.)?/i, ""),
       href: contact.website.startsWith("http") ? contact.website : `https://${contact.website}`,
     },
+    ...getResumeSocialLinks(contact),
   ].filter(Boolean);
 
   // Section heading: Minimalist line with mono index tag

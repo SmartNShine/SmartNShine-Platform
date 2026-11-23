@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useEffect, useMemo } from "react";
+import { getResumeSocialLinks } from "@/utils/resumeSocialLinks";
 import { isDescriptionDuplicatedInBullets, formatEducationDegreeAndField } from "./templateUtils";
 import {
   Globe,
@@ -502,6 +503,7 @@ const Creative2Template = forwardRef(({ resumeData = {}, onPageUsageChange }, re
       label: "GitHub",
       href: contact.github.startsWith("http") ? contact.github : `https://${contact.github}`,
     },
+    ...getResumeSocialLinks(contact),
   ].filter(Boolean);
 
   // Section Header with graphic glyph
