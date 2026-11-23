@@ -170,7 +170,7 @@ export default function ATSAnalyzer() {
   const [showInputs, setShowInputs] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 transition-colors duration-200">
+    <div className="min-h-screen dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 transition-colors duration-200">
       <SEO
         title="Free ATS Resume Score Checker &amp; Compatibility Analyzer"
         description="Check your resume's ATS score in real time against job descriptions. Discover missing keywords, fix formatting flaws, and pass Taleo, Workday, Greenhouse &amp; Lever filters."
@@ -197,25 +197,25 @@ export default function ATSAnalyzer() {
       />
 
       <div className="workspace-container py-6 sm:py-8 space-y-6">
-        {/* Ambient Top Hero Banner */}
+        {/* Banner */}
         <ATSAnalyzerBanner />
 
         {/* Guest Conversion Card */}
         {!user && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 dark:border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/[0.06] border border-amber-500/30 dark:border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20 text-amber-500 shrink-0">
+                <Sparkles className="w-5 h-5" aria-hidden="true" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Free Instant ATS Diagnostic</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Free ATS check</p>
                 <p className="text-xs text-gray-600 dark:text-zinc-400">Create your free account or sign in with Google to get instant keyword gap reports and recommendations.</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => navigate("/register", { state: { from: { pathname: "/ats-analyzer" }, message: "Create your free account to run your AI ATS analysis." } })}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black text-xs font-extrabold whitespace-nowrap active:scale-95 transition-all shadow-md cursor-pointer shrink-0"
+              className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0"
             >
               Sign Up Free (Instant) →
             </button>
@@ -257,12 +257,12 @@ export default function ATSAnalyzer() {
           /* Output View: Full-width 2-column layout */
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Top Toolbar / Action Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-gray-200/80 dark:border-white/10 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs">
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShowInputs(!showInputs)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-200 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-zinc-200 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-white/[0.06] text-zinc-800 dark:text-zinc-100 transition-colors cursor-pointer"
                 >
                   {showInputs ? "Hide Input Settings" : "Modify Job Description / Resume"}
                 </button>
@@ -279,7 +279,7 @@ export default function ATSAnalyzer() {
                 type="button"
                 onClick={handleAnalyze}
                 disabled={analyzing}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20 transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 {analyzing ? "Re-analyzing..." : "Re-run Deep ATS Analysis"}
               </button>
@@ -287,7 +287,7 @@ export default function ATSAnalyzer() {
 
             {/* Collapsible Inputs in Output View */}
             {showInputs && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 rounded-3xl bg-gray-50 dark:bg-zinc-950/60 border border-gray-200 dark:border-white/10 animate-in fade-in duration-200">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 animate-in fade-in duration-200">
                 <div className="lg:col-span-6">
                   <ATSJobDescriptionInput
                     jobDescription={jobDescription}

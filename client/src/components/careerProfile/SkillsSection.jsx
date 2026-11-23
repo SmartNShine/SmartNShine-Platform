@@ -106,7 +106,7 @@ export default function SkillsSection({
           </select>
           <button
             onClick={onAddSkill}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Skill</span>
@@ -156,7 +156,7 @@ export default function SkillsSection({
                 {categorySkills.map((s, idx) => (
                   <div
                     key={idx}
-                    className="group flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-white/[0.08] rounded-xl text-xs shadow-xs hover:border-blue-400 dark:hover:border-blue-500/40 transition-all"
+                    className="group flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-950 border border-gray-200/80 dark:border-white/[0.08] rounded-xl text-xs shadow-xs hover:border-blue-400 dark:hover:border-blue-500/40 transition-all"
                   >
                     <span className="font-semibold text-gray-900 dark:text-white">{s.name}</span>
                     {s.proficiency && (

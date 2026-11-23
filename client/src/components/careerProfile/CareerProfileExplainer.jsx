@@ -60,7 +60,7 @@ export default function CareerProfileExplainer() {
   const ActiveIcon = activeStep.icon;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-gray-200/90 dark:border-white/[0.08] bg-white/95 dark:bg-zinc-950/90 backdrop-blur-xl shadow-sm dark:shadow-2xl transition-all">
+    <div className="relative overflow-hidden rounded-3xl border border-gray-200/90 dark:border-white/[0.08] bg-white/95 dark:bg-zinc-950/90 backdrop-blur-xl shadow-xs transition-all">
       {/* Decorative ambient gradients */}
       <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-600/10 dark:bg-blue-500/15 blur-3xl" />
       <div className="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-cyan-600/10 dark:bg-cyan-500/15 blur-3xl" />
@@ -187,7 +187,7 @@ export default function CareerProfileExplainer() {
               </div>
 
               {/* Action Trigger Box */}
-              <div className="lg:col-span-4 flex flex-col justify-center space-y-3 bg-white dark:bg-zinc-900 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-white/10 text-center shadow-md">
+              <div className="lg:col-span-4 flex flex-col justify-center space-y-3 bg-white dark:bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-white/10 text-center shadow-md">
                 <span className="text-[11px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                   Quick Action
                 </span>
@@ -195,7 +195,7 @@ export default function CareerProfileExplainer() {
                 {activeStep.id === "career-qa" ? (
                   <Link
                     to="/career-qa"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-xs sm:text-sm shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
                   >
                     <MessageSquareQuote className="w-4 h-4" />
                     <span>Open Career Q&A Hub</span>

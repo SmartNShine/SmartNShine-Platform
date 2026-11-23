@@ -29,11 +29,11 @@ import {
 const btnPrimary =
   "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 border border-zinc-950/80 dark:border-zinc-300 transition-colors";
 const btnSecondary =
-  "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors";
+  "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors";
 const btnSmPrimary =
   "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 border border-zinc-800 dark:border-zinc-300 transition-colors";
 const btnSmSecondary =
-  "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors";
+  "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-950 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors";
 
 export default function DashboardOverview() {
   const { user } = useAuth();
@@ -148,7 +148,7 @@ export default function DashboardOverview() {
         {/* 2. THREE KEY METRIC STAT CARDS (Refined Accents matching Feature Pages) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Stat 1: Resumes (Blue Accent) */}
-          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Saved Resumes
@@ -175,7 +175,7 @@ export default function DashboardOverview() {
           </div>
 
           {/* Stat 2: Web Portfolio (Cyan Accent) */}
-          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 relative overflow-hidden group hover:border-cyan-500/30 transition-colors">
+          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 relative overflow-hidden group hover:border-cyan-500/30 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Web Portfolio
@@ -223,7 +223,7 @@ export default function DashboardOverview() {
           </div>
 
           {/* Stat 3: Career Profile Readiness (Amber Accent) */}
-          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
+          <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 relative overflow-hidden group hover:border-amber-500/30 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Profile Readiness
@@ -269,7 +269,7 @@ export default function DashboardOverview() {
               </Link>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-800/80 overflow-hidden shadow-xs">
+            <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 divide-y divide-zinc-100 dark:divide-zinc-800/80 overflow-hidden shadow-xs">
               {loading ? (
                 <div className="p-8 text-center text-xs text-zinc-400">
                   Loading resumes...
@@ -400,7 +400,7 @@ export default function DashboardOverview() {
                 </Link>
               </div>
 
-              <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4 shadow-xs">
+              <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 space-y-4 shadow-xs">
                 {primaryPortfolio ? (
                   <>
                     <div className="space-y-1">
@@ -497,7 +497,7 @@ export default function DashboardOverview() {
                 </Link>
               </div>
 
-              <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4 shadow-xs">
+              <div className="p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 space-y-4 shadow-xs">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">

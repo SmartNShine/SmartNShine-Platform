@@ -316,7 +316,7 @@ export default function Pricing() {
 
         {/* 1. THREE PLANS — Pro (₹199) centered & elevated on desktop */}
         <div className="pt-2 md:pt-8 pb-1">
-          <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] shadow-sm dark:shadow-2xl overflow-hidden md:overflow-visible transition-colors">
+          <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden md:overflow-visible transition-colors">
             <div className="grid grid-cols-1 md:grid-cols-3 md:items-end divide-y md:divide-y-0 md:divide-x divide-neutral-200 dark:divide-[#1F1F1F]">
               {threePlanEntries.map(([tierKey, tierData]) => {
                 const isPopular = tierKey === "pro";
@@ -344,13 +344,13 @@ export default function Pricing() {
         </div>
 
         {/* 2. DEDICATED CAMPUS PLAN BELOW (Two Sections: Left Plan & Pricing, Right What We Provide | Contact Cards Below) */}
-        <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] shadow-sm dark:shadow-2xl overflow-hidden divide-y divide-neutral-200 dark:divide-[#1F1F1F] transition-colors">
+        <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden divide-y divide-neutral-200 dark:divide-[#1F1F1F] transition-colors">
           {/* Upper Section: Divided into Left (Plan Details & Pricing) and Right (What We Provide) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-neutral-200 dark:divide-[#1F1F1F]">
             {/* Left Section (col-span-5): Overview, Custom Pricing & Action CTAs */}
             <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200 dark:bg-[#18181b] dark:text-neutral-300 dark:border-neutral-800 text-[11px] font-semibold tracking-wide">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200 dark:bg-zinc-950 dark:text-neutral-300 dark:border-neutral-800 text-[11px] font-semibold tracking-wide">
                   <GraduationCap className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400" />
                   <span>{CAMPUS_PLAN_DATA.badge}</span>
                 </div>
@@ -398,7 +398,7 @@ export default function Pricing() {
                 <button
                   type="button"
                   onClick={() => navigate("/tpo/login")}
-                  className="w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-zinc-950 dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60 cursor-pointer"
                 >
                   <GraduationCap className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                   <span>Campus TPO Sign In</span>
@@ -426,10 +426,10 @@ export default function Pricing() {
                   return (
                     <div
                       key={fIdx}
-                      className="flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border border-neutral-200/80 dark:border-[#222222] bg-neutral-50/70 dark:bg-[#141417] hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+                      className="flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border border-neutral-200/80 dark:border-[#222222] bg-neutral-50/70 dark:bg-zinc-950 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
                     >
                       <div
-                        className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 shadow-xs ${feat.tint || "text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-[#1e1e24] border-neutral-200 dark:border-neutral-800"}`}
+                        className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 shadow-xs ${feat.tint || "text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-zinc-950 border-neutral-200 dark:border-neutral-800"}`}
                       >
                         <Icon className="w-[18px] h-[18px] stroke-[2]" />
                       </div>
@@ -466,7 +466,7 @@ export default function Pricing() {
               {CAMPUS_PLAN_DATA.contacts.map((contact, cIdx) => (
                 <div
                   key={cIdx}
-                  className="p-4 sm:p-5 rounded-xl border border-neutral-200/80 dark:border-[#222222] bg-white dark:bg-[#141417] space-y-3 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
+                  className="p-4 sm:p-5 rounded-xl border border-neutral-200/80 dark:border-[#222222] bg-white dark:bg-zinc-950 space-y-3 shadow-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
@@ -492,7 +492,7 @@ export default function Pricing() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(contact.email, "Email")}
-                          className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white bg-neutral-100 hover:bg-neutral-200 dark:bg-[#1f1f24] dark:hover:bg-[#282830] border border-neutral-200 dark:border-neutral-800 shrink-0 cursor-pointer transition-colors"
+                          className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white bg-neutral-100 hover:bg-neutral-200 dark:bg-zinc-950 dark:hover:bg-[#282830] border border-neutral-200 dark:border-neutral-800 shrink-0 cursor-pointer transition-colors"
                           title="Copy email"
                           aria-label="Copy email"
                         >
@@ -512,7 +512,7 @@ export default function Pricing() {
                       <button
                         type="button"
                         onClick={() => handleCopyText(contact.phone, "Phone")}
-                        className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white bg-neutral-100 hover:bg-neutral-200 dark:bg-[#1f1f24] dark:hover:bg-[#282830] border border-neutral-200 dark:border-neutral-800 shrink-0 cursor-pointer transition-colors"
+                        className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white bg-neutral-100 hover:bg-neutral-200 dark:bg-zinc-950 dark:hover:bg-[#282830] border border-neutral-200 dark:border-neutral-800 shrink-0 cursor-pointer transition-colors"
                         title="Copy phone"
                         aria-label="Copy phone"
                       >

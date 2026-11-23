@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import SEO from "@/components/common/SEO";
+import PageLoader from "@/components/common/PageLoader";
 import {
   User,
   GraduationCap,
@@ -300,16 +301,8 @@ export default function CareerProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="relative w-16 h-16 mx-auto">
-            <div className="absolute inset-0 border-3 border-gray-200 dark:border-zinc-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
-            <User className="w-6 h-6 text-blue-600 dark:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 font-semibold tracking-wide uppercase">
-            Loading Career Profile...
-          </p>
-        </div>
+      <div className="min-h-screen dark:bg-[#09090b]">
+        <PageLoader label="Loading career profile" stats={0} />
       </div>
     );
   }
@@ -357,7 +350,7 @@ export default function CareerProfile() {
 
           {/* Form Fields Area (8 cols) */}
           <div className="lg:col-span-8">
-            <div className="bg-white dark:bg-zinc-950/90 rounded-3xl p-6 sm:p-8 border border-gray-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-2xl">
+            <div className="bg-white dark:bg-zinc-950/90 rounded-3xl p-6 sm:p-8 border border-gray-200/80 dark:border-white/[0.08] shadow-xs">
               {activeTab === "personal" && (
                 <PersonalInfoSection
                   profile={profile}

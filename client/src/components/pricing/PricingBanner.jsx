@@ -13,15 +13,15 @@ export default function PricingBanner() {
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-[#141417] dark:text-neutral-300 dark:border-neutral-800">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-zinc-950 dark:text-neutral-300 dark:border-neutral-800">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
           7-Day Money Back Guarantee
         </span>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-[#141417] dark:text-neutral-300 dark:border-neutral-800">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-zinc-950 dark:text-neutral-300 dark:border-neutral-800">
           <Zap className="w-3.5 h-3.5 text-amber-500" />
           Instant Activation
         </span>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-[#141417] dark:text-neutral-300 dark:border-neutral-800">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-zinc-950 dark:text-neutral-300 dark:border-neutral-800">
           <Building2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
           Campus TPO Support
         </span>

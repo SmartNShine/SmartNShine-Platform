@@ -52,7 +52,7 @@ export default function CertificationsSection({ profile, setProfile, onOpenAIMod
           </button>
           <button
             onClick={addCertification}
-            className="text-xs flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+            className="text-xs flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Certification</span>

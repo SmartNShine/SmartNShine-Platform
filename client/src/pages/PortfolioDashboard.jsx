@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import SEO from "@/components/common/SEO";
+import PageLoader from "@/components/common/PageLoader";
 import { Plus, Globe2, ArrowLeft } from "lucide-react";
 import { portfolioAPI } from "@/api/portfolio.api";
 import PortfolioBanner from "@/components/portfolio/PortfolioBanner";
@@ -56,17 +57,9 @@ export default function PortfolioDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="relative w-16 h-16 mx-auto">
-            <div className="absolute inset-0 border-3 border-gray-200 dark:border-zinc-800 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin"></div>
-            <Globe2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 font-semibold tracking-wide uppercase">
-            Loading Portfolios...
-          </p>
-        </div>
-      </div>
+      <>
+        <PageLoader label="Loading portfolios" stats={3} />
+      </>
     );
   }
 
@@ -110,7 +103,7 @@ export default function PortfolioDashboard() {
               </h2>
               <Link
                 to="/portfolio/new"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold rounded-xl text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Create portfolio</span>

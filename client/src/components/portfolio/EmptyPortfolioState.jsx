@@ -22,7 +22,7 @@ export default function EmptyPortfolioState() {
 
       <Link
         to="/portfolio/new"
-        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all duration-200 active:scale-95 cursor-pointer"
+        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-sm shadow-xs transition-all duration-200 active:scale-95 cursor-pointer"
       >
         <Rocket className="w-4 h-4" />
         <span>Create Your First Portfolio</span>

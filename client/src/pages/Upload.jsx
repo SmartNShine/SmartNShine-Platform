@@ -125,7 +125,7 @@ export default function Upload() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 transition-colors duration-200">
+    <div className="min-h-screen dark:bg-[#09090b] text-gray-900 dark:text-zinc-100 transition-colors duration-200">
       <SEO
         title="Upload Your Resume - AI Enhancer | SmartNShine"
         description="Upload your existing resume to let our AI extract, categorize, and transform it into an ATS-optimized, recruiter-ready resume in seconds."

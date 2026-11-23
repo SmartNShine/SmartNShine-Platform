@@ -183,7 +183,7 @@ export function PricingComparisonTable() {
   ];
 
   return (
-    <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] p-5 sm:p-7 shadow-sm dark:shadow-2xl space-y-5 transition-colors">
+    <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] p-5 sm:p-7 shadow-xs space-y-5 transition-colors">
       <div className="text-center space-y-1.5">
         <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
           Comprehensive Feature Comparison
@@ -213,7 +213,7 @@ export function PricingComparisonTable() {
           <tbody className="divide-y divide-neutral-100 dark:divide-[#1a1a1e]">
             {featureCategories.map((group, gIdx) => (
               <React.Fragment key={gIdx}>
-                <tr className="bg-neutral-50/80 dark:bg-[#141417]">
+                <tr className="bg-neutral-50/80 dark:bg-zinc-950">
                   <td
                     colSpan={5}
                     className="py-2.5 px-3.5 font-bold uppercase text-[10px] tracking-wider text-neutral-600 dark:text-neutral-400"
@@ -277,7 +277,7 @@ export function PricingFAQ() {
   ];
 
   return (
-    <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 shadow-sm dark:shadow-2xl space-y-6 transition-colors">
+    <div className="rounded-2xl sm:rounded-3xl border border-neutral-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 shadow-xs space-y-6 transition-colors">
       <div className="text-center space-y-1.5">
         <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
           Frequently Asked Questions
@@ -291,7 +291,7 @@ export function PricingFAQ() {
         {faqs.map((faq, idx) => (
           <div
             key={idx}
-            className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141417] border border-neutral-200 dark:border-[#222222] space-y-2"
+            className="p-4 rounded-xl bg-neutral-50 dark:bg-zinc-950 border border-neutral-200 dark:border-[#222222] space-y-2"
           >
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-start gap-2">
               <HelpCircle className="w-4 h-4 text-neutral-500 dark:text-neutral-400 shrink-0 mt-0.5" />
@@ -358,7 +358,7 @@ export function PricingResumeChooserModal({
                 <button
                   key={resume._id}
                   onClick={() => onChooseResume(resume)}
-                  className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-neutral-200 dark:border-[#222222] bg-neutral-50 dark:bg-[#141417] hover:border-neutral-400 dark:hover:border-neutral-600 text-left transition-all cursor-pointer"
+                  className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-neutral-200 dark:border-[#222222] bg-neutral-50 dark:bg-zinc-950 hover:border-neutral-400 dark:hover:border-neutral-600 text-left transition-all cursor-pointer"
                 >
                   <div className="w-9 h-9 rounded-lg bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex items-center justify-center shrink-0">
                     {isLocked ? (

@@ -105,7 +105,7 @@ export default function AIFastImportModal({
           {aiResultPreview ? (
             <button
               onClick={onApplyAIResult}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               Confirm & Merge to Profile
             </button>
@@ -113,7 +113,7 @@ export default function AIFastImportModal({
             <button
               onClick={onRunAIStructure}
               disabled={aiStructuring || !aiInputText.trim()}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               {aiStructuring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               <span>{aiStructuring ? "Structuring..." : "Structure with AI"}</span>
