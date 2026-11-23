@@ -45,7 +45,7 @@ router.post(
   analyzeResume
 );
 
-// Calculate match score between resume data and job description (for JobMatchAnalyzer component)
+// Calculate match score between resume data and job description
 router.post(
   "/match-score",
   authenticateToken,

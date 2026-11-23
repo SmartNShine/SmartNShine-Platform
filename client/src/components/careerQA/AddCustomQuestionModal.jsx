@@ -90,7 +90,7 @@ export default function AddCustomQuestionModal({
           </button>
           <button
             onClick={onAddCustomQuestion}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             Add Question
           </button>

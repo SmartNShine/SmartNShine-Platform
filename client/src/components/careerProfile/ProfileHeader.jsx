@@ -9,7 +9,7 @@ export default function ProfileHeader({ onGoBack, onSave, saving }) {
       <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
         <button
           onClick={onGoBack}
-          className="inline-flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs sm:text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
+          className="inline-flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs sm:text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
           title="Back to dashboard"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -39,7 +39,7 @@ export default function ProfileHeader({ onGoBack, onSave, saving }) {
         <button
           onClick={onSave}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all duration-200 disabled:opacity-50 active:scale-95 cursor-pointer"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold rounded-xl text-xs sm:text-sm shadow-xs transition-all duration-200 disabled:opacity-50 active:scale-95 cursor-pointer"
         >
           {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           <span className="hidden sm:inline">{saving ? "Saving..." : "Save Profile"}</span>

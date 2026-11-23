@@ -4,3 +4,5 @@ node_modules/
 uploads/
 *.log
 .DS_Store
+.cache/
+storage/

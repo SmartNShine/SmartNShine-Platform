@@ -46,7 +46,16 @@ export async function generateExecutiveReport(session, user) {
     starBreakdown: q.evaluation?.starBreakdown || null,
   }));
 
-  const systemPrompt = `You are a Principal Engineering Bar Raiser and Technical Hiring Committee Lead generating an Executive Interview Performance Report for a ${experienceLevel.toUpperCase()} ${role}.
+  const formatGuidance = {
+    behavioral: `INTERVIEW FORMAT: BEHAVIORAL. The candidate was NOT asked technical questions — do not penalize or comment on missing technical knowledge. Interpret the competency fields as: technicalDepth → quality of judgment and decisions in their stories; architecturalTradeoffs → scope and complexity of situations handled; evidenceAndGrounding → ownership and measurable results; starProblemSolving → STAR structure; communicationSignal → clarity. The growth roadmap should target behavioral skills and storytelling, not technical topics.`,
+    "resume-based": "INTERVIEW FORMAT: RESUME-BASED. Judge how well the candidate can defend and explain the work on their own resume; resume suggestions should fix claims they could not back up.",
+    "job-description": "INTERVIEW FORMAT: JOB-DESCRIPTION. Judge fit against the job's requirements; name which requirements they demonstrated and which they did not.",
+    mixed: "INTERVIEW FORMAT: MIXED. Weigh technical and behavioral answers separately before combining them.",
+    technical: "INTERVIEW FORMAT: TECHNICAL. No behavioral questions were asked; base starProblemSolving on how they structured technical problem-solving.",
+  }[session.interviewType] || "";
+
+  const systemPrompt = `You are a Principal Engineering Bar Raiser and Hiring Committee Lead generating an Executive Interview Performance Report for a ${experienceLevel.toUpperCase()} ${role}.
+${formatGuidance}
 
 REPORT OBJECTIVES:
 1. Provide a rigorous, evidence-based assessment.

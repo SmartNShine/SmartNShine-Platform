@@ -1,6 +1,7 @@
 import {
-  TrendingUp,
-  XCircle,
+  Lightbulb,
+  SearchX,
+  BadgeCheck,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -28,7 +29,7 @@ export default function ATSResultsBreakdown({
   return (
     <div className="space-y-4">
       {/* 1. Top Recommendations */}
-      {showRecommendations && <div className="bg-white dark:bg-zinc-900/90 rounded-3xl p-5 sm:p-6 border border-gray-200/90 dark:border-white/[0.08] shadow-sm">
+      {showRecommendations && <div className="bg-white dark:bg-zinc-950 rounded-3xl p-5 sm:p-6 border border-zinc-200/90 dark:border-white/10 shadow-xs">
         <button
           type="button"
           onClick={() => toggleSection("recommendations")}
@@ -36,11 +37,11 @@ export default function ATSResultsBreakdown({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-              <TrendingUp className="w-5 h-5" />
+              <Lightbulb className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h4 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                Actionable Recommendations
+                Recommendations
               </h4>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
                 {improvements.length} high-impact improvements detected
@@ -60,9 +61,9 @@ export default function ATSResultsBreakdown({
               visibleImprovements.map((tip, index) => (
                 <div
                   key={index}
-                  className="flex flex-col items-stretch gap-3 rounded-2xl border border-gray-200/70 bg-gray-50/60 p-3.5 dark:border-white/5 dark:bg-zinc-950/60 sm:flex-row sm:items-start"
+                  className="flex flex-col items-stretch gap-3 rounded-2xl border border-zinc-200 p-3.5 dark:border-white/10 sm:flex-row sm:items-start"
                 >
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-black shrink-0">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-bold shrink-0 tabular-nums">
                     {index + 1}
                   </span>
                   <p className="text-xs sm:text-sm font-medium text-gray-800 dark:text-zinc-200 leading-relaxed">
@@ -71,7 +72,7 @@ export default function ATSResultsBreakdown({
                   <button
                     type="button"
                     onClick={() => onEditResume?.(tip)}
-                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 px-2.5 py-2 text-[11px] font-bold text-blue-700 transition-colors hover:bg-blue-500/20 dark:text-blue-300 sm:ml-auto"
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 px-2.5 py-2 text-[11px] font-bold text-blue-700 dark:text-blue-300 transition-colors hover:bg-blue-500/20 sm:ml-auto"
                   >
                     <PencilLine className="h-3.5 w-3.5" />
                     Edit this improvement
@@ -88,7 +89,7 @@ export default function ATSResultsBreakdown({
               <button
                 type="button"
                 onClick={() => setShowAllImprovements((prev) => !prev)}
-                className="w-full py-2.5 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl transition-all cursor-pointer"
+                className="w-full py-2.5 text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 rounded-xl transition-colors cursor-pointer"
               >
                 {showAllImprovements
                   ? "Show Less Recommendations"
@@ -102,7 +103,7 @@ export default function ATSResultsBreakdown({
       </div>}
 
       {/* 2. Missing Keywords */}
-      {showKeywords && <div className="bg-white dark:bg-zinc-900/90 rounded-3xl p-5 sm:p-6 border border-gray-200/90 dark:border-white/[0.08] shadow-sm">
+      {showKeywords && <div className="bg-white dark:bg-zinc-950 rounded-3xl p-5 sm:p-6 border border-zinc-200/90 dark:border-white/10 shadow-xs">
         <button
           type="button"
           onClick={() => toggleSection("keywords")}
@@ -110,7 +111,7 @@ export default function ATSResultsBreakdown({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/20 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
-              <XCircle className="w-5 h-5" />
+              <SearchX className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h4 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
@@ -162,7 +163,7 @@ export default function ATSResultsBreakdown({
       </div>}
 
       {/* 3. Strengths & Verified Signals */}
-      {showStrengths && <div className="bg-white dark:bg-zinc-900/90 rounded-3xl p-5 sm:p-6 border border-gray-200/90 dark:border-white/[0.08] shadow-sm">
+      {showStrengths && <div className="bg-white dark:bg-zinc-950 rounded-3xl p-5 sm:p-6 border border-zinc-200/90 dark:border-white/10 shadow-xs">
         <button
           type="button"
           onClick={() => toggleSection("strengths")}
@@ -170,11 +171,11 @@ export default function ATSResultsBreakdown({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
+              <BadgeCheck className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h4 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                Strength Signals
+                Strengths
               </h4>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
                 {strengths.length} verified matching qualifications

@@ -52,11 +52,11 @@ async function runTests() {
   assert.equal(syllabus.length, 8, "Syllabus should contain exactly 8 planned questions");
   assert.equal(syllabus[0].questionType, "resume-based", "Mixed interview with resume should start with resume deep dive");
   assert.equal(syllabus[0].cognitiveLevel, 2, "Phase 1 starts at level 2");
+  assert.ok(syllabus.some((s) => s.questionType === "behavioral"), "Mixed interview must include behavioral questions");
 
-  // Senior level should test level 4 in Phase 3
-  const phase3 = syllabus.find((s) => s.phase.includes("Phase 3"));
-  assert.ok(phase3, "Phase 3 (Architecture) must be planned");
-  assert.equal(phase3.cognitiveLevel, 4, "Senior candidate should have Level 4 cognitive target in Architecture phase");
+  // Senior technical questions ramp up to architecture-level depth
+  const architecture = syllabus.find((s) => s.questionType === "technical" && s.cognitiveLevel >= 4);
+  assert.ok(architecture, "Senior mixed interview must reach Level 4+ technical depth");
   passed++;
   console.log("  ✅ Passed: Syllabus planning and phase allocation\n");
 

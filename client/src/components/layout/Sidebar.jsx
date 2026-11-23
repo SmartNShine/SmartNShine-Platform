@@ -1,23 +1,22 @@
 import {Link, useLocation} from "react-router-dom";
 import {BlockableLink} from "@/components/auth";
 import {
-  Home,
-  Grid,
-  Palette,
-  Wand2,
-  Target,
+  House,
+  FolderOpen,
+  LayoutTemplate,
+  WandSparkles,
+  ScanSearch,
   Mail,
   LayoutDashboard,
-  Globe2,
+  PanelsTopLeft,
   ChevronLeft,
   ChevronRight,
-  Shield,
-  UserCircle,
-  Tag,
-  Mic,
-  HelpCircle,
-  TrendingUp,
-  FileText,
+  ShieldCheck,
+  UserRound,
+  BriefcaseBusiness,
+  Gem,
+  AudioLines,
+  MessageCircleQuestion,
   History,
 } from "lucide-react";
 import {useAuth} from "@/context/AuthContext";
@@ -39,32 +38,32 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "My Resumes",
       path: "/my-resumes",
-      icon: FileText,
+      icon: FolderOpen,
       description: "Manage your resumes",
       requiresAuth: true,
     },
     {
       name: "Templates",
       path: "/templates",
-      icon: Palette,
+      icon: LayoutTemplate,
       description: "Browse templates",
     },
     {
       name: "AI Enhancer",
       path: "/upload",
-      icon: Wand2,
+      icon: WandSparkles,
       description: "Build resume with AI",
     },
     {
       name: "ATS Analyzer",
       path: "/ats-analyzer",
-      icon: Target,
+      icon: ScanSearch,
       description: "Check ATS compatibility",
     },
     {
       name: "AI Interview",
       path: "/interview",
-      icon: Mic,
+      icon: AudioLines,
       description: "AI Mock Interview Studio",
       requiresAuth: true,
       badge: "NEW",
@@ -79,7 +78,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Career Profile",
       path: "/career-profile",
-      icon: UserCircle,
+      icon: BriefcaseBusiness,
       description: "Your master career info",
       requiresAuth: true,
       openNewTab: true,
@@ -87,7 +86,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Career Q&A",
       path: "/career-qa",
-      icon: HelpCircle,
+      icon: MessageCircleQuestion,
       description: "Personalized answer bank",
       requiresAuth: true,
       openNewTab: true,
@@ -95,7 +94,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Portfolios",
       path: "/portfolio",
-      icon: Globe2,
+      icon: PanelsTopLeft,
       description: "Manage portfolio websites",
       requiresAuth: true,
     },
@@ -110,14 +109,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Profile",
       path: "/profile",
-      icon: UserCircle,
+      icon: UserRound,
       description: "Profile & Subscription",
       requiresAuth: true,
     },
     {
       name: "Pricing",
       path: "/pricing",
-      icon: Tag,
+      icon: Gem,
       description: "View Pricing",
     },
     {
@@ -129,7 +128,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Landing Page",
       path: "/",
-      icon: Home,
+      icon: House,
       description: "Explore Landing",
     },
   ];
@@ -194,22 +193,22 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 </button>
               </>
             ) : (
-              /* Collapsed Header: Clean vertical layout with logo and dedicated expand button */
-              <div className="w-full flex flex-col items-center justify-center gap-1.5 py-1">
+              /* Collapsed Header: centred logo; expand chip sits on the sidebar edge */
+              <div className="w-full flex items-center justify-center">
                 <Link
                   to={user ? "/dashboard" : "/"}
-                  className="flex items-center justify-center p-0.5 rounded-lg hover:opacity-85 transition-opacity"
+                  className="flex items-center justify-center rounded-xl hover:opacity-85 transition-opacity"
                   title="SmartNShine Dashboard"
                 >
                   <Logo
-                    className="w-8 h-8 object-contain"
+                    className="w-9 h-9 object-contain"
                     alt="SmartNShine Logo"
                   />
                 </Link>
                 <button
                   type="button"
                   onClick={() => setIsOpen(true)}
-                  className="w-8 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition-colors cursor-pointer"
+                  className="hidden lg:flex absolute -right-3 top-5 z-10 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/15 text-zinc-500 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white shadow-sm items-center justify-center transition-colors cursor-pointer"
                   title="Expand sidebar"
                   aria-label="Expand sidebar"
                 >
@@ -236,7 +235,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   }`}
                   title={!isOpen ? "Admin Panel" : ""}
                 >
-                  <Shield
+                  <ShieldCheck
                     className={`w-5 h-5 flex-shrink-0 ${
                       location.pathname.startsWith("/admin")
                         ? ""

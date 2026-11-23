@@ -6,6 +6,7 @@ import {
   interviewLimiter,
   interviewTurnLimiter,
   interviewProctoringLimiter,
+  interviewScreenFrameLimiter,
   checkInterviewLimit,
   checkVoiceAccess,
 } from "../middleware/interview.middleware.js";
@@ -104,6 +105,19 @@ router.post(
 );
 
 /**
+ * Self-introduction (re-plans question 1 from it)
+ * POST /api/interview/sessions/:sessionId/introduction
+ * Body: { introduction }
+ */
+router.post(
+  "/sessions/:sessionId/introduction",
+  authenticateToken,
+  interviewTurnLimiter,
+  checkSubscription,
+  interviewController.submitIntroduction
+);
+
+/**
  * Complete interview and generate report
  * POST /api/interview/sessions/:sessionId/complete
  */
@@ -131,6 +145,27 @@ router.post(
   authenticateToken,
   interviewProctoringLimiter,
   interviewController.recordProctoringEvent
+);
+
+// Screen sharing (proctored mode, security plan S1.5)
+router.post(
+  "/sessions/:sessionId/proctoring/screen-frame",
+  authenticateToken,
+  interviewScreenFrameLimiter,
+  interviewController.uploadScreenFrame
+);
+
+router.post(
+  "/sessions/:sessionId/proctoring/screen-share",
+  authenticateToken,
+  interviewScreenFrameLimiter,
+  interviewController.updateScreenShareStatus
+);
+
+router.get(
+  "/sessions/:sessionId/screen-frames/:frameId",
+  authenticateToken,
+  interviewController.getScreenFrame
 );
 
 /**

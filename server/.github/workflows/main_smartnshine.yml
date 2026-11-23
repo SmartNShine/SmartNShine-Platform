@@ -25,7 +25,9 @@ jobs:
 
       - name: npm install, build, and test
         run: |
+          export PUPPETEER_CACHE_DIR="$PWD/.cache/puppeteer"
           npm install
+          npx puppeteer browsers install chrome || true
           npm run build --if-present
           npm run test --if-present
 

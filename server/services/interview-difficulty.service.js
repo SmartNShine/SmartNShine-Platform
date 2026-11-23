@@ -172,10 +172,52 @@ COGNITIVE DEPTH TARGET: ${meta.label} (${meta.name})
 `;
 }
 
+// Live-interview pacing: thinking window before the mic opens, and the answer
+// window per question. Spoken modes only; text mode is untimed per question.
+export const THINK_TIME_SEC = 10;
+export const INTRO_ANSWER_TIME_SEC = 90;
+const ANSWER_TIME_BY_DIFFICULTY = { easy: 120, medium: 150, hard: 180 };
+
+/**
+ * Seconds the candidate gets to answer a question.
+ * Follow-ups are narrower (2:00); STAR stories and resume walkthroughs need room
+ * (2:30, 3:00 at senior scope); hypotheticals are shorter (2:00); technical
+ * questions scale with cognitive depth (2:00 / 2:30 / 3:00).
+ */
+export function getAnswerTimeLimitSec({ questionType, cognitiveLevel, difficulty, isFollowUp } = {}) {
+  const level = Number(cognitiveLevel);
+  if (isFollowUp || questionType === "follow-up") return level >= 4 ? 150 : 120;
+  if (questionType === "behavioral" || questionType === "resume-based") return level >= 4 ? 180 : 150;
+  if (questionType === "situational") return 120;
+  if (level >= 4) return ANSWER_TIME_BY_DIFFICULTY.hard;
+  if (level === 3) return ANSWER_TIME_BY_DIFFICULTY.medium;
+  if (level === 1 || level === 2) return ANSWER_TIME_BY_DIFFICULTY.easy;
+  return ANSWER_TIME_BY_DIFFICULTY[difficulty] || ANSWER_TIME_BY_DIFFICULTY.medium;
+}
+
+/**
+ * How many questions fit into an interview of `minutes` length.
+ * Spoken turns budget think time + an average answer + TTS/evaluation overhead,
+ * after the greeting and self-introduction.
+ */
+export function estimateQuestionCount(minutes, mode = "live") {
+  const duration = Number(minutes);
+  if (!Number.isFinite(duration) || duration <= 0) return null;
+  if (mode === "text") return Math.max(3, Math.min(15, Math.floor(duration * 0.8)));
+  const introSec = 30 + THINK_TIME_SEC + INTRO_ANSWER_TIME_SEC;
+  const perQuestionSec = THINK_TIME_SEC + 120 + 20; // most answers end before the limit
+  const count = Math.floor((duration * 60 - introSec) / perQuestionSec);
+  return Math.max(2, Math.min(15, count));
+}
+
 export default {
   COGNITIVE_LEVELS,
   SENIORITY_BASELINES,
   TURN_DECISIONS,
+  THINK_TIME_SEC,
+  INTRO_ANSWER_TIME_SEC,
   evaluateTurnProgression,
   getCognitiveLevelPrompt,
+  getAnswerTimeLimitSec,
+  estimateQuestionCount,
 };

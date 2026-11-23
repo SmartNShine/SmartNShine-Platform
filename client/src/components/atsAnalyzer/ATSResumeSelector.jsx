@@ -1,10 +1,10 @@
 import {
   Upload,
-  Sparkles,
+  BriefcaseBusiness,
+  FileUser,
   CheckCircle2,
   AlertCircle,
-  FileText,
-  Brain,
+  ScanSearch,
   RefreshCw,
   X,
 } from "lucide-react";
@@ -28,17 +28,17 @@ export default function ATSResumeSelector({
     (useCareerProfile || selectedResume || uploadedFile);
 
   return (
-    <div className="bg-white dark:bg-zinc-900/90 rounded-3xl p-6 sm:p-7 border border-gray-200/90 dark:border-white/[0.08] shadow-sm space-y-5">
+    <div className="bg-white dark:bg-zinc-950 rounded-3xl p-6 sm:p-7 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-          <Upload className="w-5 h-5" />
+        <div className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+          <FileUser className="w-5 h-5" aria-hidden="true" />
         </div>
         <div>
           <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-            Select Resume Source
+            Resume
           </h2>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">
-            Compare against Career Profile, a saved resume, or uploaded document
+            Pick what to compare against the job
           </p>
         </div>
       </div>
@@ -53,26 +53,26 @@ export default function ATSResumeSelector({
             setUploadedFile(null);
           }
         }}
-        className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+        className={`w-full p-4 rounded-2xl border text-left transition-colors flex items-center justify-between gap-3 cursor-pointer ${
           useCareerProfile
-            ? "bg-blue-50/80 dark:bg-blue-950/40 border-blue-400 dark:border-blue-600/80 shadow-sm"
-            : "bg-gray-50/50 dark:bg-zinc-950/60 border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-zinc-900"
+            ? "bg-blue-50/80 dark:bg-blue-950/40 border-blue-400 dark:border-blue-600/80"
+            : "border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/[0.04]"
         }`}
       >
-        <div className="flex items-center gap-3.5">
+        <div className="flex min-w-0 items-center gap-3.5">
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+            className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
               useCareerProfile
-                ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
-                : "bg-gray-200 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400"
+                ? "bg-blue-600 text-white"
+                : "bg-zinc-100 dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300"
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <BriefcaseBusiness className="w-5 h-5" aria-hidden="true" />
           </div>
           <div>
-            <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <div className="text-sm font-bold text-gray-900 dark:text-white flex flex-wrap items-center gap-x-2 gap-y-1">
               <span>Master Career Profile</span>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+              <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                 Recommended
               </span>
             </div>
@@ -83,12 +83,12 @@ export default function ATSResumeSelector({
         </div>
 
         {useCareerProfile ? (
-          <span className="text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 border border-blue-300 dark:border-blue-800 px-3 py-1 rounded-xl">
-            Selected ✓
+          <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 border border-blue-300 dark:border-blue-800 px-2.5 py-1 rounded-full">
+            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> Selected
           </span>
         ) : (
-          <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500">
-            Click to use
+          <span className="shrink-0 text-xs font-medium text-gray-400 dark:text-zinc-500">
+            Use
           </span>
         )}
       </button>
@@ -96,7 +96,7 @@ export default function ATSResumeSelector({
       {/* Option 2: Saved Resume Dropdown */}
       <div className="space-y-1.5">
         <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300">
-          Or Select From Saved Resumes
+          Saved resumes
         </label>
         {loadingResumes ? (
           <div className="flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-white/5">
@@ -114,12 +114,12 @@ export default function ATSResumeSelector({
               setUploadedFile(null);
             }}
             disabled={useCareerProfile}
-            className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-zinc-950 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full h-12 px-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <option value="">Choose from your saved resumes...</option>
+            <option value="">Choose a saved resume</option>
             {userResumes.map((resume) => (
               <option key={resume._id} value={resume._id}>
-                {resume.name} — {resume.contact?.name || "Target Resume"}
+                {resume.resumeTitle || resume.name || "Untitled resume"}
               </option>
             ))}
           </select>
@@ -137,8 +137,8 @@ export default function ATSResumeSelector({
           <div className="w-full border-t border-gray-200 dark:border-white/5" />
         </div>
         <div className="relative flex justify-center">
-          <span className="px-3 bg-white dark:bg-zinc-900 text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
-            Or upload file
+          <span className="px-3 bg-white dark:bg-zinc-950 text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
+            Or upload
           </span>
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function ATSResumeSelector({
           className="hidden"
           disabled={useCareerProfile}
         />
-        <div className="border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-blue-500 dark:hover:border-blue-500/60 rounded-2xl p-6 text-center bg-gray-50/40 dark:bg-zinc-950/40 hover:bg-blue-50/20 dark:hover:bg-blue-950/10 transition-all">
+        <div className="border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-blue-500 dark:hover:border-blue-500/60 hover:bg-blue-500/5 rounded-2xl p-6 text-center transition-colors">
           {uploadedFile ? (
             <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
               <div className="flex items-center gap-3 text-left">
@@ -185,14 +185,14 @@ export default function ATSResumeSelector({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="w-10 h-10 mx-auto bg-gray-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-gray-600 dark:text-zinc-300">
+              <div className="w-10 h-10 mx-auto bg-zinc-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center text-zinc-600 dark:text-zinc-300">
                 <Upload className="w-5 h-5" />
               </div>
               <p className="text-xs sm:text-sm font-bold text-gray-800 dark:text-zinc-200">
-                Upload Resume File (PDF / DOCX)
+                Upload a PDF or DOCX
               </p>
               <p className="text-[11px] text-gray-400 dark:text-zinc-500">
-                Max file size 5MB • Instant offline parsing
+                Up to 5 MB
               </p>
             </div>
           )}
@@ -203,17 +203,17 @@ export default function ATSResumeSelector({
       <button
         onClick={handleAnalyze}
         disabled={analyzing || !canAnalyze}
-        className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2.5 active:scale-98 cursor-pointer"
+        className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm sm:text-base rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 cursor-pointer"
       >
         {analyzing ? (
           <>
             <RefreshCw className="w-5 h-5 animate-spin" />
-            <span>Scanning ATS Keywords & Semantics...</span>
+            <span>Scanning…</span>
           </>
         ) : (
           <>
-            <Brain className="w-5 h-5" />
-            <span>Run Deep ATS Analysis</span>
+            <ScanSearch className="w-5 h-5" aria-hidden="true" />
+            <span>Run ATS analysis</span>
           </>
         )}
       </button>

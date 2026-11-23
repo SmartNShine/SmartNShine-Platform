@@ -4,7 +4,7 @@
     "description": "AI-powered ATS Resume Builder & Career Platform - SmartNShine with MERN Stack + OpenAI GPT-4o",
     "scripts": {
         "setup": "bash setup.sh",
-        "install-all": "npm install --prefix server && npm install --prefix client",
+        "install-all": "npm install --prefix server && PUPPETEER_SKIP_DOWNLOAD=1 npm install --prefix client",
         "dev": "concurrently \"npm run server\" \"npm run client\"",
         "server": "cd server && npm run dev",
         "client": "cd client && npm run dev",

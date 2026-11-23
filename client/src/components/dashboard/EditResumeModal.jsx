@@ -75,7 +75,7 @@ export default function EditResumeModal({
           <button
             type="button"
             onClick={onSave}
-            className="flex-1 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl transition-all duration-200 shadow-md shadow-blue-500/20 text-xs sm:text-sm active:scale-95 cursor-pointer"
+            className="flex-1 px-5 py-3 bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold rounded-2xl transition-all duration-200 shadow-xs text-xs sm:text-sm active:scale-95 cursor-pointer"
           >
             Save Changes
           </button>

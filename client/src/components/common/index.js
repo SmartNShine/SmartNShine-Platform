@@ -6,3 +6,4 @@ export { default as FestiveSaleBanner } from "./FestiveSaleBanner";
 export * from "./modals";
 export * from "./cards";
 export { default as Logo } from "./Logo";
+export { default as PageLoader } from "./PageLoader";

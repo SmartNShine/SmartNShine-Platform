@@ -245,82 +245,86 @@ const InterviewHistory = () => {
   }, [chartData]);
 
   if (loading) {
+    const bone = "animate-pulse rounded-xl bg-zinc-200/80 dark:bg-white/[0.06]";
+    const shell = "rounded-3xl border border-zinc-200/90 bg-white dark:border-white/10 dark:bg-zinc-950";
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-[#090A0F] flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-4 p-8 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200 dark:border-white/10 shadow-xl">
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 animate-pulse" />
-            <Loader2 className="w-7 h-7 animate-spin text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      <div className="min-h-screen dark:bg-[#09090b]" role="status" aria-live="polite" aria-label="Loading interview history">
+        <div className="workspace-container py-6 sm:py-8 space-y-6">
+          <div className={`${shell} p-6 sm:p-8 flex items-center justify-between gap-6`}>
+            <div className="space-y-3 flex-1">
+              <div className={`${bone} h-7 w-64`} />
+              <div className={`${bone} h-4 w-full max-w-md`} />
+            </div>
+            <div className={`${bone} h-11 w-44 hidden sm:block`} />
           </div>
-          <div className="text-center">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Loading Interview History</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Aggregating telemetry & reports...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={`${shell} p-5 space-y-4`}>
+                <div className={`${bone} h-3 w-28`} />
+                <div className={`${bone} h-9 w-24`} />
+                <div className={`${bone} h-3 w-36`} />
+              </div>
+            ))}
           </div>
+          <div className={`${shell} p-6`}><div className={`${bone} h-56 w-full`} /></div>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={`${shell} p-5 flex items-center gap-4`}>
+              <div className={`${bone} h-12 w-12 shrink-0`} />
+              <div className="flex-1 space-y-2.5">
+                <div className={`${bone} h-4 w-56`} />
+                <div className={`${bone} h-3 w-80 max-w-full`} />
+              </div>
+              <div className={`${bone} h-10 w-32 hidden sm:block`} />
+            </div>
+          ))}
+          <span className="sr-only">Loading your interviews…</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#090A0F] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+    <div className="min-h-screen dark:bg-[#09090b] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
       <div className="workspace-container py-6 sm:py-8 space-y-8">
-        {/* 1. EXECUTIVE STUDIO HERO BANNER */}
-        <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/30 dark:from-[#111218] dark:via-[#0E1017] dark:to-[#141522] border border-blue-200/80 dark:border-white/10 shadow-sm">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-semibold tracking-wide uppercase">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span>Interview Performance Telemetry</span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                Interview History & Analytics
-              </h1>
-
-              <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
-                Review your mock interview rounds, track performance velocity over time, and inspect turn-by-turn diagnostic feedback.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                  <Activity className="w-3.5 h-3.5 text-blue-500" />
-                  <span>{stats?.totalInterviews || 0} Total Sessions</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                  <Award className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Avg Score: {stats?.averageScore || 0}%</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>STAR Calibrated</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="shrink-0 flex flex-wrap sm:flex-nowrap items-center gap-3">
-              <Link
-                to="/interview"
-                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 active:scale-95"
-              >
-                <Play className="w-4 h-4 fill-white" />
-                <span>Start New Interview</span>
-              </Link>
+        {/* 1. HEADER */}
+        <div className="flex flex-col gap-5 rounded-3xl border border-zinc-200/90 bg-white p-6 shadow-xs dark:border-white/10 dark:bg-zinc-950 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">
+              Interview history
+            </h1>
+            <p className="max-w-xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+              Review past rounds, track how your scores move over time, and open any report for answer-by-answer feedback.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-2.5 py-1 dark:border-white/10">
+                <Activity className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+                {stats?.totalInterviews || 0} sessions
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-2.5 py-1 dark:border-white/10">
+                <Award className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+                Avg {stats?.averageScore || 0}%
+              </span>
             </div>
           </div>
+          <Link
+            to="/interview"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:outline-white"
+          >
+            <Play className="h-4 w-4 fill-current" aria-hidden="true" />
+            New interview
+          </Link>
         </div>
 
         {/* 2. FOUR EXECUTIVE METRIC STAT CARDS */}
         {stats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Total Interviews */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm relative overflow-hidden group hover:border-blue-500/30 transition-all">
+            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs relative overflow-hidden group hover:border-zinc-300 dark:hover:border-white/20 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Total Sessions
                 </span>
-                <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-white/[0.06] dark:border-white/10 dark:text-zinc-200 flex items-center justify-center">
                   <Target className="w-5 h-5" />
                 </div>
               </div>
@@ -333,12 +337,12 @@ const InterviewHistory = () => {
                 </span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
-                Recorded technical & behavioral mocks
+                Mock interviews completed
               </p>
             </div>
 
             {/* Card 2: Average Score */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs relative overflow-hidden group hover:border-zinc-300 dark:hover:border-white/20 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Average Score
@@ -386,12 +390,12 @@ const InterviewHistory = () => {
             </div>
 
             {/* Card 3: Total Practice Time */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm relative overflow-hidden group hover:border-indigo-500/30 transition-all">
+            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs relative overflow-hidden group hover:border-zinc-300 dark:hover:border-white/20 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Total Practice Time
                 </span>
-                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-white/[0.06] dark:border-white/10 dark:text-zinc-200 flex items-center justify-center">
                   <Clock className="w-5 h-5" />
                 </div>
               </div>
@@ -401,17 +405,17 @@ const InterviewHistory = () => {
                 </span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
-                Active speech & response duration
+                Time spent answering
               </p>
             </div>
 
             {/* Card 4: Recent Trend */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm relative overflow-hidden group hover:border-purple-500/30 transition-all">
+            <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs relative overflow-hidden group hover:border-zinc-300 dark:hover:border-white/20 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Performance Velocity
+                  Recent trend
                 </span>
-                <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-white/[0.06] dark:border-white/10 dark:text-zinc-200 flex items-center justify-center">
                   <TrendingUp className="w-5 h-5" />
                 </div>
               </div>
@@ -428,7 +432,7 @@ const InterviewHistory = () => {
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>Multi-turn adaptive progression</span>
+                <span>Based on recent sessions</span>
               </p>
             </div>
           </div>
@@ -436,24 +440,24 @@ const InterviewHistory = () => {
 
         {/* 3. PERFORMANCE VELOCITY CHART (RECHARTS AREA CHART) */}
         {chartData.length > 0 ? (
-          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm space-y-4">
+          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100 dark:border-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-white/[0.06] dark:border-white/10 dark:text-zinc-200 flex items-center justify-center">
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                    Score Progression & Velocity
+                    Score progression
                   </h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Trajectory of overall scores across consecutive mock interview attempts
+                    Overall score across your interview attempts
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                <span className="px-3 py-1 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-white/[0.06] dark:border-white/10 dark:text-zinc-200 text-xs font-semibold">
                   Latest: {latestScore}%
                 </span>
                 <span className="px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
@@ -495,7 +499,7 @@ const InterviewHistory = () => {
                       if (active && payload && payload.length) {
                         const d = payload[0].payload;
                         return (
-                          <div className="p-3 rounded-2xl bg-gray-900/95 dark:bg-[#161822] text-white border border-white/10 shadow-2xl text-xs space-y-1">
+                          <div className="p-3 rounded-2xl bg-gray-900/95 dark:bg-zinc-900 text-white border border-white/10 shadow-2xl text-xs space-y-1">
                             <div className="font-bold text-blue-400">{d.role}</div>
                             <div className="text-gray-400 text-[10px] capitalize">
                               {d.interviewType} • {d.fullDate}
@@ -531,27 +535,27 @@ const InterviewHistory = () => {
             </div>
           </div>
         ) : (
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-100 text-zinc-700 dark:bg-white/[0.06] dark:text-zinc-200 flex items-center justify-center shrink-0">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-gray-900 dark:text-white">Velocity Analytics Engine</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Complete mock interviews to plot score growth & velocity trends.</p>
+                <h3 className="font-bold text-sm text-gray-900 dark:text-white">No trend yet</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Finish a few interviews to see how your scores change.</p>
               </div>
             </div>
             <Link
               to="/interview"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-xs"
+              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-700 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-xs font-semibold"
             >
-              Start First Round
+              Start first interview
             </Link>
           </div>
         )}
 
         {/* 4. CONSOLIDATED TOOLBAR & FILTERS */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Status Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 text-xs">
             {[
@@ -571,7 +575,7 @@ const InterviewHistory = () => {
                   }}
                   className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-white dark:bg-[#1E202E] text-blue-600 dark:text-blue-400 shadow-xs"
+                      ? "bg-white dark:bg-white/10 text-zinc-900 dark:text-white shadow-xs"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
@@ -591,7 +595,7 @@ const InterviewHistory = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by role or type..."
-                className="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-white/30"
               />
               {searchQuery && (
                 <button
@@ -608,7 +612,7 @@ const InterviewHistory = () => {
             <select
               value={formatFilter}
               onChange={(e) => setFormatFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#141520] text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-white/30"
             >
               <option value="all">All Formats</option>
               <option value="resume-based">Resume-Based</option>
@@ -622,7 +626,7 @@ const InterviewHistory = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#141520] text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-white/30"
             >
               <option value="newest">Newest First</option>
               <option value="highest-score">Highest Score</option>
@@ -634,29 +638,29 @@ const InterviewHistory = () => {
 
         {/* 5. INTERVIEW HISTORY LIST */}
         {filteredInterviews.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-sm space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+          <div className="p-12 text-center rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-4">
+            <div className="w-16 h-16 rounded-3xl bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-white/[0.06] dark:border-white/10 dark:text-zinc-200 flex items-center justify-center mx-auto">
               <Sparkles className="w-8 h-8" />
             </div>
             <div className="max-w-md mx-auto space-y-1">
               <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                 {searchQuery || formatFilter !== "all" || statusFilter
                   ? "No matching interviews found"
-                  : "No Mock Interviews Recorded Yet"}
+                  : "No interviews yet"}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {searchQuery || formatFilter !== "all" || statusFilter
                   ? "Try resetting your search query or status filter to see other archived sessions."
-                  : "Launch your first mock interview with live voice, AI proctoring, and comprehensive diagnostic reports."}
+                  : "Start a mock interview and your reports will show up here."}
               </p>
             </div>
             <div className="pt-2">
               <Link
                 to="/interview"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-md active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-700 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors"
               >
                 <Play className="w-4 h-4 fill-white" />
-                <span>Launch Mock Interview</span>
+                <span>Start an interview</span>
               </Link>
             </div>
           </div>
@@ -679,7 +683,7 @@ const InterviewHistory = () => {
               return (
                 <div
                   key={interview._id}
-                  className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111218] border border-gray-200/80 dark:border-white/10 shadow-xs hover:border-blue-500/30 hover:shadow-md transition-all group relative overflow-hidden"
+                  className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-gray-200/80 dark:border-white/10 shadow-xs hover:border-zinc-300 dark:hover:border-white/20 hover:shadow-md transition-all group relative overflow-hidden"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                     {/* Left: Role Info & Badges */}
@@ -732,7 +736,7 @@ const InterviewHistory = () => {
                         <div className="pt-1 flex items-center gap-3">
                           <div className="w-32 sm:w-40 bg-gray-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
                             <div
-                              className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-300"
+                              className="bg-zinc-900 dark:bg-white h-full rounded-full transition-all duration-300"
                               style={{ width: `${progressPercent}%` }}
                             />
                           </div>
@@ -764,7 +768,7 @@ const InterviewHistory = () => {
                             </span>
                           </div>
                           <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mt-0.5">
-                            Evaluated Score
+                            Score
                           </p>
                         </div>
                       ) : (
@@ -779,7 +783,7 @@ const InterviewHistory = () => {
                         {hasResult || answeredQuestions > 0 ? (
                           <Link
                             to={`/interview/result/${interview._id}`}
-                            className="px-4 py-2.5 rounded-2xl bg-blue-600/10 hover:bg-blue-600 text-blue-600 dark:text-blue-400 hover:text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                            className="px-4 py-2.5 rounded-2xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 text-zinc-800 dark:text-zinc-100 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             <span>View Report</span>
@@ -790,7 +794,7 @@ const InterviewHistory = () => {
                         {interview.status === "in-progress" && (
                           <Link
                             to={`/interview?resume=${interview._id}`}
-                            className="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 active:scale-95"
+                            className="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
                           >
                             <Play className="w-4 h-4 fill-black" />
                             <span>Continue</span>

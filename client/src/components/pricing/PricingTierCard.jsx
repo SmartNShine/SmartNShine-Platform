@@ -204,7 +204,7 @@ export default function PricingTierCard({
             className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
               isActivePlan
                 ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
-                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
+                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-zinc-950 dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
             }`}
           >
             <span>
@@ -219,7 +219,7 @@ export default function PricingTierCard({
             className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
               isActivePlan
                 ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
-                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-[#1c1c1f] dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
+                : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 dark:bg-zinc-950 dark:hover:bg-[#28282c] dark:text-neutral-200 dark:border-neutral-700/60"
             }`}
           >
             <span>

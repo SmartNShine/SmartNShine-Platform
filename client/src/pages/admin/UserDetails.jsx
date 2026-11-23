@@ -325,10 +325,10 @@ const UserDetails = () => {
         tier: currentTier,
         plan: currentPlan,
         durationDays: defaults.durationDays,
-        amount: defaults.amount,
+        amount: 0,
         currency: "INR",
-        autoRenew: currentPlan === "monthly" || currentPlan === "yearly",
-        notes: "",
+        autoRenew: false,
+        notes: "Complimentary access granted by admin",
       },
       extend: {
         days: 30,
@@ -358,8 +358,8 @@ const UserDetails = () => {
       tier,
       plan: nextPlan,
       durationDays: defaults.durationDays,
-      amount: defaults.amount,
-      autoRenew: nextPlan === "monthly" || nextPlan === "yearly",
+      amount: 0,
+      autoRenew: false,
     }));
   };
 
@@ -369,8 +369,8 @@ const UserDetails = () => {
       ...current,
       plan,
       durationDays: defaults.durationDays,
-      amount: defaults.amount,
-      autoRenew: plan === "monthly" || plan === "yearly",
+      amount: 0,
+      autoRenew: false,
     }));
   };
 
@@ -1329,16 +1329,19 @@ const SubscriptionActionModal = ({
             </label>
 
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Amount
+              Amount (₹0 for Complimentary Admin Grant)
               <input
                 type="number"
                 min="0"
                 step="0.01"
-                value={form.amount ?? ""}
+                value={form.amount ?? 0}
                 onChange={(event) => onChange("amount", event.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-black dark:text-white"
                 required
               />
+              <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                Admin grants default to ₹0 and do not inflate earnings.
+              </span>
             </label>
 
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">

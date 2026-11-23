@@ -1,8 +1,18 @@
 import puppeteer from "puppeteer";
 import {existsSync} from "fs";
+import path from "path";
 
 const isRunningInDocker = () =>
   Boolean(process.env.RUNNING_IN_DOCKER) || existsSync("/.dockerenv");
+
+const ensurePuppeteerCacheDir = () => {
+  if (process.env.PUPPETEER_CACHE_DIR) return process.env.PUPPETEER_CACHE_DIR;
+
+  // Keep Chromium inside the app tree so Azure zip deploys include it.
+  const cacheDir = path.join(process.cwd(), ".cache", "puppeteer");
+  process.env.PUPPETEER_CACHE_DIR = cacheDir;
+  return cacheDir;
+};
 
 const normalizeClientBaseUrl = (baseUrl) => {
   const configuredUrl =
@@ -23,54 +33,135 @@ const normalizeClientBaseUrl = (baseUrl) => {
   return trimmedUrl;
 };
 
+const getRemoteBrowserEndpoint = () =>
+  process.env.BROWSER_WS_ENDPOINT ||
+  (process.env.BROWSERLESS_TOKEN
+    ? `wss://chrome.browserless.io?token=${process.env.BROWSERLESS_TOKEN}`
+    : null);
+
+const getSystemChromePath = () => {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+
+  if (
+    process.platform === "darwin" &&
+    existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+  ) {
+    return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  }
+
+  if (process.platform === "win32") {
+    return [
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    ].find((candidate) => existsSync(candidate));
+  }
+
+  if (process.platform === "linux") {
+    return [
+      "/usr/bin/google-chrome",
+      "/usr/bin/google-chrome-stable",
+      "/usr/bin/chromium",
+      "/usr/bin/chromium-browser",
+      "/snap/bin/chromium",
+    ].find((candidate) => existsSync(candidate));
+  }
+
+  return null;
+};
+
+const getProductionLaunchArgs = (extraArgs = []) => [
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+  "--font-render-hinting=none",
+  "--hide-scrollbars",
+  ...extraArgs,
+];
+
+const launchWithSparticuzChromium = async () => {
+  const {default: chromium} = await import("@sparticuz/chromium");
+  const executablePath = await chromium.executablePath();
+
+  console.info("[pdf-export] launching @sparticuz/chromium fallback");
+  return puppeteer.launch({
+    args: getProductionLaunchArgs(chromium.args || []),
+    defaultViewport: chromium.defaultViewport || {
+      width: 794,
+      height: 1123,
+      deviceScaleFactor: 1,
+    },
+    executablePath,
+    headless: chromium.headless ?? true,
+  });
+};
+
+const launchLocalBrowser = async () => {
+  ensurePuppeteerCacheDir();
+
+  const launchOptions = {
+    headless: true,
+    args: getProductionLaunchArgs(),
+  };
+
+  const systemChrome = getSystemChromePath();
+  if (systemChrome) {
+    launchOptions.executablePath = systemChrome;
+    console.info("[pdf-export] using system Chrome/Chromium:", systemChrome);
+    return puppeteer.launch(launchOptions);
+  }
+
+  // Prefer packaged Chromium for Azure/App Service Linux where system Chrome is absent.
+  if (process.platform === "linux") {
+    try {
+      return await launchWithSparticuzChromium();
+    } catch (error) {
+      console.warn(
+        "[pdf-export] @sparticuz/chromium unavailable, falling back to puppeteer chrome:",
+        error.message
+      );
+    }
+  }
+
+  console.info(
+    "[pdf-export] launching puppeteer bundled Chrome (cache:",
+    process.env.PUPPETEER_CACHE_DIR,
+    ")"
+  );
+  return puppeteer.launch(launchOptions);
+};
+
 export const renderResumePdf = async (token, baseUrl) => {
   let browser;
-  const wsEndpoint = process.env.BROWSER_WS_ENDPOINT || 
-    (process.env.BROWSERLESS_TOKEN ? `wss://chrome.browserless.io?token=${process.env.BROWSERLESS_TOKEN}` : null);
+  const wsEndpoint = getRemoteBrowserEndpoint();
 
-  if (wsEndpoint) {
-    console.info("[pdf-export] connecting to remote browser at", wsEndpoint.split("?")[0]);
-    browser = await puppeteer.connect({
-      browserWSEndpoint: wsEndpoint,
-    });
-  } else {
-    console.info("[pdf-export] launching local puppeteer browser");
-    const launchOptions = {
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    };
-
-    // Use environment-configured path first if set, otherwise try to auto-detect system browsers
-    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-      console.info("[pdf-export] using environment-defined PUPPETEER_EXECUTABLE_PATH:", launchOptions.executablePath);
-    } else if (process.platform === "darwin" && existsSync("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")) {
-      launchOptions.executablePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-      console.info("[pdf-export] using system Google Chrome on macOS");
-    } else if (process.platform === "win32") {
-      const winPaths = [
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
-      ];
-      const winPath = winPaths.find(p => existsSync(p));
-      if (winPath) {
-        launchOptions.executablePath = winPath;
-        console.info("[pdf-export] using system Google Chrome on Windows");
-      }
-    } else if (process.platform === "linux") {
-      const linuxPaths = [
-        "/usr/bin/google-chrome",
-        "/usr/bin/chromium",
-        "/usr/bin/chromium-browser"
-      ];
-      const linuxPath = linuxPaths.find(p => existsSync(p));
-      if (linuxPath) {
-        launchOptions.executablePath = linuxPath;
-        console.info("[pdf-export] using system Chrome/Chromium on Linux");
-      }
+  try {
+    if (wsEndpoint) {
+      console.info(
+        "[pdf-export] connecting to remote browser at",
+        wsEndpoint.split("?")[0]
+      );
+      browser = await puppeteer.connect({
+        browserWSEndpoint: wsEndpoint,
+      });
+    } else {
+      browser = await launchLocalBrowser();
     }
-
-    browser = await puppeteer.launch(launchOptions);
+  } catch (error) {
+    const hint =
+      "Resume PDF needs Chrome. On Azure, set BROWSERLESS_TOKEN / BROWSER_WS_ENDPOINT, or redeploy with Chromium packaged via @sparticuz/chromium / PUPPETEER_CACHE_DIR.";
+    console.error("[pdf-export] failed to start browser", {
+      message: error.message,
+      cacheDir: process.env.PUPPETEER_CACHE_DIR || null,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+      hasBrowserless: Boolean(process.env.BROWSERLESS_TOKEN),
+      hasBrowserWs: Boolean(process.env.BROWSER_WS_ENDPOINT),
+    });
+    const wrapped = new Error(`${hint} (${error.message})`);
+    wrapped.cause = error;
+    throw wrapped;
   }
 
   try {

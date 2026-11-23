@@ -23,6 +23,7 @@ export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, in
   const landmarkerRef = useRef(null);
   const detectorRef = useRef(null);
   const analysisCanvasRef = useRef(null);
+  const objectCanvasRef = useRef(null);
   const alertTimerRef = useRef(null);
   const lastLoggedRef = useRef({});
   const healthRef = useRef({ faceAt: 0, objectAt: 0 });
@@ -169,15 +170,27 @@ export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, in
         if (detectorRef.current && now - lastObjectAt >= 250) {
           lastObjectAt = now;
           try {
-            const results = detectorRef.current.detectForVideo(video, now);
+            // Fixed 640px analysis frame: keeps phones large enough to detect while
+            // CPU cost stays flat no matter how sharp the camera stream is.
+            if (!objectCanvasRef.current) objectCanvasRef.current = document.createElement("canvas");
+            const canvas = objectCanvasRef.current;
+            const scale = Math.min(1, 640 / (video.videoWidth || 640));
+            canvas.width = Math.round((video.videoWidth || 640) * scale);
+            canvas.height = Math.round((video.videoHeight || 480) * scale);
+            canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+            const results = detectorRef.current.detectForVideo(canvas, now);
             healthRef.current.objectAt = Date.now();
             let confidence = 0;
             for (const detection of results.detections || []) {
               for (const category of detection.categories || []) {
-                if (["cell phone", "phone", "mobile phone", "telephone"].includes(category.categoryName?.toLowerCase())) confidence = Math.max(confidence, category.score || 0);
+                const name = category.categoryName?.toLowerCase() || "";
+                const score = category.score || 0;
+                if (["cell phone", "phone", "mobile phone", "telephone"].includes(name)) confidence = Math.max(confidence, score);
+                // A phone held at an angle is often classified as a remote.
+                else if (name === "remote" && score >= 0.55) confidence = Math.max(confidence, score * 0.9);
               }
             }
-            observe("PHONE_DETECTED", { now, present: confidence >= 0.6, confidence, faceCount: healthRef.current.faceCount ?? null });
+            observe("PHONE_DETECTED", { now, present: confidence >= 0.45, confidence, faceCount: healthRef.current.faceCount ?? null });
             setIsPhoneInView(evidenceRef.current.isActive("PHONE_DETECTED"));
           } catch { /* The heartbeat reports persistent inference failure. */ }
         }
@@ -222,15 +235,10 @@ export function useProctoringEngine({ videoRef, sessionId, isInterviewActive, in
 
   useEffect(() => {
     if (!isInterviewActive) return;
-    const visibility = () => { if (document.hidden) void logViolation({ eventType: "TAB_SWITCH", details: "Candidate switched tabs or minimized the window" }); };
-    const blur = () => { void logViolation({ eventType: "WINDOW_BLUR", severity: "low", details: "Interview window lost focus" }); };
+    // Tab switches and focus loss are measured with durations in useEnvironmentGuard.
     const paste = (event) => { if (["TEXTAREA", "INPUT"].includes(event.target?.tagName)) void logViolation({ eventType: "PASTE_ATTEMPT", details: "External text pasted into the answer input" }); };
-    document.addEventListener("visibilitychange", visibility);
-    window.addEventListener("blur", blur);
     document.addEventListener("paste", paste);
     return () => {
-      document.removeEventListener("visibilitychange", visibility);
-      window.removeEventListener("blur", blur);
       document.removeEventListener("paste", paste);
       clearTimeout(alertTimerRef.current);
     };

@@ -44,7 +44,7 @@ const VARIANTS = {
   },
   surface: {
     face:
-      "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800",
+      "bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800",
     shadow: { light: "#a1a1aa", dark: "#52525b" },
     offsetX: -5,
     offsetY: 5,

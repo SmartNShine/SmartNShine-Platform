@@ -9,6 +9,7 @@ import {
   Calendar,
   FileText,
   Sparkles,
+  Lightbulb,
 } from "lucide-react";
 import { IntegrityTimeline } from "./proctoring/IntegrityTimeline";
 
@@ -245,6 +246,7 @@ export const ResultStep = ({
         <IntegrityTimeline
           proctoringAudit={result.proctoringAudit}
           videoRecordingUrl={result.videoRecordingUrl}
+          sessionId={result.sessionId?._id || result.sessionId}
         />
       )}
 
@@ -329,7 +331,7 @@ export const ResultStep = ({
                 key={idx}
                 className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs text-slate-700 dark:text-gray-300 flex items-start gap-2.5"
               >
-                <span className="text-indigo-600 dark:text-indigo-400 font-bold shrink-0">💡</span>
+                <Lightbulb className="mt-px h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                 <span>{tip}</span>
               </li>
             ))}

@@ -6,7 +6,7 @@
  */
 
 // Core API exports
-export {authAPI, resumeAPI, contactAPI, voiceAPI} from "./api";
+export {authAPI, resumeAPI, contactAPI} from "./api";
 
 // Admin API exports
 export {
@@ -50,13 +50,11 @@ export {
 // Subscription API exports
 export {
   getPricing,
-  comparePlans,
   createPaymentOrder,
   verifyPayment,
   getSubscriptionStatus,
   getSubscriptionHistory,
   cancelSubscription,
-  renewSubscription,
   getUsageStats,
   getAIConfig,
   updateAIPreference,

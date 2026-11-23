@@ -6,7 +6,9 @@ import {
   Sparkles,
 } from "lucide-react";
 
-// Sarvam AI & Local Voice Personas
+// Interviewer persona. Only Shubh is offered: the other Sarvam voices sounded
+// noticeably less natural in testing. Pre-recorded clips live in
+// public/audio/interview/shubh (see voiceClips.js).
 export const INTERVIEWER_VOICES = {
   shubh: {
     id: "shubh",
@@ -16,57 +18,6 @@ export const INTERVIEWER_VOICES = {
     provider: "sarvam",
     accent: "Indian / Global English",
     badge: "Default",
-    avatarImage: "/images/interviewer_shubh.jpg",
-  },
-  anushka: {
-    id: "anushka",
-    name: "Anushka",
-    gender: "female",
-    title: "Senior Technical Recruiter",
-    provider: "sarvam",
-    accent: "Indian / Global English",
-    badge: "Popular",
-    avatarImage: "/images/interviewer_anushka.jpg",
-  },
-  amartya: {
-    id: "amartya",
-    name: "Amartya",
-    gender: "male",
-    title: "Principal Solutions Architect",
-    provider: "sarvam",
-    accent: "Deep Professional",
-    badge: "Executive",
-    avatarImage: "/images/interviewer_shubh.jpg",
-  },
-  meera: {
-    id: "meera",
-    name: "Meera",
-    gender: "female",
-    title: "Director of Engineering",
-    provider: "sarvam",
-    accent: "Clear & Warm",
-    badge: "Leadership",
-    avatarImage: "/images/interviewer_anushka.jpg",
-  },
-  arvind: {
-    id: "arvind",
-    name: "Arvind",
-    gender: "male",
-    title: "Staff Systems Engineer",
-    provider: "sarvam",
-    accent: "Conversational Pace",
-    badge: "Dynamic",
-    avatarImage: "/images/interviewer_shubh.jpg",
-  },
-  rachel: {
-    id: "rachel",
-    name: "Rachel",
-    gender: "female",
-    title: "Technical Assessor",
-    provider: "sarvam",
-    accent: "Global English",
-    badge: "Specialist",
-    avatarImage: "/images/interviewer_rachel.jpg",
   },
 };
 
@@ -117,3 +68,30 @@ export const CONVERSATION_PHASES = {
   WRAP_UP: "wrap_up",
   COMPLETED: "completed",
 };
+
+// Live-interview pacing. Mirrors server/services/interview-difficulty.service.js;
+// the server sends answerTimeLimitSec per question, these are the fallbacks.
+export const THINK_TIME_SEC = 10;
+export const INTRO_ANSWER_TIME_SEC = 90;
+export const ANSWER_WARNING_SEC = 30;
+const ANSWER_TIME_BY_DIFFICULTY = { easy: 120, medium: 150, hard: 180 };
+
+export function getAnswerTimeLimitSec(question) {
+  if (Number(question?.answerTimeLimitSec) > 0) return Number(question.answerTimeLimitSec);
+  const level = Number(question?.cognitiveLevel);
+  const type = question?.type || question?.questionType;
+  if (question?.isFollowUp || type === "follow-up") return level >= 4 ? 150 : 120;
+  if (type === "behavioral" || type === "resume-based") return level >= 4 ? 180 : 150;
+  if (type === "situational") return 120;
+  if (level >= 4) return ANSWER_TIME_BY_DIFFICULTY.hard;
+  if (level === 3) return ANSWER_TIME_BY_DIFFICULTY.medium;
+  if (level === 1 || level === 2) return ANSWER_TIME_BY_DIFFICULTY.easy;
+  return ANSWER_TIME_BY_DIFFICULTY[question?.difficulty] || ANSWER_TIME_BY_DIFFICULTY.medium;
+}
+
+export function estimateQuestionCount(minutes, mode = "live") {
+  if (mode === "text") return Math.max(3, Math.min(15, Math.floor(minutes * 0.8)));
+  const introSec = 30 + THINK_TIME_SEC + INTRO_ANSWER_TIME_SEC;
+  const perQuestionSec = THINK_TIME_SEC + 120 + 20;
+  return Math.max(2, Math.min(15, Math.floor((minutes * 60 - introSec) / perQuestionSec)));
+}
