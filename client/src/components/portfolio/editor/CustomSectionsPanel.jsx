@@ -44,7 +44,7 @@ const normalizeItem = (item, index = 0) => {
     link: item.link || item.url || "",
     description: item.description || "",
     bullets: Array.isArray(item.bullets)
-      ? item.bullets.map((b) => (typeof b === "string" ? b : b?.text || "")).filter(Boolean)
+      ? item.bullets.map((b) => (typeof b === "string" ? b : b?.text || ""))
       : [],
     image: item.image || item.imageUrl || item.thumbnail || "",
   };
@@ -266,10 +266,9 @@ export default function CustomSectionsPanel({
                             value={(item.bullets || []).join("\n")}
                             onChange={(e) =>
                               updateItem(sectionIndex, itemIndex, {
-                                bullets: e.target.value
-                                  .split("\n")
-                                  .map((line) => line.trim())
-                                  .filter(Boolean),
+                                // Preserve spaces and blank lines while typing. The
+                                // server normalizes these lines when saving.
+                                bullets: e.target.value.split("\n"),
                               })
                             }
                             rows={3}

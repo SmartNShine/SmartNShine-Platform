@@ -32,14 +32,13 @@ export function exitInterviewFullscreen() {
  * camera/mic permission has been granted.
  * @returns {Promise<{ virtualDevices: string[], extendedDisplay: boolean|null, fullscreenSupported: boolean }>}
  */
-export async function checkInterviewEnvironment() {
-  let virtualDevices = [];
-  try {
-    const devices = await navigator.mediaDevices?.enumerateDevices?.() || [];
-    virtualDevices = devices
-      .filter((device) => ["videoinput", "audioinput"].includes(device.kind) && isVirtualDeviceLabel(device.label))
-      .map((device) => device.label);
-  } catch { /* Permission not granted yet: nothing to inspect. */ }
+export async function checkInterviewEnvironment({ cameraStream, micStream } = {}) {
+  const virtualDevices = [
+    ...(cameraStream?.getVideoTracks?.() || []),
+    ...(micStream?.getAudioTracks?.() || []),
+  ]
+    .filter((track) => track.readyState === "live" && isVirtualDeviceLabel(track.label))
+    .map((track) => track.label);
   return {
     virtualDevices: [...new Set(virtualDevices)],
     // Chromium only; other browsers report null (unknown), never "fine".

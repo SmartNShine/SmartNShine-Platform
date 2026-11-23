@@ -100,6 +100,8 @@ export const MonitoringCheckStep = ({
   onBack,
   onBegin,
   cameraVideoRef,
+  cameraStream,
+  getMicStream,
   isCameraActive = false,
   cameraError = null,
   isCameraInitializing = false,
@@ -133,7 +135,7 @@ export const MonitoringCheckStep = ({
   // System check: re-run when devices change or the camera starts.
   useEffect(() => {
     let cancelled = false;
-    const run = () => checkInterviewEnvironment().then((result) => { if (!cancelled) setEnvironment(result); });
+    const run = () => checkInterviewEnvironment({ cameraStream, micStream: getMicStream?.() }).then((result) => { if (!cancelled) setEnvironment(result); });
     run();
     const timer = setInterval(run, 5000);
     navigator.mediaDevices?.addEventListener?.("devicechange", run);
@@ -142,7 +144,7 @@ export const MonitoringCheckStep = ({
       clearInterval(timer);
       navigator.mediaDevices?.removeEventListener?.("devicechange", run);
     };
-  }, [isCameraActive]);
+  }, [isCameraActive, cameraStream, getMicStream, selectedDeviceId, selectedAudioDeviceId]);
 
   // state: ok | warn (start allowed) | block (start disabled) | pending
   const checks = [

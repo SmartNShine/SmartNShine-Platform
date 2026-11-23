@@ -541,7 +541,7 @@ export const completeSession = async (req, res) => {
     // Create result document
     // Event requests may have arrived while answers/report generation were running.
     const auditSession = await InterviewSession.findById(sessionId)
-      .select("proctoringSummary proctoringEvents").lean();
+      .select("proctoringSummary proctoringEvents screenShare proctoringLevel").lean();
     const result = new InterviewResult({
       userId,
       sessionId: session._id,

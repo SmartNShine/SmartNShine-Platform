@@ -15,6 +15,7 @@ import { ANSWER_WARNING_SEC, THINK_TIME_SEC } from "../constants";
  */
 export function useInterviewTurnFlow({
   enabled,
+  frozen = false,
   interviewPhase,
   turnKey,
   answerLimitSec,
@@ -41,7 +42,7 @@ export function useInterviewTurnFlow({
   // Latest callbacks/limit, read from timers and async continuations.
   const latest = useRef({});
   useLayoutEffect(() => {
-    latest.current = { answerLimitSec, startRecording, submitRecording, cancelRecording, prepareMic, onAnswerEnd };
+    latest.current = { frozen, answerLimitSec, startRecording, submitRecording, cancelRecording, prepareMic, onAnswerEnd };
   });
 
   const setStage = useCallback((next) => {
@@ -53,9 +54,10 @@ export function useInterviewTurnFlow({
   }, [answerWindowOpenRef]);
 
   const startCountdown = useCallback((seconds) => {
-    deadlineRef.current = Date.now() + seconds * 1000;
-    pausedRemainingMsRef.current = null;
-    setIsPaused(false);
+    const paused = latest.current.frozen;
+    deadlineRef.current = paused ? 0 : Date.now() + seconds * 1000;
+    pausedRemainingMsRef.current = paused ? seconds * 1000 : null;
+    setIsPaused(paused);
     setRemainingSec(seconds);
   }, []);
 
@@ -69,6 +71,7 @@ export function useInterviewTurnFlow({
   }, [setStage]);
 
   const beginAnswer = useCallback(async () => {
+    if (latest.current.frozen) return;
     const stageNow = stageRef.current;
     if (stageNow !== "thinking" && stageNow !== "mic-error" && stageNow !== "retry") return;
     const runId = ++runIdRef.current;
@@ -146,6 +149,7 @@ export function useInterviewTurnFlow({
   useEffect(() => {
     if ((stage !== "thinking" && stage !== "answering") || isPaused) return;
     const tick = () => {
+      if (latest.current.frozen) return;
       const msLeft = deadlineRef.current - Date.now();
       setRemainingSec(Math.max(0, Math.ceil(msLeft / 1000)));
       if (msLeft > 0) return;
@@ -157,19 +161,22 @@ export function useInterviewTurnFlow({
     return () => clearInterval(interval);
   }, [stage, isPaused, beginAnswer, finishAnswer]);
 
-  // Freeze the countdown while a blocking dialog (skip confirm) is open.
-  const pause = useCallback(() => {
-    if (pausedRemainingMsRef.current !== null || !deadlineRef.current) return;
-    pausedRemainingMsRef.current = Math.max(0, deadlineRef.current - Date.now());
-    setIsPaused(true);
-  }, []);
-
-  const resume = useCallback(() => {
-    if (pausedRemainingMsRef.current === null) return;
-    deadlineRef.current = Date.now() + pausedRemainingMsRef.current;
-    pausedRemainingMsRef.current = null;
-    setIsPaused(false);
-  }, []);
+  // Keep the pause state even when a dialog opens before a countdown exists.
+  useLayoutEffect(() => {
+    if (frozen) {
+      if (pausedRemainingMsRef.current === null && deadlineRef.current) {
+        pausedRemainingMsRef.current = Math.max(0, deadlineRef.current - Date.now());
+        deadlineRef.current = 0;
+      }
+      setIsPaused(true);
+    } else {
+      if (pausedRemainingMsRef.current !== null) {
+        deadlineRef.current = Date.now() + pausedRemainingMsRef.current;
+        pausedRemainingMsRef.current = null;
+      }
+      setIsPaused(false);
+    }
+  }, [frozen]);
 
   const recordRepeat = useCallback(() => {
     const used = (repeatsByTurnRef.current.get(turnKey) || 0) + 1;
@@ -197,8 +204,6 @@ export function useInterviewTurnFlow({
     finishNow: () => finishAnswer("done"),
     retryMic: beginAnswer,
     submitDraft,
-    pause,
-    resume,
     recordRepeat,
     reset,
   };

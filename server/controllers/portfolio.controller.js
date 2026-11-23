@@ -820,6 +820,11 @@ export const updatePortfolio = async (req, res) => {
       }
     }
 
+    // Keep saved custom-section assets intact until the database write succeeds.
+    const previousCustomImages = (portfolio.customSections || [])
+      .flatMap((section) => (section.items || []).map((item) => item?.image))
+      .filter(Boolean);
+
     const scalarUpdates = {
       title,
       tagline,
@@ -902,6 +907,15 @@ export const updatePortfolio = async (req, res) => {
     }
 
     await portfolio.save();
+
+    const retainedImages = JSON.stringify(portfolio.toObject());
+    for (const url of new Set(previousCustomImages)) {
+      if (url.includes("cloudinary.com") && !retainedImages.includes(JSON.stringify(url))) {
+        cloudinaryService.deleteImage(url).catch((err) =>
+          console.warn("Could not delete old custom-section image:", err.message)
+        );
+      }
+    }
 
     res.json({
       message: "Portfolio updated successfully",
@@ -1049,6 +1063,8 @@ export const updatePortfolioProject = async (req, res) => {
       "visible",
     ];
 
+    const previousImageUrls = (project.images || []).map((image) => image.url).filter(Boolean);
+
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         project[field] = req.body[field];
@@ -1056,6 +1072,15 @@ export const updatePortfolioProject = async (req, res) => {
     });
 
     await project.save();
+
+    const retainedImages = JSON.stringify(project.toObject());
+    for (const url of new Set(previousImageUrls)) {
+      if (url.includes("cloudinary.com") && !retainedImages.includes(JSON.stringify(url))) {
+        cloudinaryService.deleteImage(url).catch((err) =>
+          console.warn("Could not delete old project image:", err.message)
+        );
+      }
+    }
 
     res.json({
       message: "Portfolio project updated successfully",

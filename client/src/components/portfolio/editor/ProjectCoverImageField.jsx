@@ -34,7 +34,7 @@ export default function ProjectCoverImageField({
     setUploading(true);
     const toastId = toast.loading("Uploading project image...");
     try {
-      const res = await portfolioAPI.uploadImage(file, coverUrl || null);
+      const res = await portfolioAPI.uploadImage(file);
       if (!res.data?.url) {
         throw new Error("No upload URL returned");
       }
@@ -70,9 +70,7 @@ export default function ProjectCoverImageField({
     }
     commitImages(next);
 
-    if (oldUrl && oldUrl.includes("cloudinary.com")) {
-      portfolioAPI.deleteImage(oldUrl).catch(() => {});
-    }
+    // Saved assets are cleaned up by the server only after persistence.
     toast.success("Project image removed");
   };
 

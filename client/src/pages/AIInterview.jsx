@@ -144,33 +144,6 @@ const AIInterview = () => {
     isMutedRef,
   });
 
-  // 3b. Automatic spoken turn: think time → auto-record → timed answer → auto-submit
-  const isWarmUpTurn = session.conversationPhase === CONVERSATION_PHASES.WARM_UP;
-  const turnFlow = useInterviewTurnFlow({
-    enabled: session.step === "interview" && session.selectedMode !== "text",
-    interviewPhase: session.interviewPhase,
-    turnKey: isWarmUpTurn ? "intro" : `q${session.currentQuestion?.number ?? 0}`,
-    answerLimitSec: isWarmUpTurn
-      ? INTRO_ANSWER_TIME_SEC
-      : getAnswerTimeLimitSec(session.currentQuestion),
-    isRecording: recording.isRecording,
-    hasRecordingDraft: recording.hasRecordingDraft,
-    startRecording: recording.startRecording,
-    submitRecording: recording.submitRecording,
-    cancelRecording: recording.cancelRecording,
-    prepareMic: recording.startMicPreview,
-    // Fill the processing gap like a real interviewer: a natural beat before
-    // the acknowledgment (never an instant reply, and the closing mic can't
-    // pick it up). Cancelled automatically if the next question is already ready.
-    onAnswerEnd: (reason) => {
-      speech.playFiller(reason === "timeout" ? "times_up" : "ack", {
-        delayMs: reason === "timeout" ? 450 : 700 + Math.round(Math.random() * 400),
-      });
-    },
-    answerWindowOpenRef,
-  });
-
-
   const handleSkip = () => setIsSkipDialogOpen(true);
 
   const handleConfirmSkip = async () => {
@@ -231,10 +204,32 @@ const AIInterview = () => {
 
   // Freeze the turn countdown while a dialog is open, fullscreen was left or the share stopped.
   const isTimerFrozen = isExitModalOpen || isSkipDialogOpen || environment.fullscreenLost || screenShare.shareLost;
-  useEffect(() => {
-    if (isTimerFrozen) turnFlow.pause();
-    else turnFlow.resume();
-  }, [isTimerFrozen]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 9. Automatic spoken turn: think time → auto-record → timed answer → auto-submit
+  const isWarmUpTurn = session.conversationPhase === CONVERSATION_PHASES.WARM_UP;
+  const turnFlow = useInterviewTurnFlow({
+    frozen: isTimerFrozen,
+    enabled: session.step === "interview" && session.selectedMode !== "text",
+    interviewPhase: session.interviewPhase,
+    turnKey: isWarmUpTurn ? "intro" : `q${session.currentQuestion?.number ?? 0}`,
+    answerLimitSec: isWarmUpTurn
+      ? INTRO_ANSWER_TIME_SEC
+      : getAnswerTimeLimitSec(session.currentQuestion),
+    isRecording: recording.isRecording,
+    hasRecordingDraft: recording.hasRecordingDraft,
+    startRecording: recording.startRecording,
+    submitRecording: recording.submitRecording,
+    cancelRecording: recording.cancelRecording,
+    prepareMic: recording.startMicPreview,
+    // Fill the processing gap like a real interviewer: a natural beat before
+    // the acknowledgment (never an instant reply, and the closing mic can't
+    // pick it up). Cancelled automatically if the next question is already ready.
+    onAnswerEnd: (reason) => {
+      speech.playFiller(reason === "timeout" ? "times_up" : "ack", {
+        delayMs: reason === "timeout" ? 450 : 700 + Math.round(Math.random() * 400),
+      });
+    },
+    answerWindowOpenRef,
+  });
 
   useEffect(() => {
     if (session.step !== "setup") setIsMonitoringCheckOpen(false);
@@ -497,6 +492,8 @@ const AIInterview = () => {
             setIsMonitoringCheckOpen(false);
           }}
           onBegin={handleStart}
+          cameraStream={camera.stream}
+          getMicStream={recording.getMicStream}
           cameraVideoRef={camera.attachVideoRef}
           isCameraActive={camera.isCameraActive}
           cameraError={camera.cameraError}
