@@ -1,6 +1,6 @@
 # AI Interview Upgrade Plan
 
-Status: in progress (Phases 1, 2, 4 core done) · Created 2026-11-23 · Owner: @atharva038
+Status: in progress (Phases 1, 2, 2b, 3 core, 4 core done) · Created 2026-11-23 · Owner: @atharva038
 
 Goal: make the live interview feel like a real video call that runs itself —
 the interviewer asks, the candidate gets thinking time, the mic opens on its own,
@@ -67,11 +67,127 @@ SPEAKING (TTS) ──► THINKING (10 s) ──► ANSWERING (2–3 min, mic aut
 - [ ] Mic failures mid-answer (device unplugged / permission revoked): pause the answer timer, show a blocking banner with device picker, resume.
 - [ ] Tab hidden during ANSWERING: keep recording, log a proctoring event (already have the event endpoint).
 
+## Phase 2b — Conversational interviewer (adaptive turns)
+
+**Outcome:** the interviewer reacts to what the candidate actually said and decides the next
+question from the answer — like a real interviewer — instead of reading a pre-generated list.
+
+Problem found: the next question was generated *before* the candidate answered
+(`prepareNextInterviewQuestion` → `preparedQuestion`), and evaluation only ran in the background.
+So nothing adapted to the answer, and the self-introduction was never sent to the server.
+
+### Turn algorithm
+
+```
+answer submitted
+  ├─ client: instantly play a pre-recorded acknowledgment ("Okay, thank you…")   ← hides latency
+  ├─ server: STT (voice) → planNextTurn() — one fast LLM call (JSON):
+  │     decision   FOLLOW_UP | ADVANCE
+  │     kind       PROBE_DEEP (vague / buzzwords → ask for specifics they mentioned)
+  │                CHALLENGE  (strong answer → edge case, scale, failure mode)
+  │                STEP_DOWN  (wrong / confused → check the fundamental underneath)
+  │                CLARIFY    (contradiction or unclear claim)
+  │     reaction   ≤ 18 words, neutral, references their words, never grades
+  │     question   ≤ 45 words, spoken style, one question only
+  ├─ guards enforced in code (not trusted to the LLM):
+  │     • max 2 consecutive follow-ups on one thread, then ADVANCE
+  │     • skipped answer → ADVANCE (no LLM call)
+  │     • ADVANCE targets the next uncovered syllabus topic + cognitive level
+  │     • timeout / bad JSON → syllabus fallback question, no reaction
+  ├─ background: full 5-dimension scoring (unchanged, does not block the turn)
+  └─ client: speak reaction, then question (two TTS calls fetched in parallel)
+```
+
+- [x] `server/services/interview-conversation.service.js` — `planNextTurn()` + `planOpeningQuestion()`.
+- [x] Fast model for the live turn (`INTERVIEW_TURN_MODEL`, default `gpt-4o-mini`), 8 s timeout, no retries.
+- [x] `saveInterviewTurn` uses the adaptive next question; stores `turnDecision` on the answered
+      question and `acknowledgmentBridge`, `isFollowUp`, `parentQuestionNumber` on the next one.
+- [x] Background `preparedQuestion` generation disabled when adaptive turns are on (saves a GPT-4o call per turn).
+- [x] Self-introduction is sent to the server (`POST /sessions/:id/introduction`); Q1 is re-planned
+      from the intro + resume and opens with a reaction to it. Intro is kept as context for later turns.
+- [x] Next-question payload carries `leadIn` + `isFollowUp`; follow-ups shown with a "Follow-up" tag.
+- [ ] Tune prompts after 10–20 real sessions (follow-up rate target: ~30–40% of turns).
+- [ ] Phase 5 (long-answer STT) directly cuts turn latency — do next.
+
+### Voice: Shubh only
+- [x] Only the Shubh persona is offered (others sounded poor). Server normalizes `personaUsed` to `shubh`.
+
+## Phase 2c — Interview-type blueprints (all 5 formats)
+
+**Problem found (audit 2026-11-23):** `generateInterviewSyllabus` ignored the selected format.
+Phases 1–4 were always technical and unconditional; behavioral questions only filled "leftover"
+slots — which never exist now that question count follows duration (3–5 Qs). So a **Behavioral
+interview asked only technical questions**. Also:
+- Q1 was generated with the plan's type, not the session's → JD/resume context dropped from Q1.
+- Resume-based: only Q1 used the resume. JD-based: topics never came from the JD.
+- Mixed: no real alternation. Syllabus could be longer than `totalQuestions`.
+- Scoring (`processInterviewTurn`) and the final report used technical rubrics for every answer.
+
+### Blueprint per format (length = `totalQuestions`, which follows the selected time)
+
+| Format | Question plan | Never asks |
+|---|---|---|
+| **Technical** | Role ontology topics; cognitive level ramps from seniority min → max across the interview (fundamentals → trade-offs → design → failure modes) | Behavioral / "tell me about a time" |
+| **Behavioral** | Competency bank ordered by seniority (fresher: teamwork, learning, ownership… · senior/lead: leadership, influence, conflict…). STAR "tell me about a time" + situational "what would you do"; freshers may use college/internship examples | Technical, coding, system design |
+| **Resume-based** | Anchored to the resume: flagship project → technical decisions → skill-depth check → hardest problem → measurable impact → collaboration → "what would you change" | Generic textbook questions unrelated to the resume |
+| **Job description** | Requirements extracted from the JD, ramped in difficulty; one team/culture-fit question (≥ 4 Qs) and a role scenario | Topics absent from the JD (falls back to role topics only if nothing extractable) |
+| **Mixed** | ~60% technical / ~40% behavioral, interleaved T, B, T, T, B… (behavioral guaranteed by Q2); resume project first when a resume is attached | — |
+
+### Checklist
+- [x] Rewrite `generateInterviewSyllabus` as per-format builders; exact length = `totalQuestions`.
+- [x] `extractJobRequirements(jd)` — requirement lines + soft-skill lines from the JD.
+- [x] Q1 (`startSession`) and fallback generation use the session format's prompt context (JD/resume kept) + topic objective.
+- [x] `buildQuestionPrompt`: `situational` case, objective line, fresher-friendly behavioral wording.
+- [x] Adaptive planner: hard format rule per interview type; behavioral follow-ups probe STAR gaps
+      (own action, result, what you'd change) instead of technical depth; follow-ups keep the parent's type.
+- [x] Follow-up budget scales with interview length (≤ 5 Qs: 1 follow-up in a row, ~35% of turns max)
+      so short interviews still cover their key topics.
+- [x] Next-topic selection by unopened category for both adaptive and fallback paths.
+- [x] Answer time by type: technical 2:00–3:00 by level · behavioral 2:30 (3:00 senior+) · situational 2:00 ·
+      resume 2:30 · follow-up 2:00.
+- [x] Type-aware scoring rubric (behavioral/situational → STAR, ownership, judgment; resume → ownership & credibility).
+- [x] Type-aware final report interpretation (behavioral reports don't penalize "technical depth").
+- [x] Tests: each format's blueprint at 3/5/7/11 questions; behavioral contains zero technical items.
+
+### Implementation notes (2026-11-23)
+- Topic tracking is positional: the Nth main question consumes the Nth planned topic; follow-ups don't
+  consume topics (fixes topics being skipped, and repeats for sessions whose Q1 stored the model's own label).
+- Q1 and fallback questions store the *plan's* category/type, not the model's labels.
+- Follow-ups keep their parent's `questionType` (behavioral follow-ups stay behavioral for timing, scoring, rules).
+- Live check (gpt-4o-mini / gpt-4o): behavioral Q1 = teamwork STAR question with college/internship framing;
+  JD Q1 = Node/Express from the JD; resume Q1 names the candidate's project. Behavioral follow-ups probe
+  personal role and impact, never technology.
+- Tests: `server/tests/interview-blueprint.test.js` (11) — all formats × 5 durations × 5 levels.
+- [ ] Watch: JD requirement extraction is heuristic (bullets / sentences with requirement verbs). JDs written as
+      one paragraph without those verbs fall back to role topics. Consider an LLM extraction at session create.
+
+## Phase 2d — Studio polish round (2026-11-23, from live test)
+
+- [x] No question numbers, category pills, "Follow-up" tag or AI lead-in text on screen — the candidate sees only the question.
+- [x] Header stepper `Intro · 1 · 2 · … · N`, advances only on a new *main* question (follow-ups stay on the same step;
+      the step total shrinks by one per follow-up since it uses a planned slot). Compresses to `1 2 … n` for long interviews.
+- [x] Human pacing: acknowledgment waits 0.7–1.1 s after "I'm done" (0.45 s on timeout), 0.45 s breath before the reaction,
+      0.28 s between reaction and question; a pending acknowledgment is dropped if the next question is already ready.
+- [x] Warmer voice: Sarvam `pace 0.95`, `temperature 0.72` (env `SARVAM_TTS_PACE` / `SARVAM_TTS_TEMPERATURE`);
+      acknowledgments rewritten with natural pauses ("Mm-hmm… okay. Thank you for that.") and re-recorded.
+- [x] New button system (white primary, quiet secondaries, no flat green), custom duotone icon set (`StudioIcons.jsx`),
+      micro-interactions on hover/press, reduced-motion respected.
+- [x] `TurnTimer`: watch-bezel with 60 burning ticks, smooth deadline-driven arc with glowing head, rolling digits;
+      amber think → teal/sky answer → amber last 30 s → pulsing rose last 10 s; shows "Paused" in dialogs.
+- [x] `StudioDialog` for End interview and Skip (skip used to be `window.confirm`); safe action focused by default,
+      Esc/backdrop cancel, timer paused while open.
+- [x] Phone detection restored: commit 542a65b had raised the bar to ≥ 0.6 on 70 % of frames for 2 s, which
+      EfficientDet-Lite0 rarely reaches for a hand-held phone. Now ≥ 0.45 for ~1 s (50 % of frames), "remote"
+      class counted at ≥ 0.55, detection runs on a fixed 640 px frame.
+- [x] Camera requests 1080p @ 30 fps (was 720p). Proctoring analyses fixed small frames and the recorder bitrate is
+      capped at 450 kbps, so CPU and upload size don't grow.
+- [ ] Verify phone detection false-positive rate across lighting / backgrounds before tightening or loosening further.
+
 ## Phase 3 — Pre-recorded voice clips (save Sarvam credits)
 
 **Outcome:** every fixed phrase plays from a static file; Sarvam is only called for the actual question text.
 
-- [ ] Write a clip script `client/src/components/interview/voiceClips.js` — one source of truth for clip IDs + text:
+- [x] Write a clip script `client/src/components/interview/voiceClips.js` — one source of truth for clip IDs + text:
   - `greeting_1..3` — role-agnostic ("Hi, welcome! Thanks for joining today…")
   - `intro_prompt` — "To start, could you briefly introduce yourself?"
   - `think_prompt` — "Take a moment to think. Your timer will start shortly."
@@ -83,12 +199,12 @@ SPEAKING (TTS) ──► THINKING (10 s) ──► ANSWERING (2–3 min, mic aut
   - `skip_ack` — "No problem, let's move on."
   - `closing_1..2` — "That's the end of our interview… your report is being prepared."
   - `voice_test_sample` — for the setup-screen **Test Voice** button
-- [ ] Server script `server/scripts/generateInterviewClips.js`: for each persona × clip, call `sarvamService.textToSpeech`, transcode WAV → Opus/MP3 (ffmpeg, ~10× smaller), write `client/public/audio/interview/{persona}/{clipId}.mp3` + `manifest.json`. Idempotent: skip existing files unless `--force`. One-time cost ≈ 6 personas × ~25 clips.
-- [ ] Note: the 6 UI personas map to Sarvam speakers via `speakerAliases` (`sarvam.service.js`) — generate per *Sarvam speaker*, not per UI name, to avoid duplicates.
-- [ ] Client `playClip(persona, clipId)` in `useInterviewSpeech`: static file → fallback to Sarvam TTS → fallback to Web Speech. Preload the persona's clips when the interview starts.
+- [x] Server script `server/scripts/generateInterviewClips.js`: for each persona × clip, call `sarvamService.textToSpeech`, transcode WAV → Opus/MP3 (ffmpeg, ~10× smaller), write `client/public/audio/interview/{persona}/{clipId}.mp3` + `manifest.json`. Idempotent: skip existing files unless `--force`. One-time cost ≈ 6 personas × ~25 clips.
+- [x] ~~Note: the 6 UI personas map~~ (moot — Shubh only). Note: the 6 UI personas map to Sarvam speakers via `speakerAliases` (`sarvam.service.js`) — generate per *Sarvam speaker*, not per UI name, to avoid duplicates.
+- [x] Client `playClip(persona, clipId)` in `useInterviewSpeech`: static file → fallback to Sarvam TTS → fallback to Web Speech. Preload the persona's clips when the interview starts.
 - [ ] Sequence before each question: `transition_k` clip (free) + Sarvam TTS of the question only.
-- [ ] Cache question audio blobs client-side per question number (for Repeat) — never re-synthesize the same text.
-- [ ] Replace **Test Voice** on setup with the pre-recorded sample.
+- [x] Cache question audio blobs client-side per question number (for Repeat) — never re-synthesize the same text.
+- [x] Replace **Test Voice** on setup with the pre-recorded sample.
 - [ ] Optionally serve clips from a CDN/Azure Blob later; static `public/` is fine for v1.
 - [ ] Track TTS chars per session in `AIUsage` (before/after numbers to prove savings).
 
@@ -139,7 +255,22 @@ SPEAKING (TTS) ──► THINKING (10 s) ──► ANSWERING (2–3 min, mic aut
 - `answerTimeLimitSec` is derived (`getAnswerTimeLimitSec` in `interview-difficulty.service.js`), not stored — no migration. Client mirrors it in `constants.js` as a fallback.
 - Question count: `estimateQuestionCount` → 10 min ≈ 3 Qs, 15 ≈ 5, 20 ≈ 7, 30 ≈ 11. `InterviewSession.totalQuestions` min lowered 5 → 2.
 - Turn engine: `client/src/components/interview/hooks/useInterviewTurnFlow.js`. Stages `idle → thinking → starting → answering → submitting`, plus `retry` (upload failed / empty audio) and `mic-error`.
-- Not done yet from Phases 1–2: 30 s warning *audio* cue (visual only for now), silence detection, mic-loss pause, tab-hidden event, text-mode per-question timer, repeat replaying cached audio (Phase 3).
+- Not done yet from Phases 1–2: 30 s warning *audio* cue (visual only — a spoken cue would be captured by the mic), silence detection, tab-hidden event, text-mode per-question timer.
+- Turn countdown now pauses while the "End interview?" dialog is open.
+
+## Implementation notes (2026-11-23, round 2)
+
+- Adaptive turns live-tested on `gpt-4o-mini`: 1.1–1.8 s per decision. Vague answer → probe on their own words;
+  wrong answer ("an API is a database") → step down to fundamentals; solid answer → deeper probe.
+- Env flags: `INTERVIEW_ADAPTIVE_TURNS=false` restores the old pre-generated flow; `INTERVIEW_TURN_MODEL`
+  (default `gpt-4o-mini`); `INTERVIEW_TURN_TIMEOUT_MS` (default 8000).
+- Fallback when the planner fails is the generic syllabus template question (background GPT-4o pre-generation
+  is off in adaptive mode). Watch logs for `Interview turn planning failed`.
+- Clips: 14 Shubh lines recorded (868 Sarvam characters, 408 KB) in `client/public/audio/interview/shubh/`.
+  Regenerate after editing `voiceClips.js`: `cd server && npm run interview:clips`.
+- Sound design per turn: answer ends → "Okay, thank you." / "Okay, that's time." (timeout) / "No problem,
+  let's move on." (skip) → AI reaction → question. The next question waits (≤ 3 s) for the filler to finish.
+- New tests: `server/tests/interview-conversation.test.js` (8), included in `npm run test:interview`.
 
 ## Open decisions
 

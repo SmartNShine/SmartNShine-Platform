@@ -15,10 +15,43 @@ import { EVENT_WEIGHTS, normalizeProctoringEvent } from "../services/proctoring-
 import { appendProctoringEvent, checkOfflineProctoring } from "../services/proctoring.service.js";
 
 import {
-  finishPendingEvaluations, prepareNextInterviewQuestion, saveInterviewTurn,
+  buildGenerationConfig, finishPendingEvaluations, getQuestionPlan, prepareNextInterviewQuestion, saveInterviewTurn,
   scheduleInterviewWork, validateInterviewTurn,
 } from "../services/interview-progression.service.js";
 import { estimateQuestionCount, getAnswerTimeLimitSec } from "../services/interview-difficulty.service.js";
+import { isAdaptiveTurnsEnabled, planOpeningQuestion } from "../services/interview-conversation.service.js";
+import { createTurnToken, timingAnomalyFor, verifyTurnToken } from "../services/interview-integrity.service.js";
+import { normalizeProctoringLevel } from "../services/proctoring-events.js";
+import {
+  getLastFrameAt, markFrameAccepted, resolveScreenSharePolicy, screenFramePath, validateScreenFrame, writeScreenFrame,
+} from "../services/screen-share.service.js";
+import User from "../models/User.model.js";
+
+// v2 adds the screen-capture line (security plan S1.5).
+const PROCTORING_CONSENT_VERSION = "2026-11-23.2";
+
+// Screen sharing is mandatory only for TPO-assigned assessments (not linked to sessions yet).
+const isScreenShareRequired = () => false;
+
+// Only the Shubh voice is offered; older clients may still send other persona ids.
+const SUPPORTED_PERSONAS = new Set(["shubh"]);
+
+function toQuestionPayload(question, sessionId) {
+  return {
+    turnToken: sessionId ? createTurnToken(sessionId, question.questionNumber) : undefined,
+    number: question.questionNumber,
+    text: question.questionText,
+    type: question.questionType,
+    category: question.category,
+    cognitiveLevel: question.cognitiveLevel,
+    cognitiveMeta: question.cognitiveMeta,
+    difficulty: question.difficulty,
+    answerTimeLimitSec: getAnswerTimeLimitSec(question),
+    isFollowUp: Boolean(question.isFollowUp),
+    leadIn: question.acknowledgmentBridge || "",
+    audio: null,
+  };
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -112,6 +145,9 @@ export const createSession = async (req, res) => {
       voiceEngineUsed = "sarvam",
       personaUsed = "shubh",
       interviewLanguage = "unknown",
+      proctoringLevel,
+      proctoringConsent,
+      screenShare: screenShareInput,
     } = req.body;
 
     // Validate required fields
@@ -120,6 +156,22 @@ export const createSession = async (req, res) => {
         success: false,
         error: "Interview type and role are required",
       });
+    }
+
+    if (normalizeProctoringLevel(proctoringLevel) === "proctored" && !proctoringConsent?.accepted) {
+      return res.status(400).json({
+        success: false,
+        error: "Proctored interviews require accepting the monitoring terms",
+      });
+    }
+
+    const screenSharePolicy = resolveScreenSharePolicy({
+      level: normalizeProctoringLevel(proctoringLevel),
+      screenShare: screenShareInput,
+      required: isScreenShareRequired(req),
+    });
+    if (!screenSharePolicy.ok) {
+      return res.status(400).json({ success: false, error: screenSharePolicy.error, code: "SCREEN_SHARE_REQUIRED" });
     }
 
     // Validate interview type
@@ -199,9 +251,17 @@ export const createSession = async (req, res) => {
       status: "created",
       startedAt: new Date(),
       voiceEngineUsed: mode === "text" ? "none" : voiceEngineUsed,
-      personaUsed: mode === "text" ? "standard" : personaUsed,
+      personaUsed: mode === "text" ? "standard" : SUPPORTED_PERSONAS.has(personaUsed) ? personaUsed : "shubh",
       interviewLanguage: sarvamService.normalizeSttLanguage(interviewLanguage),
       aiModel: selectAIModel(req.user),
+      proctoringLevel: normalizeProctoringLevel(proctoringLevel),
+      proctoringConsent: proctoringConsent?.accepted ? {
+        acceptedAt: new Date(),
+        version: PROCTORING_CONSENT_VERSION,
+        level: normalizeProctoringLevel(proctoringLevel),
+      } : undefined,
+      integrity: { turnTokens: true },
+      screenShare: screenSharePolicy.screenShare,
       metadata: {
         browserInfo: req.headers["user-agent"],
         ipAddress: req.ip,
@@ -224,6 +284,7 @@ export const createSession = async (req, res) => {
         mode: session.mode,
         totalQuestions: session.totalQuestions,
         status: session.status,
+        proctoringLevel: session.proctoringLevel,
       },
     });
   } catch (error) {
@@ -257,46 +318,27 @@ export const startSession = async (req, res) => {
       });
     }
 
-    const firstPlan = session.syllabus?.[0] || {
-      category: "Core Technical Fundamentals",
-      cognitiveLevel: 2,
-      phase: "Phase 1: Foundations",
-      questionType: session.interviewType === "behavioral" ? "behavioral" : "technical",
-    };
-
-    // Generate first question
-    const questionConfig = {
-      interviewType: firstPlan.questionType || session.interviewType,
-      role: session.role,
-      experienceLevel: session.experienceLevel,
-      resumeText: session.resumeText,
-      jobDescription: session.jobDescription,
-      targetSkills: session.targetSkills,
-      previousQuestions: [],
-      previousAnswers: [],
-      currentDifficulty: (firstPlan.cognitiveLevel || 2) >= 4 ? "hard" : (firstPlan.cognitiveLevel || 2) <= 2 ? "easy" : "medium",
-      questionNumber: 1,
-      targetCategory: firstPlan.category,
-      cognitiveLevel: firstPlan.cognitiveLevel || 2,
-    };
-
+    // Question 1 follows the format's blueprint: the plan picks the topic and
+    // question type, the session format decides which context (resume/JD) is used.
+    const firstPlan = getQuestionPlan(session);
     const questionData = await interviewService.generateQuestion(
-      questionConfig,
+      buildGenerationConfig(session, firstPlan, 1),
       req.user
     );
 
-    const cogLevel = firstPlan.cognitiveLevel || 2;
-    const cogMeta = interviewService.COGNITIVE_LEVELS?.[cogLevel] || null;
+    const cogLevel = firstPlan.cognitiveLevel;
+    const cogMeta = firstPlan.cognitiveMeta || null;
 
-    // Add question to session
-    session.addQuestion({
+    // Store the plan's topic and type (not the model's own labels) so topic
+    // tracking and answer timing stay consistent with the blueprint.
+    const firstQuestion = session.addQuestion({
       questionText: questionData.question,
-      questionType: questionData.questionType || firstPlan.questionType,
-      category: questionData.category || firstPlan.category,
-      difficulty: questionData.difficulty,
+      questionType: firstPlan.questionType,
+      category: firstPlan.category,
+      difficulty: firstPlan.difficulty,
       cognitiveLevel: cogLevel,
       cognitiveMeta: cogMeta,
-      syllabusPhase: firstPlan.phase || "Phase 1: Foundations",
+      syllabusPhase: firstPlan.syllabusPhase,
     });
 
     await session.save();
@@ -311,17 +353,7 @@ export const startSession = async (req, res) => {
         sessionId: session._id,
         status: session.status,
         mode: session.mode,
-        currentQuestion: {
-          number: 1,
-          text: questionData.question,
-          type: questionData.questionType,
-          category: questionData.category || firstPlan.category,
-          cognitiveLevel: cogLevel,
-          cognitiveMeta: cogMeta,
-          difficulty: questionData.difficulty,
-          answerTimeLimitSec: getAnswerTimeLimitSec({ cognitiveLevel: cogLevel, difficulty: questionData.difficulty }),
-          audio: null,
-        },
+        currentQuestion: toQuestionPayload(firstQuestion, session._id),
         progress: {
           current: 1,
           total: session.totalQuestions,
@@ -340,9 +372,26 @@ export const startSession = async (req, res) => {
   }
 };
 
-function sendInterviewTurn(res, turn, questionNumber, user) {
+function sendInterviewTurn(res, turn, questionNumber, user, receivedAt) {
   res.json({ success: true, data: turn.data });
   scheduleInterviewWork(turn, questionNumber, user);
+  if (turn.accepted && receivedAt) void recordTimingCheck(turn.session, questionNumber, receivedAt);
+}
+
+// Server-measured answer time; flagged for review, never blocks the turn.
+async function recordTimingCheck(session, questionNumber, receivedAt) {
+  try {
+    const event = timingAnomalyFor(session, questionNumber, receivedAt);
+    if (event) await appendProctoringEvent(session._id, event);
+  } catch (error) {
+    console.warn("Timing integrity check failed:", error.message);
+  }
+}
+
+function rejectInvalidTurnToken(res, session, questionNumber, token) {
+  if (verifyTurnToken(session, questionNumber, token)) return false;
+  res.status(403).json({ success: false, error: "This question is not active for your session. Please refresh the interview." });
+  return true;
 }
 
 function sendTurnError(res, error, fallbackMessage) {
@@ -354,9 +403,10 @@ function sendTurnError(res, error, fallbackMessage) {
 }
 
 export const submitAnswer = async (req, res) => {
+  const receivedAt = new Date();
   try {
     const { sessionId } = req.params;
-    const { answer, questionNumber, answerMode = "text" } = req.body;
+    const { answer, questionNumber, answerMode = "text", turnToken } = req.body;
     const userId = req.user.userId || req.user._id;
     if (typeof answer !== "string" || answer.trim().length < 10) {
       return res.status(400).json({
@@ -366,8 +416,10 @@ export const submitAnswer = async (req, res) => {
     const session = await InterviewSession.findOne({ _id: sessionId, userId });
     if (!session) return res.status(404).json({ success: false, error: "Session not found" });
 
+    if (rejectInvalidTurnToken(res, session, questionNumber, turnToken)) return;
+
     const turn = await saveInterviewTurn(session, questionNumber, { answer: answer.trim(), answerMode });
-    sendInterviewTurn(res, turn, questionNumber, req.user);
+    sendInterviewTurn(res, turn, questionNumber, req.user, receivedAt);
   } catch (error) {
     sendTurnError(res, error, "Failed to process your answer");
   }
@@ -376,10 +428,11 @@ export const submitAnswer = async (req, res) => {
 export const skipQuestion = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const { questionNumber } = req.body;
+    const { questionNumber, turnToken } = req.body;
     const userId = req.user.userId || req.user._id;
     const session = await InterviewSession.findOne({ _id: sessionId, userId });
     if (!session) return res.status(404).json({ success: false, error: "Session not found" });
+    if (rejectInvalidTurnToken(res, session, questionNumber, turnToken)) return;
 
     const turn = await saveInterviewTurn(session, questionNumber, { skipped: true });
     sendInterviewTurn(res, turn, questionNumber, req.user);
@@ -560,6 +613,7 @@ export const completeSession = async (req, res) => {
           snapshotUrl: e.snapshotUrl,
           details: e.details,
         })),
+        screenShare: toScreenShareAudit(auditSession),
       },
     });
 
@@ -884,10 +938,67 @@ function isPremiumUser(user) {
 }
 
 /**
+ * Store the candidate's self-introduction and re-plan question 1 from it, so the
+ * interview opens with a reaction to who they are rather than a canned question.
+ * POST /api/interview/sessions/:sessionId/introduction
+ * Body: { introduction: string }
+ */
+export const submitIntroduction = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.userId || req.user._id;
+    const introduction = typeof req.body.introduction === "string"
+      ? req.body.introduction.trim().slice(0, 4000)
+      : "";
+    if (introduction.length < 4) {
+      return res.status(400).json({ success: false, error: "Introduction is too short" });
+    }
+
+    const session = await InterviewSession.findOne({ _id: sessionId, userId });
+    if (!session) return res.status(404).json({ success: false, error: "Session not found" });
+    if (![interviewStateManager.STATES.IN_PROGRESS, interviewStateManager.STATES.PAUSED].includes(session.status)) {
+      return res.status(400).json({ success: false, error: `Cannot update a session with status: ${session.status}` });
+    }
+
+    const first = session.questions[0];
+    const stillOnFirstQuestion = first && session.questions.length === 1 && !first.userAnswer && !first.skipped;
+    if (!stillOnFirstQuestion || session.candidateIntroduction) {
+      // Duplicate or late request: keep the current question as-is.
+      return res.json({ success: true, data: { currentQuestion: toQuestionPayload(session.questions.at(-1), session._id) } });
+    }
+
+    const opening = isAdaptiveTurnsEnabled()
+      ? await planOpeningQuestion({ session, introduction, userId: session.userId })
+      : null;
+    // Q1 is asked only now: restart its server-side clock for timing checks.
+    const update = { candidateIntroduction: introduction, "questions.0.startedAt": new Date() };
+    if (opening) {
+      update["questions.0.questionText"] = opening.questionText;
+      update["questions.0.acknowledgmentBridge"] = opening.acknowledgmentBridge;
+    }
+
+    const updated = await InterviewSession.findOneAndUpdate({
+      _id: session._id,
+      userId,
+      "questions.1": { $exists: false },
+      "questions.0.userAnswer": { $in: ["", null] },
+      "questions.0.skipped": { $ne: true },
+    }, { $set: update, $inc: { __v: 1 } }, { new: true });
+
+    const current = (updated || session).questions.at(-1);
+    res.json({ success: true, data: { currentQuestion: toQuestionPayload(current, session._id), adapted: Boolean(updated && opening) } });
+  } catch (error) {
+    console.error("❌ Submit introduction error:", error);
+    res.status(500).json({ success: false, error: "Failed to process introduction" });
+  }
+};
+
+/**
  * Submit voice answer (audio file)
  * POST /api/interview/sessions/:sessionId/voice-answer
  */
 export const submitVoiceAnswer = async (req, res) => {
+  const receivedAt = new Date();
   try {
     const { sessionId } = req.params;
     const questionNumber = Number(req.body.questionNumber);
@@ -895,6 +1006,7 @@ export const submitVoiceAnswer = async (req, res) => {
     const session = await InterviewSession.findOne({ _id: sessionId, userId });
     if (!session) return res.status(404).json({ success: false, error: "Session not found" });
 
+    if (rejectInvalidTurnToken(res, session, questionNumber, req.body.turnToken)) return;
     const replay = validateInterviewTurn(session, questionNumber);
     if (replay) return sendInterviewTurn(res, { session, data: replay, accepted: false }, questionNumber, req.user);
 
@@ -917,7 +1029,7 @@ export const submitVoiceAnswer = async (req, res) => {
     }
 
     const turn = await saveInterviewTurn(session, questionNumber, { answer: text, answerMode: "voice", transcription });
-    sendInterviewTurn(res, turn, questionNumber, req.user);
+    sendInterviewTurn(res, turn, questionNumber, req.user, receivedAt);
   } catch (error) {
     sendTurnError(res, error, "Failed to process voice answer");
   }
@@ -1045,6 +1157,111 @@ export const recordProctoringEvent = async (req, res) => {
   }
 };
 
+function toScreenShareAudit(session) {
+  const share = session.screenShare;
+  if (!share || session.proctoringLevel !== "proctored") return undefined;
+  return {
+    status: share.status,
+    required: Boolean(share.required),
+    stoppedMsTotal: share.stoppedMsTotal || 0,
+    frames: (share.frames || []).map((frame) => ({
+      id: String(frame._id),
+      reason: frame.reason,
+      timestampSeconds: frame.timestampSeconds,
+    })),
+  };
+}
+
+/**
+ * Store one screen frame (proctored mode).
+ * POST /api/interview/sessions/:sessionId/proctoring/screen-frame
+ */
+export const uploadScreenFrame = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.userId || req.user._id;
+    const session = await InterviewSession.findOne({ _id: sessionId, userId })
+      .select("status proctoringLevel screenShare.frames._id")
+      .lean();
+    if (!session) return res.status(404).json({ success: false, error: "Session not found" });
+    const frame = validateScreenFrame({
+      session,
+      imageData: req.body?.imageData,
+      reason: req.body?.reason,
+      timestampSeconds: req.body?.timestampSeconds,
+      lastFrameAt: getLastFrameAt(sessionId),
+    });
+    if (!frame.ok) return res.status(frame.status).json({ success: false, error: frame.error });
+    markFrameAccepted(sessionId);
+    const file = await writeScreenFrame(sessionId, frame.buffer, frame.ext);
+    const updated = await InterviewSession.findOneAndUpdate(
+      { _id: sessionId, userId, status: "in-progress" },
+      { $push: { "screenShare.frames": { reason: frame.reason, timestampSeconds: frame.timestampSeconds, file, bytes: frame.buffer.length } } },
+      { new: true, projection: { "screenShare.frames": { $slice: -1 } } }
+    );
+    if (!updated) return res.status(409).json({ success: false, error: "Session is no longer active" });
+    res.status(201).json({ success: true, data: { frameId: String(updated.screenShare.frames[0]._id) } });
+  } catch (error) {
+    console.error("Screen frame upload error:", error.message);
+    res.status(500).json({ success: false, error: "Failed to store screen frame" });
+  }
+};
+
+/**
+ * Record a change in the screen share (stopped, resumed, surface).
+ * POST /api/interview/sessions/:sessionId/proctoring/screen-share
+ */
+export const updateScreenShareStatus = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.userId || req.user._id;
+    const { status, stoppedMs } = req.body || {};
+    const set = {};
+    if (["monitor", "window", "browser", "unknown", "unavailable", "declined", "off"].includes(status)) set["screenShare.status"] = status;
+    const inc = {};
+    const stopped = Number(stoppedMs);
+    if (Number.isFinite(stopped) && stopped > 0) inc["screenShare.stoppedMsTotal"] = Math.min(stopped, 6 * 60 * 60 * 1000);
+    if (!Object.keys(set).length && !Object.keys(inc).length) return res.status(400).json({ success: false, error: "Nothing to update" });
+    const updated = await InterviewSession.findOneAndUpdate(
+      { _id: sessionId, userId, status: "in-progress", proctoringLevel: "proctored" },
+      { ...(Object.keys(set).length && { $set: set }), ...(Object.keys(inc).length && { $inc: inc }) },
+      { new: true, projection: { "screenShare.status": 1, "screenShare.stoppedMsTotal": 1 } }
+    );
+    if (!updated) return res.status(409).json({ success: false, error: "Session is not an active proctored session" });
+    res.json({ success: true, data: { status: updated.screenShare.status, stoppedMsTotal: updated.screenShare.stoppedMsTotal } });
+  } catch (error) {
+    console.error("Screen share status error:", error.message);
+    res.status(500).json({ success: false, error: "Failed to update screen share" });
+  }
+};
+
+/**
+ * Serve one screen frame to the candidate or an admin. Never cached.
+ * GET /api/interview/sessions/:sessionId/screen-frames/:frameId
+ */
+export const getScreenFrame = async (req, res) => {
+  try {
+    const { sessionId, frameId } = req.params;
+    const userId = req.user.userId || req.user._id;
+    const session = await InterviewSession.findById(sessionId).select("userId screenShare.frames").lean();
+    if (!session) return res.status(404).json({ success: false, error: "Not found" });
+    if (String(session.userId) !== String(userId)) {
+      const viewer = await User.findById(userId).select("role").lean();
+      if (viewer?.role !== "admin") return res.status(403).json({ success: false, error: "Access denied" });
+      logger.info?.(`Admin ${userId} viewed screen frame ${frameId} of session ${sessionId}`);
+    }
+    const frame = (session.screenShare?.frames || []).find((item) => String(item._id) === frameId);
+    const filePath = frame && screenFramePath(sessionId, frame.file);
+    if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ success: false, error: "Frame not available" });
+    res.set("Cache-Control", "private, no-store");
+    res.type(path.extname(filePath));
+    fs.createReadStream(filePath).pipe(res);
+  } catch (error) {
+    console.error("Screen frame read error:", error.message);
+    res.status(500).json({ success: false, error: "Failed to load screen frame" });
+  }
+};
+
 export const recordProctoringHeartbeat = async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id;
@@ -1125,6 +1342,7 @@ export default {
   startSession,
   submitAnswer,
   submitVoiceAnswer,
+  submitIntroduction,
   skipQuestion,
   completeSession,
   getSession,

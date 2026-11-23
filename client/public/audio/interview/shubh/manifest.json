@@ -1,0 +1,76 @@
+{
+  "voice": "shubh",
+  "clips": {
+    "greeting_1": {
+      "file": "greeting_1.mp3",
+      "text": "Hi, welcome, and thanks for joining today. I'm Shubh, and I'll be your interviewer. To get started, could you briefly introduce yourself?",
+      "hash": "c641ad23fe14"
+    },
+    "greeting_2": {
+      "file": "greeting_2.mp3",
+      "text": "Hello, and welcome. I'm Shubh. Before we dive in, tell me a little about yourself and what you've been working on recently.",
+      "hash": "18df926c6ee6"
+    },
+    "greeting_3": {
+      "file": "greeting_3.mp3",
+      "text": "Hi there, good to meet you. I'm Shubh, and I'll be taking your interview today. Let's begin with a short introduction about yourself.",
+      "hash": "30fae67b6227"
+    },
+    "ack_1": {
+      "file": "ack_1.mp3",
+      "text": "Mm-hmm… okay. Thank you for that.",
+      "hash": "b8fd7f13bb87"
+    },
+    "ack_2": {
+      "file": "ack_2.mp3",
+      "text": "Okay, got it. Thanks.",
+      "hash": "ab84cc7abc2d"
+    },
+    "ack_3": {
+      "file": "ack_3.mp3",
+      "text": "Hmm, alright… give me just a second.",
+      "hash": "1b3049ccb584"
+    },
+    "ack_4": {
+      "file": "ack_4.mp3",
+      "text": "Right. Thanks for walking me through that.",
+      "hash": "f6ed8bae3149"
+    },
+    "ack_5": {
+      "file": "ack_5.mp3",
+      "text": "Okay… I see. Thank you.",
+      "hash": "c2aad0d70fbd"
+    },
+    "ack_6": {
+      "file": "ack_6.mp3",
+      "text": "Alright, understood. Let me think about that for a moment.",
+      "hash": "6e08bbc3d93b"
+    },
+    "intro_ack": {
+      "file": "intro_ack.mp3",
+      "text": "Great, thanks for that introduction. Let's get started.",
+      "hash": "b33613dbc79b"
+    },
+    "times_up": {
+      "file": "times_up.mp3",
+      "text": "Okay… let's stop there. Thank you.",
+      "hash": "76bb0fb0b825"
+    },
+    "skip_ack": {
+      "file": "skip_ack.mp3",
+      "text": "That's alright, no problem. Let's move on.",
+      "hash": "de1cfe46c9a0"
+    },
+    "closing": {
+      "file": "closing.mp3",
+      "text": "Alright, that brings us to the end. Thank you so much for your time today… I'm putting together your feedback now.",
+      "hash": "8e20a041c0ff"
+    },
+    "voice_sample": {
+      "file": "voice_sample.mp3",
+      "text": "Hello! I'm Shubh, your interviewer. I'm looking forward to learning about your background and experience today.",
+      "hash": "409c5acf58ef"
+    }
+  },
+  "generatedAt": "2026-11-23T05:34:15.591Z"
+}

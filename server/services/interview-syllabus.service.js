@@ -183,10 +183,213 @@ export const getOntologyForRole = (roleName = "") => {
   };
 };
 
+// Cognitive range per seniority (mirrors SENIORITY_BASELINES in interview-difficulty).
+const LEVEL_RANGE = {
+  fresher: [1, 3],
+  junior: [1, 3],
+  mid: [2, 4],
+  senior: [3, 5],
+  lead: [3, 5],
+};
+
+const TECHNICAL_PHASES = {
+  1: { phase: "Phase 1: Fundamentals", objective: "Check conceptual clarity of core terms and mechanics, asked through a practical lens." },
+  2: { phase: "Phase 2: Core Mechanics & Implementation", objective: "Test hands-on implementation: how they would actually build or configure it." },
+  3: { phase: "Phase 3: Trade-Offs & Optimization", objective: "Make them compare approaches and justify a choice (latency, cost, complexity, consistency)." },
+  4: { phase: "Phase 4: Architecture & System Design", objective: "Have them design or decompose a component for real scale and explain the boundaries." },
+  5: { phase: "Phase 5: Failure Modes & Recovery", objective: "Present a production failure or edge case and assess diagnosis and recovery." },
+};
+
+// Behavioral competency bank. Order = priority for that seniority.
+const BEHAVIORAL_COMPETENCIES = {
+  ownership: { category: "Ownership & Initiative", objective: "A time they took responsibility beyond their assigned work and drove it to an outcome." },
+  teamwork: { category: "Teamwork & Collaboration", objective: "How they worked with others toward a shared goal and their personal contribution." },
+  learning: { category: "Learning & Adaptability", objective: "A time they had to learn something new quickly or adapt to a change in plans." },
+  failure: { category: "Handling Failure & Mistakes", objective: "A mistake or failure they owned, what they did next and what they learned." },
+  conflict: { category: "Conflict Resolution", objective: "A disagreement with a teammate or stakeholder and how they resolved it constructively." },
+  pressure: { category: "Prioritization Under Pressure", objective: "Handling competing deadlines or a crisis: how they decided what mattered most." },
+  communication: { category: "Communication & Stakeholders", objective: "Explaining a complex idea or bad news to someone non-technical or senior." },
+  leadership: { category: "Leadership & Influence", objective: "Influencing a decision or leading people without formal authority." },
+  mentoring: { category: "Mentoring & Raising the Bar", objective: "Helping someone grow or improving the team's standards or process." },
+  integrity: { category: "Integrity & Judgment", objective: "A situation with an ethical or quality trade-off and how they decided." },
+};
+const BEHAVIORAL_ORDER = {
+  fresher: ["teamwork", "learning", "ownership", "failure", "pressure", "communication", "conflict", "integrity"],
+  junior: ["teamwork", "ownership", "learning", "failure", "conflict", "pressure", "communication", "integrity"],
+  mid: ["ownership", "conflict", "failure", "pressure", "communication", "teamwork", "leadership", "learning"],
+  senior: ["leadership", "conflict", "failure", "communication", "mentoring", "pressure", "ownership", "integrity"],
+  lead: ["leadership", "communication", "conflict", "mentoring", "failure", "pressure", "integrity", "ownership"],
+};
+const BEHAVIORAL_LEVEL = { fresher: 2, junior: 2, mid: 3, senior: 4, lead: 4 };
+
+const RESUME_TOPICS = [
+  { category: "Resume: Flagship Project", questionType: "resume-based", level: 2, objective: "Walk through the most significant project on their resume: the problem, their exact role and the stack." },
+  { category: "Resume: Technical Decisions", questionType: "resume-based", level: 3, objective: "Why they chose a specific technology or design in a listed project, and what alternatives they considered." },
+  { category: "Resume: Skill Depth Check", questionType: "technical", level: 2, objective: "Pick a skill listed on the resume and test real working depth with a practical question." },
+  { category: "Resume: Hardest Problem", questionType: "resume-based", level: 3, objective: "The hardest bug or obstacle in a listed project and exactly how they solved it." },
+  { category: "Resume: Measurable Impact", questionType: "resume-based", level: 3, objective: "The concrete, measurable impact of their work in a listed internship, job or project." },
+  { category: "Resume: Collaboration", questionType: "behavioral", level: 3, objective: "How they worked with others on a project or role listed on the resume." },
+  { category: "Resume: Second Project", questionType: "resume-based", level: 2, objective: "A different project or experience from the resume than the ones already discussed." },
+  { category: "Resume: Rebuild & Scale", questionType: "resume-based", level: 4, objective: "What they would change if they rebuilt a listed project today or it had to handle 100x the users." },
+];
+
+// Leading \b only: these are word stems ("familiar" → "familiarity").
+const REQUIREMENT_HINT = /\b(experience|proficien|knowledge|familiar|understanding|ability to|expertise|hands-on|skilled|build(?!er)|design(?!er)|develop(?!er)|implement|maintain|optimi[sz]|work with|using|deploy)/i;
+const SOFT_SKILL_HINT = /\b(communicat|collaborat|teamwork|team player|stakeholder|ownership|fast-paced|leadership|mentor|cross-functional|problem[- ]solving|self-starter)/i;
+const YEARS_PREFIX = /^\d+\s*\+?\s*(?:-\s*\d+\s*)?years?\s+(?:of\s+)?(?:professional\s+|hands-on\s+)?(?:experience|exp)\s*(?:with|in|of|building)?\s*/i;
+const JD_NOISE = /\b(salary|benefit|equal opportunity|apply|location|remote|hybrid|ctc|lpa|perks|insurance|about us|we are|our company)\b/i;
+
 /**
- * Generate a dynamic 5-phase interview syllabus tailored to role, seniority, resume, and JD
- * @param {Object} options
- * @returns {Array} List of planned agenda topics
+ * Pull requirement-like lines out of a free-text job description.
+ * @returns {{ technical: string[], soft: string[] }}
+ */
+export function extractJobRequirements(jobDescription = "") {
+  const lines = String(jobDescription)
+    .split(/\r?\n|•|·|\u2022|\u25AA|;|(?<=[.!?])\s+(?=[A-Z])/)
+    .map((line) => line
+      .replace(/^[\s\-*–—•]+/, "")
+      .replace(/^\d+[.)]\s+/, "")
+      .replace(/^(responsibilities|requirements|qualifications|skills|must[- ]haves?|nice[- ]to[- ]haves?|what you.ll do)\s*:\s*/i, "")
+      .replace(/\s+/g, " ")
+      .trim())
+    // Requirements are phrases, not titles: at least 3 words.
+    .filter((line) => line.length >= 12 && line.length <= 220 && line.split(" ").length >= 3 && !JD_NOISE.test(line));
+  const seen = new Set();
+  const unique = lines.filter((line) => {
+    const key = line.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const clip = (line) => {
+    const text = line.replace(YEARS_PREFIX, "").replace(/^./, (first) => first.toUpperCase());
+    return text.length > 90 ? `${text.slice(0, 87).replace(/\s+\S*$/, "")}…` : text;
+  };
+  const soft = unique.filter((line) => SOFT_SKILL_HINT.test(line) && !REQUIREMENT_HINT.test(line.replace(SOFT_SKILL_HINT, "")));
+  const technical = unique.filter((line) => REQUIREMENT_HINT.test(line) && !soft.includes(line));
+  return { technical: technical.slice(0, 10).map(clip), soft: soft.slice(0, 4).map(clip) };
+}
+
+// Evenly ramp cognitive level across `count` technical questions.
+function rampLevels(count, [min, max]) {
+  if (count <= 1) return [Math.min(max, min + 1)];
+  return Array.from({ length: count }, (_, index) => Math.round(min + ((max - min) * index) / (count - 1)));
+}
+
+function technicalItems(count, { categories, experienceLevel }) {
+  const levels = rampLevels(count, LEVEL_RANGE[experienceLevel] || LEVEL_RANGE.mid);
+  return levels.map((level, index) => ({
+    ...TECHNICAL_PHASES[level],
+    phaseIndex: level,
+    category: categories[index % categories.length],
+    questionType: "technical",
+    cognitiveLevel: level,
+  }));
+}
+
+function behavioralItems(count, { experienceLevel }) {
+  const order = BEHAVIORAL_ORDER[experienceLevel] || BEHAVIORAL_ORDER.mid;
+  const level = BEHAVIORAL_LEVEL[experienceLevel] || 3;
+  // Freshers have fewer past stories: alternate with hypothetical scenarios.
+  const situationalEvery = experienceLevel === "fresher" ? 2 : 3;
+  return Array.from({ length: count }, (_, index) => {
+    const competency = BEHAVIORAL_COMPETENCIES[order[index % order.length]];
+    const situational = (index + 1) % situationalEvery === 0;
+    return {
+      phase: situational ? "Situational Judgment" : "Behavioral (STAR)",
+      phaseIndex: 6,
+      category: competency.category,
+      questionType: situational ? "situational" : "behavioral",
+      cognitiveLevel: level,
+      objective: situational
+        ? `Hypothetical workplace scenario testing: ${competency.objective.charAt(0).toLowerCase()}${competency.objective.slice(1)}`
+        : competency.objective,
+    };
+  });
+}
+
+function resumeItems(count, { experienceLevel }) {
+  const [, max] = LEVEL_RANGE[experienceLevel] || LEVEL_RANGE.mid;
+  return Array.from({ length: count }, (_, index) => {
+    const topic = RESUME_TOPICS[index % RESUME_TOPICS.length];
+    const round = Math.floor(index / RESUME_TOPICS.length);
+    return {
+      phase: "Resume Deep Dive",
+      phaseIndex: 1,
+      category: round ? `${topic.category} (${round + 1})` : topic.category,
+      questionType: topic.questionType,
+      cognitiveLevel: Math.min(max, topic.level),
+      objective: topic.objective,
+    };
+  });
+}
+
+function jobDescriptionItems(count, { jobDescription, categories, experienceLevel }) {
+  const { technical, soft } = extractJobRequirements(jobDescription);
+  const items = [];
+  const behavioralSlots = count >= 4 ? 1 : 0;
+  const technicalCount = count - behavioralSlots;
+  // JD requirements first; role topics only fill slots the JD can't cover.
+  const pool = [
+    ...technical.map((requirement) => ({ label: `JD: ${requirement}`, requirement })),
+    ...categories.map((category) => ({ label: category, requirement: category })),
+  ];
+  const levels = rampLevels(technicalCount, LEVEL_RANGE[experienceLevel] || LEVEL_RANGE.mid);
+  levels.forEach((level, index) => {
+    const { label, requirement } = pool[index % pool.length];
+    const isScenario = index === technicalCount - 1 && technicalCount >= 3;
+    items.push({
+      phase: isScenario ? "Role Scenario" : "Job Requirements",
+      phaseIndex: 2,
+      category: label,
+      questionType: isScenario ? "situational" : "technical",
+      cognitiveLevel: level,
+      objective: isScenario
+        ? `A realistic on-the-job scenario for this role involving: ${requirement}.`
+        : `Test the job requirement "${requirement}" with a practical question tied to this role.`,
+    });
+  });
+  if (behavioralSlots) {
+    const softSkill = soft[0];
+    items.splice(Math.max(1, Math.round(items.length * 0.6)), 0, {
+      phase: "Team & Culture Fit",
+      phaseIndex: 6,
+      category: softSkill ? `JD: ${softSkill}` : "Team & Culture Fit",
+      questionType: "behavioral",
+      cognitiveLevel: BEHAVIORAL_LEVEL[experienceLevel] || 3,
+      objective: softSkill
+        ? `A past example demonstrating the expectation "${softSkill}" from the job description.`
+        : "A past example of working the way this team expects (collaboration, ownership, communication).",
+    });
+  }
+  return items;
+}
+
+function mixedItems(count, options) {
+  const hasResume = Boolean(options.resumeText?.trim());
+  const behavioralCount = count >= 2 ? Math.max(1, Math.round(count * 0.4)) : 0;
+  const resumeCount = hasResume && count >= 3 ? 1 : 0;
+  const technicalCount = count - behavioralCount - resumeCount;
+  const technical = technicalItems(Math.max(technicalCount, 0), options);
+  const behavioral = behavioralItems(behavioralCount, options);
+  const items = resumeCount ? resumeItems(1, options) : [];
+  // Interleave T, B, T, T, B, T, T, B… so a behavioral question arrives early.
+  const pattern = [];
+  let t = 0;
+  let b = 0;
+  while (pattern.length < technical.length + behavioral.length) {
+    const slot = pattern.length;
+    const wantBehavioral = b < behavioral.length && (slot === 1 || (slot > 1 && slot % 3 === 1) || t >= technical.length);
+    if (wantBehavioral) pattern.push(behavioral[b++]);
+    else pattern.push(technical[t++]);
+  }
+  return [...items, ...pattern];
+}
+
+/**
+ * Build the interview agenda for the selected format. Exactly `totalQuestions`
+ * items, so the plan always fits the duration the candidate picked.
+ * @returns {Array} planned topics in order
  */
 export function generateInterviewSyllabus(options = {}) {
   const {
@@ -199,115 +402,25 @@ export function generateInterviewSyllabus(options = {}) {
     targetSkills = [],
   } = options;
 
-  const ontology = getOntologyForRole(role);
-  const categories = [...ontology.coreCategories];
-
-  // Prioritize targetSkills or resume keywords if provided
-  if (targetSkills?.length > 0) {
-    targetSkills.forEach((skill) => {
-      if (!categories.some((c) => c.toLowerCase().includes(skill.toLowerCase()))) {
-        categories.unshift(`Target Skill: ${skill}`);
-      }
-    });
-  }
-
-  const syllabus = [];
-  let questionNumber = 1;
-
-  // Phase 1: Icebreaker & Resume Project Verification (1-2 questions)
-  if (interviewType === "resume-based" || (interviewType === "mixed" && resumeText)) {
-    syllabus.push({
-      phase: "Phase 1: Project & Experience Deep Dive",
-      phaseIndex: 1,
-      targetQuestionNumber: questionNumber++,
-      category: "Past Projects & Architecture Decisions",
-      questionType: "resume-based",
-      cognitiveLevel: 2,
-      objective: "Verify candidate's stated contributions, technical ownership, and architectural choices on real resume projects.",
-    });
-  } else {
-    syllabus.push({
-      phase: "Phase 1: Foundational Technical Warm-up",
-      phaseIndex: 1,
-      targetQuestionNumber: questionNumber++,
-      category: categories[0] || "Core Technical Fundamentals",
-      questionType: "technical",
-      cognitiveLevel: 1,
-      objective: "Assess baseline technical mechanics, vocabulary, and conceptual clarity.",
-    });
-  }
-
-  // Phase 2: Core Engineering Fundamentals & Practical Mechanics (2 questions)
-  syllabus.push({
-    phase: "Phase 2: Core Mechanics & Implementation",
-    phaseIndex: 2,
-    targetQuestionNumber: questionNumber++,
-    category: categories[1] || categories[0] || "Implementation Nuances",
-    questionType: "technical",
-    cognitiveLevel: 2,
-    objective: "Test practical coding patterns, language features, and hands-on implementation capabilities.",
+  const count = Math.max(1, Math.round(Number(totalQuestions) || 10));
+  const categories = [...getOntologyForRole(role).coreCategories];
+  targetSkills?.forEach((skill) => {
+    if (!categories.some((category) => category.toLowerCase().includes(skill.toLowerCase()))) {
+      categories.unshift(`Target Skill: ${skill}`);
+    }
   });
 
-  if (totalQuestions >= 6) {
-    syllabus.push({
-      phase: "Phase 2: Core Mechanics & Implementation",
-      phaseIndex: 2,
-      targetQuestionNumber: questionNumber++,
-      category: categories[2] || "Data & Execution Flow",
-      questionType: "technical",
-      cognitiveLevel: 3,
-      objective: "Evaluate understanding of internal execution models, state management, or query efficiency.",
-    });
-  }
+  const context = { categories, experienceLevel, resumeText, jobDescription };
+  const builders = {
+    technical: technicalItems,
+    behavioral: behavioralItems,
+    "resume-based": resumeItems,
+    "job-description": jobDescriptionItems,
+    mixed: mixedItems,
+  };
+  const items = (builders[interviewType] || mixedItems)(count, context).slice(0, count);
 
-  // Phase 3: System Design, Architecture & Trade-Offs (2-3 questions)
-  syllabus.push({
-    phase: "Phase 3: Architecture & Trade-Offs",
-    phaseIndex: 3,
-    targetQuestionNumber: questionNumber++,
-    category: categories[3] || "System Scalability & Architecture",
-    questionType: "technical",
-    cognitiveLevel: experienceLevel === "senior" || experienceLevel === "lead" ? 4 : 3,
-    objective: "Examine ability to weigh conflicting technical trade-offs (e.g. latency vs consistency, simplicity vs flexibility).",
-  });
-
-  if (totalQuestions >= 8) {
-    syllabus.push({
-      phase: "Phase 3: Architecture & Trade-Offs",
-      phaseIndex: 3,
-      targetQuestionNumber: questionNumber++,
-      category: categories[4] || "Caching, Storage & Partitioning",
-      questionType: "technical",
-      cognitiveLevel: experienceLevel === "senior" || experienceLevel === "lead" ? 4 : 3,
-      objective: "Assess handling of throughput bottlenecks, caching invalidation, and data distribution.",
-    });
-  }
-
-  // Phase 4: Edge Cases, Failure Modes & Debugging (1-2 questions)
-  syllabus.push({
-    phase: "Phase 4: Resilience & Edge-Case Engineering",
-    phaseIndex: 4,
-    targetQuestionNumber: questionNumber++,
-    category: categories[5] || "Resilience & Error Handling",
-    questionType: "technical",
-    cognitiveLevel: experienceLevel === "lead" ? 5 : 4,
-    objective: "Simulate unexpected production failure modes, concurrency race conditions, or network disruptions.",
-  });
-
-  // Phase 5: Behavioral Ownership, STAR & Team Collaboration (remaining slots)
-  while (questionNumber <= totalQuestions) {
-    syllabus.push({
-      phase: "Phase 5: Behavioral Leadership & Ownership (STAR)",
-      phaseIndex: 5,
-      targetQuestionNumber: questionNumber++,
-      category: "Engineering Ownership & Conflict Resolution",
-      questionType: "behavioral",
-      cognitiveLevel: 3,
-      objective: "Evaluate Situation, Task, Action, and measurable Result when resolving deadlocks, technical debt, or critical outages.",
-    });
-  }
-
-  return syllabus;
+  return items.map((item, index) => ({ ...item, targetQuestionNumber: index + 1 }));
 }
 
 /**
@@ -341,6 +454,7 @@ export function calculateCompetencyCoverage(syllabus = [], questions = []) {
 export default {
   ROLE_ONTOLOGIES,
   getOntologyForRole,
+  extractJobRequirements,
   generateInterviewSyllabus,
   calculateCompetencyCoverage,
 };

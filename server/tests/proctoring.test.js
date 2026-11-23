@@ -24,16 +24,16 @@ function observeFor(engine, eventType, duration, options = {}) {
 
 test("transient and low-confidence phone detections do not emit", () => {
   assert.equal(observeFor(new TemporalEvidence(), "PHONE_DETECTED", 750).length, 0);
-  assert.equal(observeFor(new TemporalEvidence(), "PHONE_DETECTED", 5000, { confidence: 0.5 }).length, 0);
+  assert.equal(observeFor(new TemporalEvidence(), "PHONE_DETECTED", 5000, { confidence: 0.4 }).length, 0);
 });
 
 test("sustained phone presence emits enriched evidence once during cooldown", () => {
   const events = observeFor(new TemporalEvidence(), "PHONE_DETECTED", 5000);
   assert.equal(events.length, 1);
-  assert.ok(events[0].durationMs >= 2000);
-  assert.ok(events[0].evidenceCount >= 7);
-  assert.ok(events[0].confidence >= 0.6);
-  assert.equal(events[0].detectorVersion, "temporal-vision-2");
+  assert.ok(events[0].durationMs >= 1000);
+  assert.ok(events[0].evidenceCount >= 4);
+  assert.ok(events[0].confidence >= 0.45);
+  assert.equal(events[0].detectorVersion, "temporal-vision-3");
 });
 
 test("N-of-M evidence tolerates isolated misses but rejects disconnected frames", () => {

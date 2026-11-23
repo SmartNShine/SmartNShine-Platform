@@ -13,8 +13,10 @@
         "create-tpo": "node --env-file=.env scripts/create-tpo.js",
         "migrate:resume-titles": "node --env-file=.env scripts/migrateResumeTitles.js",
         "migrate:users": "node --env-file=.env scripts/migrateUsers.js",
+        "interview:clips": "node --env-file=.env scripts/generateInterviewClips.js",
+        "purge:screen-frames": "node scripts/purgeScreenFrames.js",
         "test:models": "node --env-file=.env scripts/testModels.js",
-        "test:interview": "node --test tests/proctoring.test.js tests/interview-algorithm.test.js tests/interview-progression.test.js",
+        "test:interview": "node --test tests/proctoring.test.js tests/interview-algorithm.test.js tests/interview-progression.test.js tests/interview-conversation.test.js tests/interview-blueprint.test.js tests/interview-security.test.js",
         "cleanup:plans:dry": "node scripts/cleanup-production-plans.js --dry-run",
         "cleanup:plans:backup": "node scripts/cleanup-production-plans.js --backup --force",
         "cleanup:plans": "node scripts/cleanup-production-plans.js --force"

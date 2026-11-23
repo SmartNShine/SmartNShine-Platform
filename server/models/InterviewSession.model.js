@@ -1,4 +1,10 @@
 import mongoose from "mongoose";
+import {
+  PROCTORING_EVENT_TYPES,
+  PROCTORING_LEVELS,
+  SCREEN_FRAME_REASONS,
+  SCREEN_SHARE_STATUSES,
+} from "../services/proctoring-events.js";
 
 /**
  * Interview Question Schema
@@ -272,6 +278,11 @@ const interviewSessionSchema = new mongoose.Schema(
     },
     questions: [interviewQuestionSchema],
     preparedQuestion: interviewQuestionSchema,
+    // Transcribed self-introduction; context for adaptive follow-up questions.
+    candidateIntroduction: {
+      type: String,
+      maxlength: 4000,
+    },
     syllabus: [
       {
         phase: String,
@@ -361,17 +372,7 @@ const interviewSessionSchema = new mongoose.Schema(
         timestampSeconds: { type: Number, default: 0 },
         eventType: {
           type: String,
-          enum: [
-            "PHONE_DETECTED",
-            "MULTIPLE_FACES",
-            "FACE_ABSENT",
-            "GAZE_DEVIATION",
-            "TAB_SWITCH",
-            "WINDOW_BLUR",
-            "PASTE_ATTEMPT",
-            "IDENTITY_SWITCH",
-            "PROCTORING_OFFLINE",
-          ],
+          enum: PROCTORING_EVENT_TYPES,
         },
         severity: {
           type: String,
@@ -399,12 +400,56 @@ const interviewSessionSchema = new mongoose.Schema(
         tabSwitch: { type: Number, default: 0 },
         identitySwitch: { type: Number, default: 0 },
         offline: { type: Number, default: 0 },
+        virtualDevice: { type: Number, default: 0 },
+        multiScreen: { type: Number, default: 0 },
+        fullscreenExit: { type: Number, default: 0 },
+        timing: { type: Number, default: 0 },
+        multiSession: { type: Number, default: 0 },
+        screenShareMissing: { type: Number, default: 0 },
+        screenSharePartial: { type: Number, default: 0 },
+        screenShareStopped: { type: Number, default: 0 },
       },
       verdict: {
         type: String,
         enum: ["VERIFIED_CLEAN", "REVIEW_RECOMMENDED", "FLAGGED_SUSPICIOUS"],
         default: "VERIFIED_CLEAN",
       },
+    },
+    // Server-side integrity features enabled for this session (absent on legacy sessions).
+    integrity: {
+      turnTokens: { type: Boolean, default: false },
+    },
+    // practice: self-started, light-touch · proctored: assessment rules (security plan §4)
+    proctoringLevel: {
+      type: String,
+      enum: PROCTORING_LEVELS,
+      default: "practice",
+    },
+    proctoringConsent: {
+      acceptedAt: Date,
+      version: String,
+      level: String,
+    },
+    // Screen sharing (proctored, security plan S1.5). Frames are stored outside the
+    // public uploads folder and served only through an authenticated route.
+    screenShare: {
+      required: { type: Boolean, default: false },
+      status: {
+        type: String,
+        enum: SCREEN_SHARE_STATUSES,
+        default: "off",
+      },
+      startedAt: Date,
+      stoppedMsTotal: { type: Number, default: 0 },
+      frames: [
+        {
+          reason: { type: String, enum: SCREEN_FRAME_REASONS, default: "periodic" },
+          timestampSeconds: { type: Number, default: 0 },
+          file: String,
+          bytes: Number,
+          createdAt: { type: Date, default: Date.now },
+        },
+      ],
     },
     proctoringHeartbeat: {
       enabled: { type: Boolean, default: false },

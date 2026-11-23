@@ -13,7 +13,10 @@ export async function appendProctoringEvent(sessionId, event, conditions = {}, e
       $expr: { $eq: [{ $size: { $ifNull: ["$proctoringEvents", []] } }, events.length] },
     }, {
       $push: { proctoringEvents: event },
-      $set: { proctoringSummary: scoreProctoringEvents([...events, event]), ...extraSet },
+      $set: {
+        proctoringSummary: scoreProctoringEvents([...events, event], { level: session.proctoringLevel }),
+        ...extraSet,
+      },
     }, { new: true, runValidators: true });
     if (updated) return updated;
   }

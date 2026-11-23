@@ -179,11 +179,16 @@ export const INTRO_ANSWER_TIME_SEC = 90;
 const ANSWER_TIME_BY_DIFFICULTY = { easy: 120, medium: 150, hard: 180 };
 
 /**
- * Seconds the candidate gets to answer a question, by cognitive depth
- * (preferred) or the AI-reported difficulty.
+ * Seconds the candidate gets to answer a question.
+ * Follow-ups are narrower (2:00); STAR stories and resume walkthroughs need room
+ * (2:30, 3:00 at senior scope); hypotheticals are shorter (2:00); technical
+ * questions scale with cognitive depth (2:00 / 2:30 / 3:00).
  */
-export function getAnswerTimeLimitSec({ cognitiveLevel, difficulty } = {}) {
+export function getAnswerTimeLimitSec({ questionType, cognitiveLevel, difficulty, isFollowUp } = {}) {
   const level = Number(cognitiveLevel);
+  if (isFollowUp || questionType === "follow-up") return level >= 4 ? 150 : 120;
+  if (questionType === "behavioral" || questionType === "resume-based") return level >= 4 ? 180 : 150;
+  if (questionType === "situational") return 120;
   if (level >= 4) return ANSWER_TIME_BY_DIFFICULTY.hard;
   if (level === 3) return ANSWER_TIME_BY_DIFFICULTY.medium;
   if (level === 1 || level === 2) return ANSWER_TIME_BY_DIFFICULTY.easy;
