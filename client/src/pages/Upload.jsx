@@ -74,41 +74,8 @@ export default function Upload() {
 
   // Create blank resume and navigate to editor
   const createBlankResume = () => {
-    const preSelectedTemplate =
-      sessionStorage.getItem("templatePreSelected") ||
-      localStorage.getItem("selectedTemplate");
-    const hasPreSelected = Boolean(
-      sessionStorage.getItem("templatePreSelected")
-    );
-
-    const blankResumeData = {
-      name: "",
-      contact: {
-        email: "",
-        phone: "",
-        location: "",
-        linkedin: "",
-        github: "",
-        portfolio: "",
-      },
-      summary: "",
-      skills: [],
-      experience: [],
-      education: [],
-      projects: [],
-      certifications: [],
-      achievements: [],
-      customSections: [],
-    };
-
     navigate("/editor", {
-      state: {
-        resumeData: blankResumeData,
-        isNewResume: true,
-        fromUpload: true,
-        templateSelected: hasPreSelected,
-        selectedTemplate: preSelectedTemplate || undefined,
-      },
+      state: { resumeData: { name: "" }, fromUpload: true },
     });
   };
 
@@ -146,7 +113,7 @@ export default function Upload() {
           error={error}
         />
 
-        {/* Alternative Action Triggers (Start from scratch, Use Career Profile) */}
+        {/* Start from scratch */}
         <UploadActionOptions
           onCreateBlank={createBlankResume}
           uploading={uploading}

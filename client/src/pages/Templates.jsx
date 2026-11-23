@@ -514,46 +514,27 @@ export default function Templates() {
   };
 
   const handleUseTemplate = (templateId, colorTheme = null) => {
-    localStorage.setItem("selectedTemplate", templateId);
-    sessionStorage.setItem("templatePreSelected", templateId);
     const themeToSave = colorTheme || selectedColorTheme;
-    if (themeToSave) {
-      localStorage.setItem("selectedColorTheme", themeToSave);
-    }
-    const blankResumeData = {
-      name: "",
-      selectedTheme: themeToSave || undefined,
-      colorTheme: themeToSave || undefined,
-      contact: {
-        email: "",
-        phone: "",
-        location: "",
-        linkedin: "",
-        github: "",
-        portfolio: "",
+    const editorState = {
+      resumeData: {
+        name: "",
+        selectedTheme: themeToSave || undefined,
+        colorTheme: themeToSave || undefined,
       },
-      summary: "",
-      skills: [],
-      experience: [],
-      education: [],
-      projects: [],
-      certifications: [],
-      achievements: [],
-      customSections: [],
+      selectedTemplate: templateId,
+      fromTemplates: true,
     };
 
     if (!user) {
+      // OAuth returns to the editor URL without the gallery's navigation state.
+      sessionStorage.setItem("templatePreSelected", templateId);
+      if (themeToSave) localStorage.setItem("selectedColorTheme", themeToSave);
+      else localStorage.removeItem("selectedColorTheme");
       navigate("/register", {
         state: {
           from: {
             pathname: "/editor",
-            state: {
-              resumeData: blankResumeData,
-              isNewResume: true,
-              templateSelected: true,
-              selectedTemplate: templateId,
-              fromTemplates: true,
-            },
+            state: editorState,
           },
           message: "Create your free account to customize and download this template.",
         },
@@ -561,15 +542,7 @@ export default function Templates() {
       return;
     }
 
-    navigate("/editor", {
-      state: {
-        resumeData: blankResumeData,
-        isNewResume: true,
-        templateSelected: true,
-        selectedTemplate: templateId,
-        fromTemplates: true,
-      },
-    });
+    navigate("/editor", { state: editorState });
   };
 
   // Check if a specific template is currently previewed or requested via URL

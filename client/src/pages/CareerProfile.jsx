@@ -255,18 +255,6 @@ export default function CareerProfile() {
     toast.success(`Added AI structured data to ${aiSection}!`);
   };
 
-  // Open in Resume Builder
-  const handleExportToResumeBuilder = async () => {
-    try {
-      const res = await careerAPI.getExportResumeFormat();
-      if (res.data?.resumeData) {
-        navigate("/editor", { state: { resumeData: res.data.resumeData } });
-      }
-    } catch (err) {
-      toast.error("Failed to prepare resume format");
-    }
-  };
-
   // Add Single Skill
   const handleAddSkill = () => {
     if (!newSkillName.trim()) return;
@@ -330,11 +318,10 @@ export default function CareerProfile() {
           sections={SECTIONS}
           onOpenAIModal={() => handleOpenAIModal(activeTab)}
           onOpenImportModal={handleOpenImportModal}
-          onExportToResumeBuilder={handleExportToResumeBuilder}
         />
 
         {/* Why Master Career Profile & How to Use It Interactive Hub */}
-        <CareerProfileExplainer onExportToResumeBuilder={handleExportToResumeBuilder} />
+        <CareerProfileExplainer />
 
         {/* Section Navigation Tabs & Form Area */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

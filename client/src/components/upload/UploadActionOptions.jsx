@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { FilePlus2, ArrowRight, BriefcaseBusiness } from "lucide-react";
+import { FilePlus2, ArrowRight } from "lucide-react";
 
 export default function UploadActionOptions({
   onCreateBlank,
@@ -19,8 +18,7 @@ export default function UploadActionOptions({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Option 1: Start from scratch */}
+      <div className="grid gap-4">
         <button
           onClick={onCreateBlank}
           disabled={uploading}
@@ -43,32 +41,6 @@ export default function UploadActionOptions({
           </div>
         </button>
 
-        {/* Option 2: Build with Career Profile */}
-        <Link
-          to="/career-profile"
-          className="group text-left p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200/90 dark:border-white/10 hover:border-cyan-500 dark:hover:border-cyan-500/60 transition-colors duration-200 shadow-xs cursor-pointer flex flex-col justify-between gap-5"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-              <BriefcaseBusiness className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <ArrowRight className="w-5 h-5 shrink-0 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-0.5 transition-[color,transform]" />
-          </div>
-
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                Use Career Profile
-              </h3>
-              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                Hub
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400 mt-1 leading-relaxed">
-              Fill your resume from the experience, skills and projects you've already saved.
-            </p>
-          </div>
-        </Link>
       </div>
     </div>
   );

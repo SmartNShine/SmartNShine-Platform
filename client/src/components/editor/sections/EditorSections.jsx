@@ -1,7 +1,6 @@
 import {useState, useEffect} from "react";
 import {useToggle} from "@/hooks";
 import EditableSection from "./EditableSection";
-import SocialLinksFields from "./SocialLinksFields";
 import {ScoreCard} from "@/components/common/cards";
 import {RecommendationsPanel} from "@/components/editor/panels";
 import {resumeAPI} from "@/api/api";
@@ -27,82 +26,6 @@ import {
 import {handleDateChange, isValidDate, getDateValidationMessage} from "@/utils/dateValidation";
 import AIBulletRewritePill from "./AIBulletRewritePill";
 
-
-export const PersonalInfoSection = ({
-  resumeData,
-  updateField,
-  updateContact,
-}) => (
-  <div className="space-y-2">
-    <input
-      type="text"
-      value={resumeData.name || ""}
-      onChange={(e) => updateField("name", e.target.value)}
-      placeholder="Full Name"
-      className="input-field font-semibold text-sm sm:text-base"
-      autoComplete="name"
-    />
-    <div className="grid grid-cols-2 gap-2">
-      <input
-        type="email"
-        value={resumeData.contact?.email || ""}
-        onChange={(e) => updateContact("email", e.target.value)}
-        placeholder="Email"
-        className="input-field"
-        autoComplete="email"
-      />
-      <input
-        type="tel"
-        value={resumeData.contact?.phone || ""}
-        onChange={(e) => {
-          const value = e.target.value;
-          if (/^[0-9\s\-()+ ]*$/.test(value)) {
-            updateContact("phone", value);
-          }
-        }}
-        placeholder="Phone (e.g., +1 234-567-8900)"
-        className="input-field"
-        autoComplete="tel"
-        maxLength="20"
-      />
-    </div>
-    <input
-      type="text"
-      value={resumeData.contact?.location || ""}
-      onChange={(e) => updateContact("location", e.target.value)}
-      placeholder="Location"
-      className="input-field"
-      autoComplete="off"
-    />
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <input
-        type="url"
-        value={resumeData.contact?.linkedin || ""}
-        onChange={(e) => updateContact("linkedin", e.target.value)}
-        placeholder="LinkedIn URL"
-        className="input-field"
-        autoComplete="url"
-      />
-      <input
-        type="url"
-        value={resumeData.contact?.github || ""}
-        onChange={(e) => updateContact("github", e.target.value)}
-        placeholder="GitHub URL"
-        className="input-field"
-        autoComplete="url"
-      />
-      <input
-        type="url"
-        value={resumeData.contact?.portfolio || ""}
-        onChange={(e) => updateContact("portfolio", e.target.value)}
-        placeholder="Portfolio / Website URL"
-        className="input-field"
-        autoComplete="url"
-      />
-    </div>
-    <SocialLinksFields contact={resumeData.contact} updateContact={updateContact} />
-  </div>
-);
 
 export const SkillsSection = ({ resumeData, updateField }) => {
   const [skillsInput, setSkillsInput] = useState("");

@@ -10,7 +10,6 @@ import {
   Download,
   Eye,
   EyeOff,
-  PenSquare,
   RefreshCw,
   ChevronDown,
   Check,
@@ -23,9 +22,6 @@ export default function EditorHeader({
   hasUnsavedChanges,
   saving,
   autoSaving,
-  isWizardMode,
-  onSwitchToFullEditor,
-  onImportCareerProfile,
   onResetOrder,
   onShowTemplateSelector,
   availableColorThemes = [],
@@ -97,35 +93,22 @@ export default function EditorHeader({
       <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5 sm:gap-2 shrink-0">
         <DarkModeToggle />
 
-        {/* Wizard Switch Button */}
-        {isWizardMode && (
-          <button
-            onClick={onSwitchToFullEditor}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition-all cursor-pointer"
-            title="Switch to full editor mode"
-          >
-            <PenSquare className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Full Editor</span>
-          </button>
-        )}
-
         {/* Reset Order Button (Desktop only) */}
-        {!isWizardMode && (
-          <button
-            onClick={onResetOrder}
-            className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-2 border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 text-xs font-semibold hover:border-orange-500 hover:text-orange-600 transition-all cursor-pointer"
-            title="Reset section order to default"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Order</span>
-          </button>
-        )}
+        <button
+          onClick={onResetOrder}
+          className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-2 border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 text-xs font-semibold hover:border-orange-500 hover:text-orange-600 transition-all cursor-pointer"
+          title="Reset section order to default"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Reset Order</span>
+        </button>
 
         {/* Template Selector Button */}
         <button
           onClick={onShowTemplateSelector}
-          className="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 text-xs font-bold hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 text-xs font-bold hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-2xs"
           title="Change template design"
+          aria-label="Change resume template"
         >
           <LayoutTemplate className="w-3.5 h-3.5 text-blue-500" />
           <span className="hidden md:inline">Templates</span>
