@@ -228,8 +228,8 @@ export async function saveInterviewTurn(session, questionNumber, { answer, answe
     }, { new: true, runValidators: true });
 
     if (updated) {
-      await checkAutoComplete(updated);
-      return { session: updated, data: getInterviewTurnResponse(updated, questionNumber), accepted: true };
+      const current = await checkAutoComplete(updated);
+      return { session: current, data: getInterviewTurnResponse(current, questionNumber), accepted: true };
     }
     session = await InterviewSession.findOne({ _id: session._id, userId: session.userId });
     if (!session) break;

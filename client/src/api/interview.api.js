@@ -14,6 +14,11 @@ export const getInterviewConfig = async () => {
   return response.data;
 };
 
+export const getAccess = async () => {
+  const response = await api.get("/interview/access", { quietErrors: true });
+  return response.data;
+};
+
 /**
  * Create a new interview session
  * @param {Object} params Session parameters
@@ -28,7 +33,7 @@ export const getInterviewConfig = async () => {
  * @returns {Promise<Object>} Created session data
  */
 export const createSession = async (params) => {
-  const response = await api.post("/interview/sessions", params);
+  const response = await api.post("/interview/sessions", params, { quietErrors: true });
   return response.data;
 };
 
@@ -38,7 +43,7 @@ export const createSession = async (params) => {
  * @returns {Promise<Object>} First question and session info
  */
 export const startSession = async (sessionId) => {
-  const response = await api.post(`/interview/sessions/${sessionId}/start`);
+  const response = await api.post(`/interview/sessions/${sessionId}/start`, undefined, { quietErrors: true });
   return response.data;
 };
 
@@ -342,6 +347,7 @@ export const testVoice = async (preset, customText) => {
 
 export default {
   getInterviewConfig,
+  getAccess,
   createSession,
   startSession,
   recordProctoringEvent,

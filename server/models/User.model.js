@@ -74,6 +74,9 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
+    // Serialize interview admissions for this account inside a transaction.
+    interviewAccessVersion: { type: Number, select: false },
+
     // Subscription fields
     subscription: {
       tier: {

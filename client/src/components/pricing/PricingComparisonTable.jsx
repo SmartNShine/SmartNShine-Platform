@@ -134,6 +134,18 @@ export function PricingComparisonTable() {
       ],
     },
     {
+      category: "Interview Practice",
+      items: [
+        {
+          name: "AI Interview Simulation",
+          free: "30 free minutes per account",
+          oneTime: "Uses the same 30 free minutes",
+          pro: "10 interviews per month",
+          campus: "Institutional access",
+        },
+      ],
+    },
+    {
       category: "Institutional & TPO Ecosystem",
       items: [
         {

@@ -13,6 +13,7 @@ Public read operations (templates catalog, guidelines, health check) are free. P
   - Standard OpenAI bullet optimization
   - Basic ATS keyword check & standard PDF export
   - 5 Career Q&A interview questions
+  - 30-Minute AI Interview Simulation allowance per account
 
 ### 2. One-Time Pass (Single Resume Boost)
 - **Price**: ₹49 INR (Promotional sales as low as ₹9 / ₹19 / ₹29)
@@ -24,6 +25,7 @@ Public read operations (templates catalog, guidelines, health check) are free. P
   - 1 Deep ATS diagnostic scan with gap analysis
   - 1 Live Public Portfolio website
   - Full Career Q&A Studio access & AI resume file parser
+  - Uses the account's 30-Minute AI Interview Simulation allowance
 
 ### 3. Pro Plan (Unlimited Career Accelerator)
 - **Price**:
@@ -36,6 +38,7 @@ Public read operations (templates catalog, guidelines, health check) are free. P
   - Unlimited Deep ATS diagnostic scans & missing keyword analysis
   - Unlimited Public Portfolio websites
   - Unlimited Career Q&A mock interviews & AI voice coach
+  - 10 AI interviews per month
   - Unlimited AI resume file parsers (PDF/DOCX)
   - 2-Way Master Career Profile Hub sync & priority 24/7 support
 

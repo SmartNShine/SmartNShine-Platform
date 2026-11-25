@@ -6,6 +6,7 @@ import Resume from "../models/Resume.model.js";
 import Settings from "../models/Settings.model.js";
 import {sendPaymentConfirmationEmail} from "./email.service.js";
 import {notifyPaymentFailure} from "./adminNotification.service.js";
+import {FREE_INTERVIEW_MINUTES, PRO_INTERVIEWS_PER_MONTH} from "./interview-access.service.js";
 
 /**
  * Payment Service (Razorpay Integration)
@@ -43,6 +44,7 @@ export const PRICING = {
       "3 Core ATS templates",
       "Master Career Profile Hub",
       "5 Career Q&A interview questions",
+      `${FREE_INTERVIEW_MINUTES}-Minute AI Interview Simulation`,
       "Basic ATS keyword check",
       "Standard PDF export",
     ],
@@ -76,6 +78,7 @@ export const PRICING = {
       "Unlimited ATS diagnostic scans",
       "Unlimited Public Portfolio websites",
       "Unlimited Career Q&A mock interviews",
+      `${PRO_INTERVIEWS_PER_MONTH} AI interviews per month`,
       "Unlimited AI resume file parsers",
       "Master Career Profile Hub 2-way sync",
       "Priority PDF rendering & 24/7 support",

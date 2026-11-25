@@ -28,6 +28,7 @@ export function useInterviewSession({
 }) {
   // Config & options
   const [config, setConfig] = useState(null);
+  const [access, setAccess] = useState(null);
   const [resumes, setResumes] = useState([]);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [ttsAvailable, setTtsAvailable] = useState(false);
@@ -84,6 +85,8 @@ export function useInterviewSession({
   const isInterviewActiveRef = externalIsInterviewActiveRef || internalActiveRef;
   const isCompletingRef = useRef(false);
   const turnInFlightRef = useRef(null);
+  const isStartingRef = useRef(false);
+  const accessRequestRef = useRef(0);
 
   const updateSession = (newSession) => {
     setSession(newSession);
@@ -94,6 +97,26 @@ export function useInterviewSession({
     setCurrentQuestion(newQuestion);
     currentQuestionRef.current = newQuestion;
   };
+
+  const refreshAccess = useCallback(async () => {
+    const request = ++accessRequestRef.current;
+    try {
+      const response = await interviewAPI.getAccess();
+      if (request === accessRequestRef.current) setAccess(response.data);
+    } catch (error) {
+      console.warn("Could not refresh interview access:", error.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user || step === "interview") return;
+    void refreshAccess();
+    window.addEventListener("focus", refreshAccess);
+    return () => {
+      accessRequestRef.current += 1;
+      window.removeEventListener("focus", refreshAccess);
+    };
+  }, [user, step, refreshAccess]);
 
   // Load initial configs
   useEffect(() => {
@@ -211,9 +234,11 @@ export function useInterviewSession({
 
   /** @param {{ screenShare?: { status: string } }} [options] proctored mode: result of the share request */
   const handleStartInterview = async ({ screenShare } = {}) => {
+    if (isStartingRef.current || access?.canStart === false) return false;
     const startError = getStartError();
     if (startError) return toast.error(startError);
 
+    isStartingRef.current = true;
     setIsSubmitting(true);
     try {
       // The server derives the count from interviewDuration; this is a fallback.
@@ -240,7 +265,12 @@ export function useInterviewSession({
       const startRes = await interviewAPI.startSession(createRes.data.sessionId);
       if (!startRes.success) throw new Error(startRes.error || "Failed to start session");
 
-      const sessionData = { id: createRes.data.sessionId, ...createRes.data };
+      const sessionData = {
+        id: createRes.data.sessionId,
+        ...createRes.data,
+        status: startRes.data.status,
+        startedAt: startRes.data.startedAt,
+      };
       updateSession(sessionData);
       updateCurrentQuestion(startRes.data.currentQuestion);
       isInterviewActiveRef.current = true;
@@ -250,6 +280,7 @@ export function useInterviewSession({
       const now = Date.now();
       setStartTime(now);
       startTimeRef.current = now;
+      setAccess(null);
       setStep("interview");
       setQuestionCount(1);
 
@@ -280,10 +311,16 @@ export function useInterviewSession({
       }
       return true;
     } catch (error) {
-      console.error("Failed to start interview:", error);
-      toast.error(error.message || "Failed to start interview");
+      const failure = error.response?.data;
+      if (failure?.access) {
+        accessRequestRef.current += 1;
+        setAccess(failure.access);
+      } else {
+        toast.error(failure?.error || error.message || "Failed to start interview");
+      }
       return false;
     } finally {
+      isStartingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -504,29 +541,22 @@ export function useInterviewSession({
     }
   };
 
-  const handleAbandonInterview = async (skipConfirm = false) => {
-    if (!skipConfirm && !window.confirm("Are you sure you want to end this interview? Your progress will be lost.")) return;
-
-    isInterviewActiveRef.current = false;
-    const currentSession = sessionRef.current;
-
+  const handleAbandonInterview = async (sessionId) => {
+    if (!sessionId) return false;
     try {
-      stopLocalAudio();
-      cleanupAudioStreams();
-
-      if (currentSession?.id) {
-        await interviewAPI.abandonSession(currentSession.id);
-      }
-
+      await interviewAPI.abandonSession(sessionId);
+      isInterviewActiveRef.current = false;
       toast.success("Interview ended");
       setStep("setup");
       setInterviewPhase("idle");
       resetState();
+      return true;
     } catch (error) {
       console.error("Failed to abandon interview:", error);
-      toast.error(error.message || "Failed to end interview");
-      resetState();
-      setStep("setup");
+      toast.error(error.response?.data?.error || error.message || "Failed to end interview");
+      return false;
+    } finally {
+      if (step === "setup") void refreshAccess();
     }
   };
 
@@ -557,6 +587,7 @@ export function useInterviewSession({
 
   return {
     config,
+    access,
     resumes,
     voiceAvailable,
     ttsAvailable,

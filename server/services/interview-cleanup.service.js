@@ -1,5 +1,5 @@
 import InterviewSession from "../models/InterviewSession.model.js";
-import { STATES, transitionTo } from "./interview-state.service.js";
+import { isStateConflict, STATES, transitionTo } from "./interview-state.service.js";
 import { purgeExpiredScreenFrames } from "./screen-share.service.js";
 
 /**
@@ -13,6 +13,14 @@ export async function purgeScreenFrames(options) {
     console.log(`🧹 Deleted screen frames of ${purged.length} interview session(s) past retention.`);
   }
   return purged;
+}
+
+async function abandonStaleSession(session, reason, staleBefore) {
+  try {
+    await transitionTo(session, STATES.ABANDONED, reason, { staleBefore });
+  } catch (error) {
+    if (!isStateConflict(error)) throw error;
+  }
 }
 
 /**
@@ -36,7 +44,7 @@ export const startCleanupJob = () => {
       });
       
       for (const session of staleSessions) {
-        await transitionTo(session, STATES.ABANDONED, "Auto-abandoned due to timeout");
+        await abandonStaleSession(session, "Auto-abandoned due to timeout", twoHoursAgo);
       }
       
       // Abandon stale "paused" sessions older than 7 days
@@ -46,7 +54,7 @@ export const startCleanupJob = () => {
       });
       
       for (const session of ancientPausedSessions) {
-        await transitionTo(session, STATES.ABANDONED, "Auto-abandoned due to max pause duration exceeded");
+        await abandonStaleSession(session, "Auto-abandoned due to max pause duration exceeded", sevenDaysAgo);
       }
       
       if (staleSessions.length > 0 || ancientPausedSessions.length > 0) {

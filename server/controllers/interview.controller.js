@@ -3,6 +3,7 @@ import InterviewResult from "../models/InterviewResult.model.js";
 import Resume from "../models/Resume.model.js";
 import * as interviewService from "../services/interview.service.js";
 import * as interviewStateManager from "../services/interview-state.service.js";
+import { getInterviewAccess, sendInterviewAccessDenied, startInterviewWithAccess } from "../services/interview-access.service.js";
 import * as sarvamService from "../services/sarvam.service.js";
 import {transcribeAudioWithAI} from "../services/openai.service.js";
 import axios from "axios";
@@ -125,6 +126,16 @@ export const getInterviewConfig = async (req, res) => {
   }
 };
 
+export const getAccess = async (req, res) => {
+  try {
+    res.set("Cache-Control", "no-store");
+    res.json({ success: true, data: await getInterviewAccess(req.user) });
+  } catch (error) {
+    console.error("Failed to check interview access:", error);
+    res.status(500).json({ success: false, error: "Failed to check interview access" });
+  }
+};
+
 /**
  * Create a new interview session
  * POST /api/interview/sessions
@@ -132,6 +143,9 @@ export const getInterviewConfig = async (req, res) => {
 export const createSession = async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id;
+    const access = await getInterviewAccess(req.user);
+    if (!access.canStart) return sendInterviewAccessDenied(res, access);
+
     const {
       interviewType,
       role,
@@ -249,7 +263,6 @@ export const createSession = async (req, res) => {
       syllabus,
       currentCognitiveLevel: 2,
       status: "created",
-      startedAt: new Date(),
       voiceEngineUsed: mode === "text" ? "none" : voiceEngineUsed,
       personaUsed: mode === "text" ? "standard" : SUPPORTED_PERSONAS.has(personaUsed) ? personaUsed : "shubh",
       interviewLanguage: sarvamService.normalizeSttLanguage(interviewLanguage),
@@ -304,66 +317,65 @@ export const startSession = async (req, res) => {
     const {sessionId} = req.params;
     const userId = req.user.userId || req.user._id;
 
-    const session = await InterviewSession.findOne({_id: sessionId, userId});
+    let session = await InterviewSession.findOne({_id: sessionId, userId});
     if (!session) {
       return res.status(404).json({success: false, error: "Session not found"});
     }
 
-    try {
-      await interviewStateManager.transitionTo(session, interviewStateManager.STATES.IN_PROGRESS, "User started session");
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err.message,
-      });
+    let started = false;
+    if (session.status === interviewStateManager.STATES.CREATED) {
+      const access = await getInterviewAccess(req.user);
+      if (!access.canStart) {
+        // Another request may have just started this same session.
+        if (String(access.activeSessionId) !== sessionId) return sendInterviewAccessDenied(res, access);
+        session = await InterviewSession.findOne({_id: sessionId, userId});
+      } else {
+        const firstPlan = getQuestionPlan(session);
+        const questionData = await interviewService.generateQuestion(
+          buildGenerationConfig(session, firstPlan, 1),
+          req.user
+        );
+        const outcome = await startInterviewWithAccess(req.user, sessionId, {
+          questionText: questionData.question,
+          questionType: firstPlan.questionType,
+          category: firstPlan.category,
+          difficulty: firstPlan.difficulty,
+          cognitiveLevel: firstPlan.cognitiveLevel,
+          cognitiveMeta: firstPlan.cognitiveMeta,
+          syllabusPhase: firstPlan.syllabusPhase,
+        });
+        if (outcome.access) return sendInterviewAccessDenied(res, outcome.access);
+        session = outcome.session;
+        started = outcome.started;
+      }
     }
 
-    // Question 1 follows the format's blueprint: the plan picks the topic and
-    // question type, the session format decides which context (resume/JD) is used.
-    const firstPlan = getQuestionPlan(session);
-    const questionData = await interviewService.generateQuestion(
-      buildGenerationConfig(session, firstPlan, 1),
-      req.user
-    );
-
-    const cogLevel = firstPlan.cognitiveLevel;
-    const cogMeta = firstPlan.cognitiveMeta || null;
-
-    // Store the plan's topic and type (not the model's own labels) so topic
-    // tracking and answer timing stay consistent with the blueprint.
-    const firstQuestion = session.addQuestion({
-      questionText: questionData.question,
-      questionType: firstPlan.questionType,
-      category: firstPlan.category,
-      difficulty: firstPlan.difficulty,
-      cognitiveLevel: cogLevel,
-      cognitiveMeta: cogMeta,
-      syllabusPhase: firstPlan.syllabusPhase,
-    });
-
-    await session.save();
-
-    console.log(
-      `✅ Interview session started: ${session._id} (mode: ${session.mode}, cognitiveLevel: ${cogLevel})`
-    );
+    if (!session) return res.status(404).json({ success: false, error: "Session not found" });
+    const currentQuestion = session.questions.at(-1);
+    if (session.status !== interviewStateManager.STATES.IN_PROGRESS || !currentQuestion) {
+      return res.status(409).json({ success: false, error: "This interview cannot be started." });
+    }
 
     res.json({
       success: true,
       data: {
         sessionId: session._id,
         status: session.status,
+        startedAt: session.startedAt,
         mode: session.mode,
-        currentQuestion: toQuestionPayload(firstQuestion, session._id),
+        currentQuestion: toQuestionPayload(currentQuestion, session._id),
         progress: {
-          current: 1,
+          current: currentQuestion.questionNumber,
           total: session.totalQuestions,
-          percentage: Math.round((1 / session.totalQuestions) * 100),
+          percentage: Math.round((currentQuestion.questionNumber / session.totalQuestions) * 100),
         },
       },
     });
-    void prepareNextInterviewQuestion(session, req.user).catch((error) => {
-      console.warn("Could not prepare the next interview question:", error.message);
-    });
+    if (started) {
+      void prepareNextInterviewQuestion(session, req.user).catch((error) => {
+        console.warn("Could not prepare the next interview question:", error.message);
+      });
+    }
   } catch (error) {
     console.error("❌ Start session error:", error);
     res
@@ -465,16 +477,17 @@ export const completeSession = async (req, res) => {
       return res.status(400).json({ success: false, error: "This interview cannot be completed." });
     }
 
-    // Mark session as completed and calculate total duration
-    await checkOfflineProctoring(session);
-    session.status = "completed";
-    session.completedAt ||= new Date();
-    const startTime = session.startedAt || session.createdAt || session.completedAt;
-    const computedSec = Math.max(1, Math.round((session.completedAt.getTime() - new Date(startTime).getTime()) / 1000));
-    if (!session.totalDurationSeconds || session.totalDurationSeconds <= 0) {
-      session.totalDurationSeconds = computedSec;
+    if (session.status !== interviewStateManager.STATES.COMPLETED) {
+      try {
+        await interviewStateManager.transitionTo(session, interviewStateManager.STATES.COMPLETED, "User completed session");
+      } catch (error) {
+        if (!interviewStateManager.isStateConflict(error)) throw error;
+        const current = await InterviewSession.findById(session._id);
+        if (current?.status !== interviewStateManager.STATES.COMPLETED) {
+          return res.status(409).json({ success: false, error: "The interview changed. Please try again." });
+        }
+      }
     }
-    await session.save();
     session = await finishPendingEvaluations(await InterviewSession.findById(session._id));
 
     // Generate comprehensive report with safe fallback
@@ -588,7 +601,7 @@ export const completeSession = async (req, res) => {
       experienceLevel: session.experienceLevel,
       aiModel: session.aiModel || "gpt-4",
       hiringRecommendation: reportData.hiringRecommendation || "Consider",
-      isPremiumAnalysis: isPremiumUser(req.user),
+      isPremiumAnalysis: session.accessTier === "pro" || (!session.accessTier && isPremiumUser(req.user)),
       videoRecordingUrl: session.videoRecordingUrl || null,
       proctoringAudit: {
         integrityScore: auditSession.proctoringSummary?.integrityScore ?? 100,
@@ -934,7 +947,7 @@ function selectAIModel(user) {
 }
 
 function isPremiumUser(user) {
-  return user.role === "admin" || user.subscription?.tier === "pro";
+  return user.role === "admin" || (user.subscription?.tier === "pro" && user.hasActiveSubscription?.());
 }
 
 /**

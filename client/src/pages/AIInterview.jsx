@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useOutletContext } from "react-router-dom";
-import { ArrowRight, AudioLines, FileBarChart2, History, ScanFace } from "lucide-react";
+import { ArrowRight, AudioLines, Clock, FileBarChart2, History, ScanFace } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import { storage } from "@/utils/storage";
 import { StudioDialog } from "@/components/interview/StudioDialog";
 import { primeVoiceActivity } from "@/components/interview/voiceActivity";
 import { CallEndIcon, ShieldIcon, SkipIcon } from "@/components/interview/StudioIcons";
@@ -37,6 +38,88 @@ import {
 // Screen sharing is mandatory only for TPO-assigned assessments (security plan S1.5).
 // They are not linked to interview sessions yet, so self-chosen proctored mode only flags.
 const SCREEN_SHARE_REQUIRED = false;
+const FREE_INTERVIEW_WARNING_SECONDS = 10 * 60;
+
+function freeInterviewTimeLabel(seconds) {
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} free interview minute${minutes === 1 ? "" : "s"} remaining`;
+}
+
+function FreeInterviewWarning({ accountId, access, canShow, onViewPlans }) {
+  const storageKey = `interviewFreeTimeWarningDismissed:${accountId}`;
+  const [dismissed, setDismissed] = useState(() => storage.get(storageKey, false));
+  const dismiss = useCallback(() => {
+    setDismissed(true);
+    storage.set(storageKey, true);
+  }, [storageKey]);
+
+  const seconds = access?.remainingSeconds ?? 0;
+  const open = canShow && !dismissed && access?.tier === "free" && access.canStart &&
+    seconds > 0 && seconds <= FREE_INTERVIEW_WARNING_SECONDS;
+
+  return (
+    <StudioDialog
+      open={open}
+      tone="caution"
+      icon={<Clock className="h-5 w-5" aria-hidden="true" />}
+      title={freeInterviewTimeLabel(seconds)}
+      description="You can still start another interview. Pro includes 10 AI interviews per billing month."
+      cancelLabel="Keep practicing"
+      confirmLabel="View subscription plans"
+      onCancel={dismiss}
+      onConfirm={() => {
+        dismiss();
+        onViewPlans();
+      }}
+    />
+  );
+}
+
+function InterviewAccessNotice({ access, onEndUnfinished }) {
+  if (!access || access.tier === "unlimited") return null;
+
+  const freeExhausted = access.code === "FREE_INTERVIEW_ACCESS_EXHAUSTED";
+  const proExhausted = access.code === "PRO_INTERVIEW_LIMIT_REACHED";
+  const hasUnfinished = access.code === "INTERVIEW_ALREADY_ACTIVE";
+  const resetDate = proExhausted && new Date(access.resetsAt).toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+  });
+  let title = access.message;
+  if (freeExhausted) title = "Free interview access exhausted";
+  if (access.canStart && access.tier === "free") {
+    title = freeInterviewTimeLabel(access.remainingSeconds);
+  }
+  if (access.canStart && access.tier === "pro") {
+    title = `${access.remainingInterviews} of ${access.monthlyLimit} AI interviews remaining this subscription month`;
+  }
+
+  return (
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 dark:border-blue-900 dark:bg-blue-950/30">
+      <div role="status">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h2>
+        {freeExhausted && (
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            {access.message} Pro includes 10 AI interviews per subscription month.
+          </p>
+        )}
+        {proExhausted && (
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Your current allowance ends on {resetDate}.</p>
+        )}
+      </div>
+      {freeExhausted && (
+        <Link to={access.upgradeUrl} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+          View subscription plans <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      )}
+      {hasUnfinished && onEndUnfinished && (
+        <button type="button" onClick={onEndUnfinished} className="rounded-xl border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-950">
+          End unfinished interview
+        </button>
+      )}
+    </section>
+  );
+}
 
 const AIInterview = () => {
   const navigate = useNavigate();
@@ -44,7 +127,8 @@ const AIInterview = () => {
   const outletContext = useOutletContext();
   const setIsFocusMode = outletContext?.setIsFocusMode;
   const isProduction = import.meta.env.PROD || false;
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [exitSessionId, setExitSessionId] = useState(null);
+  const isExitModalOpen = Boolean(exitSessionId);
   const [isSkipDialogOpen, setIsSkipDialogOpen] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
   // { previous, resolve } while asking to share the entire screen instead of a window/tab.
@@ -264,6 +348,7 @@ const AIInterview = () => {
 
   // Setup "Launch": validate the configuration, then open the monitoring check.
   const handleOpenMonitoringCheck = () => {
+    if (session.access?.canStart === false) return;
     const startError = session.getStartError();
     if (startError) {
       toast.error(startError);
@@ -275,6 +360,10 @@ const AIInterview = () => {
 
   // Fullscreen and the screen-share picker must be requested inside the click itself (browser rule).
   const handleStart = async () => {
+    if (session.access?.canStart === false) {
+      closeMonitoringCheck();
+      return;
+    }
     primeVoiceActivity(); // in the click: lets Shubh's orb follow his voice
     const startError = session.getStartError();
     if (startError) {
@@ -282,7 +371,7 @@ const AIInterview = () => {
       return;
     }
     if (!isProctored) {
-      await session.handleStartInterview();
+      if (await session.handleStartInterview() !== true) closeMonitoringCheck();
       return;
     }
     void requestInterviewFullscreen();
@@ -297,9 +386,16 @@ const AIInterview = () => {
     screenShare.adopt(share);
     const started = await session.handleStartInterview({ screenShare: { status: share.status } });
     if (started !== true) {
-      screenShare.stop();
-      exitInterviewFullscreen();
+      closeMonitoringCheck();
     }
+  };
+
+  const closeMonitoringCheck = () => {
+    camera.stopCamera();
+    recording.cleanupAudioStreams();
+    screenShare.stop();
+    exitInterviewFullscreen();
+    setIsMonitoringCheckOpen(false);
   };
 
   // Auto-start camera once when entering live interview
@@ -387,7 +483,7 @@ const AIInterview = () => {
 
     const handlePopState = () => {
       window.history.pushState({ interviewActive: true }, "");
-      setIsExitModalOpen(true);
+      setExitSessionId(activeSessionId);
     };
 
     const handleBeforeUnload = (e) => {
@@ -403,21 +499,22 @@ const AIInterview = () => {
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [session.step]);
+  }, [session.step, activeSessionId]);
 
   const handleRequestExit = () => {
-    setIsExitModalOpen(true);
+    setExitSessionId(activeSessionId || session.access?.activeSessionId || null);
   };
 
   const handleConfirmExit = async () => {
     setIsAbandoning(true);
     try {
-      await session.handleAbandonInterview(true);
-      await videoRecorder.stopVideoRecording();
-      camera.stopCamera();
+      if (await session.handleAbandonInterview(exitSessionId)) {
+        await videoRecorder.stopVideoRecording();
+        camera.stopCamera();
+      }
     } finally {
       setIsAbandoning(false);
-      setIsExitModalOpen(false);
+      setExitSessionId(null);
     }
   };
 
@@ -487,10 +584,7 @@ const AIInterview = () => {
           screenShareRequired={SCREEN_SHARE_REQUIRED}
           roleLabel={session.selectedRole}
           isSubmitting={session.isSubmitting}
-          onBack={() => {
-            camera.stopCamera();
-            setIsMonitoringCheckOpen(false);
-          }}
+          onBack={closeMonitoringCheck}
           onBegin={handleStart}
           cameraStream={camera.stream}
           getMicStream={recording.getMicStream}
@@ -539,8 +633,15 @@ const AIInterview = () => {
             </header>
           )}
 
+          {(session.step === "setup" || session.access?.canStart === false) && (
+            <InterviewAccessNotice
+              access={session.access}
+              onEndUnfinished={session.step === "setup" ? handleRequestExit : undefined}
+            />
+          )}
+
           {/* Step 1: Setup */}
-          {session.step === "setup" && !isMonitoringCheckOpen && (
+          {session.step === "setup" && session.access?.canStart !== false && (
             <SetupStep
               config={session.config}
               resumes={session.resumes}
@@ -581,6 +682,7 @@ const AIInterview = () => {
           {session.step === "result" && (
             <ResultStep
               result={session.result}
+              canStartNewInterview={session.access?.canStart !== false}
               elapsedTime={session.elapsedTime}
               formatTime={formatTime}
               onNewInterview={() => {
@@ -597,15 +699,25 @@ const AIInterview = () => {
         </div>
       )}
 
+      {user?._id && (
+        <FreeInterviewWarning
+          key={user._id}
+          accountId={user._id}
+          access={session.access}
+          canShow={session.step !== "interview" && !isMonitoringCheckOpen && !isExitModalOpen && !session.isSubmitting}
+          onViewPlans={() => navigate("/pricing")}
+        />
+      )}
+
       <StudioDialog
         open={isExitModalOpen}
         tone="danger"
         icon={<CallEndIcon className="h-5 w-5" />}
         title="End this interview?"
-        description="Your answers so far won't be scored and you won't get a report. You can start a new interview any time."
+        description="Ending this interview discards your answers and closes the session without a report."
         cancelLabel="Keep going"
         confirmLabel="End interview"
-        onCancel={() => setIsExitModalOpen(false)}
+        onCancel={() => setExitSessionId(null)}
         onConfirm={handleConfirmExit}
         loading={isAbandoning}
       />
@@ -619,7 +731,7 @@ const AIInterview = () => {
         cancelLabel="Return to fullscreen"
         confirmLabel="End interview"
         onCancel={() => void environment.returnToFullscreen()}
-        onConfirm={() => setIsExitModalOpen(true)}
+        onConfirm={handleRequestExit}
       />
 
       <StudioDialog
@@ -633,7 +745,7 @@ const AIInterview = () => {
         cancelLabel="Share screen again"
         confirmLabel={SCREEN_SHARE_REQUIRED ? "End interview" : "Continue without sharing"}
         onCancel={() => void screenShare.reshare()}
-        onConfirm={() => (SCREEN_SHARE_REQUIRED ? setIsExitModalOpen(true) : screenShare.continueWithoutShare())}
+        onConfirm={SCREEN_SHARE_REQUIRED ? handleRequestExit : screenShare.continueWithoutShare}
       />
 
       <StudioDialog

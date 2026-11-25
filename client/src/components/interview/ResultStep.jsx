@@ -23,6 +23,7 @@ const defaultFormatTime = (seconds) => {
 // Result Step Component
 export const ResultStep = ({
   result,
+  canStartNewInterview = true,
   elapsedTime,
   formatTime,
   onNewInterview,
@@ -361,13 +362,15 @@ export const ResultStep = ({
 
       {/* Actions */}
       <div className="flex gap-4">
-        <button
-          onClick={onNewInterview || onRetry}
-          className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
-        >
-          <RefreshCw className="w-5 h-5" />
-          Practice Again
-        </button>
+        {canStartNewInterview && (
+          <button
+            onClick={onNewInterview || onRetry}
+            className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
+          >
+            <RefreshCw className="w-5 h-5" />
+            Practice Again
+          </button>
+        )}
         <button
           onClick={onViewHistory || (() => { window.location.href = "/interview/history"; })}
           className="flex-1 py-4 bg-gray-100/80 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 border border-blue-500/30 text-blue-600 dark:text-blue-400 hover:border-blue-500/50 font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"

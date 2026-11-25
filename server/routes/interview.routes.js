@@ -1,14 +1,12 @@
 import express from "express";
 import {authenticateToken} from "../middleware/auth.middleware.js";
-import {checkSubscription} from "../middleware/subscription.middleware.js";
 import * as interviewController from "../controllers/interview.controller.js";
 import {
   interviewLimiter,
   interviewTurnLimiter,
   interviewProctoringLimiter,
   interviewScreenFrameLimiter,
-  checkInterviewLimit,
-  checkVoiceAccess,
+  loadInterviewAccount,
 } from "../middleware/interview.middleware.js";
 import {audioUpload, videoUpload} from "../config/multer.config.js";
 
@@ -34,6 +32,8 @@ router.get(
   interviewController.getInterviewConfig
 );
 
+router.get("/access", authenticateToken, loadInterviewAccount, interviewController.getAccess);
+
 // =====================
 // SESSION MANAGEMENT
 // =====================
@@ -46,9 +46,8 @@ router.get(
 router.post(
   "/sessions",
   authenticateToken,
-  checkSubscription,
+  loadInterviewAccount,
   interviewLimiter,
-  checkInterviewLimit,
   interviewController.createSession
 );
 
@@ -60,7 +59,7 @@ router.post(
   "/sessions/:sessionId/start",
   authenticateToken,
   interviewTurnLimiter,
-  checkSubscription,
+  loadInterviewAccount,
   interviewController.startSession
 );
 
@@ -73,7 +72,7 @@ router.post(
   "/sessions/:sessionId/answer",
   authenticateToken,
   interviewTurnLimiter,
-  checkSubscription,
+  loadInterviewAccount,
   interviewController.submitAnswer
 );
 
@@ -86,7 +85,7 @@ router.post(
   "/sessions/:sessionId/voice-answer",
   authenticateToken,
   interviewTurnLimiter,
-  checkSubscription,
+  loadInterviewAccount,
   audioUpload.single("audio"), // Multer MUST run before any middleware that accesses req.body
   interviewController.submitVoiceAnswer
 );
@@ -100,7 +99,7 @@ router.post(
   "/sessions/:sessionId/skip",
   authenticateToken,
   interviewTurnLimiter,
-  checkSubscription,
+  loadInterviewAccount,
   interviewController.skipQuestion
 );
 
@@ -113,7 +112,7 @@ router.post(
   "/sessions/:sessionId/introduction",
   authenticateToken,
   interviewTurnLimiter,
-  checkSubscription,
+  loadInterviewAccount,
   interviewController.submitIntroduction
 );
 
@@ -125,7 +124,7 @@ router.post(
   "/sessions/:sessionId/complete",
   authenticateToken,
   interviewTurnLimiter,
-  checkSubscription,
+  loadInterviewAccount,
   interviewController.completeSession
 );
 

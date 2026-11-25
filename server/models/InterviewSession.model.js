@@ -246,6 +246,10 @@ const interviewSessionSchema = new mongoose.Schema(
       default: "created",
       index: true,
     },
+    accessTier: {
+      type: String,
+      enum: ["free", "pro"],
+    },
     stateHistory: [
       {
         state: String,
@@ -471,6 +475,7 @@ const interviewSessionSchema = new mongoose.Schema(
 
 // Indexes for efficient queries
 interviewSessionSchema.index({userId: 1, status: 1});
+interviewSessionSchema.index({userId: 1, accessTier: 1, startedAt: 1});
 interviewSessionSchema.index({userId: 1, createdAt: -1});
 interviewSessionSchema.index({interviewType: 1, status: 1});
 interviewSessionSchema.index({status: 1, "proctoringHeartbeat.enabled": 1, "proctoringHeartbeat.lastSeenAt": 1});

@@ -40,7 +40,8 @@ test("the stored admin role grants interview and plan access without billing rec
   );
   const expiryCheck = t.mock.method(Subscription, "updateMany", async () => ({}));
   const billingLookup = t.mock.method(Subscription, "getActiveSubscription", async () => null);
-  const interviewCount = t.mock.method(InterviewSession, "countDocuments", async () => 999);
+  const activeInterview = t.mock.method(InterviewSession, "exists", () => ({session: async () => null}));
+  t.mock.method(InterviewSession, "aggregate", () => ({session: async () => [{seconds: 1800}]}));
   const saveInterview = t.mock.method(InterviewSession.prototype, "save", async function () {
     assert.ok(this.userId.equals(admin._id));
   });
@@ -67,7 +68,7 @@ test("the stored admin role grants interview and plan access without billing rec
   const adminSession = await request(admin, "interview/sessions", interview);
   assert.equal(adminSession.status, 201);
   assert.equal((await adminSession.json()).data.mode, "live");
-  assert.equal(interviewCount.mock.callCount(), 0);
+  assert.equal(activeInterview.mock.callCount(), 0);
   assert.equal(saveInterview.mock.callCount(), 1);
 
   const adminStatus = await request(admin, "subscription/status");
@@ -83,12 +84,12 @@ test("the stored admin role grants interview and plan access without billing rec
   assert.equal(admin.canAccessFeature("analytics"), true);
 
   const candidateSession = await request(candidate, "interview/sessions", interview);
-  assert.equal(candidateSession.status, 429);
-  assert.equal((await candidateSession.json()).error, "Daily interview limit reached");
+  assert.equal(candidateSession.status, 403);
+  assert.equal((await candidateSession.json()).code, "FREE_INTERVIEW_ACCESS_EXHAUSTED");
   const candidateStatus = await request(candidate, "subscription/status");
   assert.equal(candidateStatus.status, 200);
   assert.equal((await candidateStatus.json()).subscription.tier, "free");
-  assert.equal(expiryCheck.mock.callCount(), 2);
+  assert.equal(expiryCheck.mock.callCount(), 1);
   assert.equal(billingLookup.mock.callCount(), 1);
   assert.equal(candidate.isPremiumUser(), false);
   assert.equal(candidate.canAccessFeature("analytics"), false);
